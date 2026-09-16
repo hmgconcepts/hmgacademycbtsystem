@@ -331,3 +331,27 @@ and feature-preservation audit against the ORIGINAL baseline.
 `cbt-multi.html` · `teacher.html` · `database/complete-schema.sql` · `assets/js/site-license.js` · `client-monitor.html` · `admin.html` · `settings.html` · `deployment_validator.html` · `sw.js` (→ hmg-cbt-shell-v12-phase12-v1) · `assets/js/app.js` · `assets/js/chatbot.js` · `assets/js/site-help.js` · `PHASE12_SUBSCRIPTION_INTEGRITY.md`
 ### Generator
 `assets/js/generator.js` (applyClientMode + MANIFEST) · `templates/` (11 files re-synced tokenised; license.html + client-monitor.html deleted)
+
+---
+
+## Appendix — Phase 12B Fixes (2026-09-16) — Multi-Subject Student UX
+
+### Bug 1 — structured types unanswerable at the student end (live)
+- **Symptom:** matching/ordering questions rendered blank (renderer crash: `pairs.map is not a function`), categorization/multi-part numeric showed "⚠️ No … defined"; multi-part numeric also graded 0 even when answered.
+- **Root cause:** the CSV bridge ships Pairs/Items as JSON **strings**; four renderers + two graders read them raw. JSON-bank papers (arrays) worked, CSV papers didn't.
+- **Fix:** `normalizeQuestionPayload()` at load (both single- and multi-subject paths) + tolerant accessors `_safeItems`/`_pairsOf`/`_arrOfRaw` used by every renderer, grader and review display (School Connect `cbt-types.js itemsOf` parity). Ordering papers without an explicit key now treat the published item order as correct.
+
+### Bug 2 — no subject tabs (live)
+- **Symptom:** students saw no way to switch subjects; at the end of subject 1 the primary button was the submit.
+- **Root cause:** `renderMultiSubjectTabs()` was only called from inside the switch handler (unreachable), and `switchStudentExamSubject()` called `prevQuestionRecordTime()` — a function that no longer exists anywhere (every switch would have thrown).
+- **Fix:** tabs render at exam start (sticky, live counters, ✓ on completion), switch handler records question time directly.
+
+### Bug 3 — submit modal at every subject boundary (live)
+- **Fix:** `next()` flows subject → subject with an honest button label; submit only after the last question of the last subject; submit dialog shows per-subject progress with jump-back rows. `prev()` symmetric. Flag state, jump-to-first-unanswered and the progress line are subject-aware.
+
+### School Connect / GOSA parity ports
+- Builder publishes `subject_breakdown` [{name,start,end,count}] + `subjects` metadata and tags each question with its subject; student runner rebuilds tabs from that metadata for flat/legacy papers; lean publish retry drops `anti_cheat_config` on old databases.
+
+### Files touched
+`student.html` (normalisation, tabs, navigation, submit dialog, grader fixes) · `cbt-multi.html` (breakdown metadata + lean retry) · `sw.js` → `hmg-cbt-shell-v12-phase12b-v1` · generator templates re-synced (`student.html`, `cbt-multi.html`, `sw.js`).
+**No database change required.**

@@ -117,6 +117,12 @@
         .q-btn.unanswered-warn{border-color:var(--danger);color:var(--danger);animation:pulse-border 1s ease-in-out 3;}
         .q-btn.flagged{border-color:var(--warning);color:var(--warning);background:rgba(245,158,11,0.1);}
         .q-btn.flagged.answered{border-color:var(--warning);background:rgba(245,158,11,0.15);}
+        /* PHASE 12B — multi-subject tab bar (School Connect / GOSA Portal parity):
+           sticky at the top of the viewport so subject switching is ALWAYS one
+           tap away, exactly like the UTME-style runner in the sibling platforms. */
+        #multi-subject-tab-bar{position:sticky;top:6px;z-index:60;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding:10px 10px 12px;border:1px solid var(--border);border-radius:14px;background:linear-gradient(180deg,var(--surface) 0%,var(--surface) 72%,rgba(24,24,27,0.92) 100%);box-shadow:0 12px 28px rgba(0,0,0,0.38);}
+        #multi-subject-tab-bar .ms-tab{transition:transform .12s ease;}
+        #multi-subject-tab-bar .ms-tab:hover{transform:translateY(-1px);}
         @keyframes pulse-border{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 3px rgba(239,68,68,0.4)}}
         #flag-btn{background:rgba(245,158,11,0.1);color:var(--warning);border:1px solid rgba(245,158,11,0.35);padding:8px 14px;font-size:12px;border-radius:8px;width:auto;}
         #flag-btn:hover{background:rgba(245,158,11,0.2);opacity:1;transform:none;}
@@ -689,6 +695,7 @@
       <div><div id="sm-flagged" style="font-size:22px;font-weight:800;color:#f59e0b;">0</div><div style="font-size:11px;color:#a1a1aa;text-transform:uppercase;letter-spacing:0.5px;">Flagged</div></div>
     </div>
     <div id="sm-warning" style="display:none;background:rgba(239,68,68,0.08);border:1px solid rgba(239,68,68,0.3);border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:13px;color:#ef4444;font-weight:600;"></div>
+    <div id="sm-subjects" style="display:none;background:#09090b;border:1px solid #27272a;border-radius:12px;padding:14px 16px;margin-bottom:16px;"></div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('submit-modal').style.display='none';" style="flex:1;padding:13px;background:transparent;color:#a1a1aa;border:1px solid #27272a;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">← Review</button>
       <button onclick="confirmSubmit()" id="confirm-submit-btn" style="flex:2;padding:13px;background:#10b981;color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">✓ Submit Now</button>
@@ -885,8 +892,8 @@
           <div id="timer">00:00</div>
         </div>
     </div>
-    <!-- Multi-Subject Tab Bar -->
-    <div id="multi-subject-tab-bar" style="display:none;gap:8px;flex-wrap:wrap;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid var(--border);"></div>
+    <!-- Multi-Subject Tab Bar (PHASE 12B: sticky, always visible while taking a multi-subject paper) -->
+    <div id="multi-subject-tab-bar" style="display:none;"></div>
 
     <!-- Student identity strip during exam -->
     <div id="student-id-strip" style="display:none;background:rgba(16,185,129,0.07);border:1px solid rgba(16,185,129,0.2);border-radius:8px;padding:8px 14px;margin-bottom:16px;font-size:12px;align-items:center;gap:8px;">
@@ -1074,6 +1081,39 @@ function decodeMeta(r){
     if(!r||!r.includes('|'))return{subject:r||'—',cls:'—',term:'—',topic:'—',type:'—',session:'—',passmark:50};
     const p=r.split('|');
     return{subject:p[0]||'—',cls:p[1]||'—',term:p[2]||'—',topic:p[3]||'—',type:p[4]||'—',session:p[5]||'—',passmark:parseInt(p[6])||50};
+}
+
+/* ═══ PHASE 12B — STRUCTURED-PAYLOAD NORMALISATION ═══
+   School Connect / GOSA parity (cbt-types.js `itemsOf`). Question banks reach
+   the student runtime from three sources — JSON banks (arrays), CSV-bridge
+   papers (JSON *strings* in the Pairs/Items columns) and older databases
+   (either shape). Renderers and graders must never see a shape they cannot
+   read: every question is normalised ONCE at load, and the accessors below
+   are tolerant of whatever still slips through. */
+function _arrOfRaw(v){
+    if(Array.isArray(v))return v;
+    if(typeof v==='string'&&v.trim()!==''){try{const p=JSON.parse(v);if(Array.isArray(p))return p;}catch(e){}}
+    return [];
+}
+function _pairsOf(q){
+    if(Array.isArray(q.pairs))return q.pairs;
+    if(typeof q.pairs==='string'&&q.pairs.trim()!==''){try{const p=JSON.parse(q.pairs);if(Array.isArray(p))return p;}catch(e){}}
+    /* banks that store the matching table under `items` */
+    if(q.pairs===undefined){const it=_safeItems(q);if(it.length&&it.every(x=>x&&typeof x==='object'&&('left'in x||'right'in x)))return it;}
+    return [];
+}
+function normalizeQuestionPayload(q){
+    try{
+        const t=getQType(q);
+        if(q.pairs!==undefined&&q.pairs!==null)q.pairs=_pairsOf(q);
+        if(q.distractors!==undefined&&q.distractors!==null)q.distractors=_arrOfRaw(q.distractors);
+        /* array-expecting types get arrays; assertion_reason / case_study /
+           image_mcq / code self-parse strings OR objects and keep theirs. */
+        if(['matching','ordering','categorization','multi_numeric','matrix','hot_text'].includes(t)&&q.items!==undefined&&q.items!==null){
+            q.items=_safeItems(q);
+        }
+    }catch(e){}
+    return q;
 }
 
 function parseQuestionData(raw){
@@ -1492,6 +1532,27 @@ function init_admission(){
 
     isMultiSubjectMode = !!(exam.is_multi_subject || (exam.subjects_data && Array.isArray(exam.subjects_data) && exam.subjects_data.length > 0));
 
+    /* PHASE 12B — School Connect / GOSA Portal parity: papers built on the
+       sibling platforms (or by older tools) ship a FLAT csv_data plus
+       subject_breakdown metadata [{name,start,end,count}] instead of
+       subjects_data. Rebuild the subject list from those ranges so every
+       multi-subject paper gets tabs — whichever product published it. */
+    if(!isMultiSubjectMode){
+        let _ac=exam.anti_cheat_config;
+        try{ _ac = typeof _ac==='string' ? JSON.parse(_ac) : _ac; }catch(e){ _ac=null; }
+        const _bd=Array.isArray(_ac&&_ac.subject_breakdown)?_ac.subject_breakdown:null;
+        if(_bd&&_bd.length>1){
+            const _flat=parseQuestionData(exam.csv_data);
+            if(_flat.length){
+                const _subs=_bd.map(b=>{
+                    const st=Number(b.start)||0, ct=Number(b.count)||0;
+                    return {name:String(b.name||'Subject'),subject_name:String(b.name||'Subject'),count:ct,questions:_flat.slice(st,st+ct)};
+                }).filter(sb=>sb.questions.length);
+                if(_subs.length>1){ exam.subjects_data=_subs; isMultiSubjectMode=true; }
+            }
+        }
+    }
+
     if(isMultiSubjectMode){
         multiSubjectsList = (exam.subjects_data || []).map((s, sIdx) => {
             let qs = s.questions || [];
@@ -1503,6 +1564,7 @@ function init_admission(){
                 q._orig = i;
                 q._subjIdx = sIdx;
                 if(!q.type) q.type = 'mcq';
+                normalizeQuestionPayload(q);   /* PHASE 12B: pairs/items → arrays before any renderer sees them */
                 const qt = q.type.toLowerCase();
                 if(qt==='mcq'||qt==='tf'){
                     q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^[\"\'\s]+|[\"\'\s]+$/g,'').toUpperCase();
@@ -1543,6 +1605,7 @@ function init_admission(){
     rawQuestions.forEach((q, i) => {
         q._orig = i;
         if(!q.type)q.type='mcq';
+        normalizeQuestionPayload(q);   /* PHASE 12B: same guarantee for single-subject papers */
         const qt=q.type.toLowerCase();
         if(qt==='mcq'||qt==='tf'){
             q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^["'\s]+|["'\s]+$/g,'').toUpperCase();
@@ -1767,18 +1830,44 @@ function renderMultiSubjectTabs(){
             if(answers[`${idx}_${q._orig}`] !== undefined && answers[`${idx}_${q._orig}`] !== null && answers[`${idx}_${q._orig}`] !== '') answeredInSubj++;
         });
         const isAct = idx === activeSubjectIdx;
-        return `<button type="button" class="btn-sm ${isAct ? 'btn-primary' : 'btn-outline'}" onclick="switchStudentExamSubject(${idx})" style="padding:7px 14px;border-radius:20px;font-weight:700;font-size:12px;">
-          ${escapeHtmlStudent(s.name)} (${answeredInSubj}/${s.questions.length})
+        const done = s.questions.length > 0 && answeredInSubj >= s.questions.length;
+        return `<button type="button" id="ms-tab-${idx}" class="btn-sm ${isAct ? 'btn-primary' : 'btn-outline'} ms_tab" onclick="switchStudentExamSubject(${idx})" style="padding:7px 14px;border-radius:20px;font-weight:700;font-size:12px;">
+          ${escapeHtmlStudent(s.name)} <span id="ms-tab-count-${idx}" style="opacity:.85;font-weight:600;">(${answeredInSubj}/${s.questions.length}${done ? ' ✓' : ''})</span>
         </button>`;
     }).join('');
 }
 
-function switchStudentExamSubject(idx){
+/* PHASE 12B (School Connect refreshMeters parity): update the tab counters and
+   active highlight WITHOUT rebuilding the buttons — a full re-render would
+   recreate dropdowns / drag lists under the student's finger mid-answer. */
+function _refreshSubjectTabCounts(){
+    if(!isMultiSubjectMode || !multiSubjectsList.length) return;
+    multiSubjectsList.forEach((s, idx) => {
+        const span=document.getElementById('ms-tab-count-'+idx), btn=document.getElementById('ms-tab-'+idx);
+        if(!span || !btn) return;
+        let a=0;
+        s.questions.forEach(q=>{ const v=answers[`${idx}_${q._orig}`]; if(v!==undefined&&v!==null&&v!=='')a++; });
+        const done=s.questions.length>0&&a>=s.questions.length;
+        span.textContent=`(${a}/${s.questions.length}${done?' ✓':''})`;
+        btn.className='btn-sm '+(idx===activeSubjectIdx?'btn-primary':'btn-outline')+' ms_tab';
+    });
+}
+
+function switchStudentExamSubject(idx, toLast){
     if(idx < 0 || idx >= multiSubjectsList.length) return;
-    if(prevQuestionRecordTime) prevQuestionRecordTime();
+    /* PHASE 12B FIX: this used to call `prevQuestionRecordTime()` — a function
+       that no longer exists anywhere in the codebase, so EVERY subject switch
+       threw a ReferenceError. Record the elapsed time on the question being
+       left directly (same contract showQ's prevIndex path uses). */
+    if(examActive && questions[current]){
+        const elapsed=Math.round((Date.now()-questionStartTime)/1000);
+        const tKey=_timeKeyOf(questions[current]);
+        questionTimes[tKey]=(questionTimes[tKey]||0)+elapsed;
+    }
+    questionStartTime=Date.now();
     activeSubjectIdx = idx;
     questions = multiSubjectsList[activeSubjectIdx].questions;
-    current = 0;
+    current = toLast ? Math.max(0, questions.length - 1) : 0;
     renderMultiSubjectTabs();
     renderQNav();
     showQ();
@@ -2029,6 +2118,10 @@ function _beginExam(){
     if(isAntiCheatEnabled('audio'))startAudioMonitor();         // optional audio spike monitor
     restoreQuestionNavigatorPreference();
     ensureMathKeyboardAlwaysAvailable();
+    /* PHASE 12B FIX: the tab bar was only rendered from inside the switch
+       handler, so students never saw it — they hit the submit button at the
+       end of subject 1 instead. Tabs now mount at exam start. */
+    renderMultiSubjectTabs();
     renderWatermark();renderQNav();showQ();
 }
 
@@ -2153,6 +2246,20 @@ function toggleFlag(){
     renderQNav();
 }
 function jumpToFirstUnanswered(){
+    /* PHASE 12B: in multi-subject papers the first unanswered question may
+       live in another subject — scan every subject and switch to it. */
+    if(isMultiSubjectMode&&multiSubjectsList.length){
+        for(let si=0;si<multiSubjectsList.length;si++){
+            const fj=multiSubjectsList[si].questions.findIndex(q=>!hasAnswer(q._orig));
+            if(fj!==-1){
+                if(si!==activeSubjectIdx){switchStudentExamSubject(si);current=fj;showQ();}
+                else{const p=current;current=fj;showQ(p);}
+                return;
+            }
+        }
+        showToastStudent('✅ All questions across all subjects are answered!');
+        return;
+    }
     const first=questions.findIndex((q)=>!hasAnswer(q._orig));
     if(first===-1){
         // FIX (M7): flagged entries are composite keys in multi-subject mode — extract the position.
@@ -2196,6 +2303,7 @@ function renderQNav(){
     const n=questions.filter(q=>hasAnswer(q._orig)).length;
     document.getElementById('answered-count').innerText=`${n} of ${questions.length} answered`;
     document.getElementById('progress-bar').style.width=((n/questions.length)*100)+'%';
+    _refreshSubjectTabCounts();   /* PHASE 12B: live per-subject counters on the tab bar */
 }
 // ═══════════════════════════════════════════
 // QUESTION TYPE HELPERS
@@ -2236,9 +2344,18 @@ function showQ(prevIndex){
      if(q.difficulty) metaHtml += `<span style="font-size:10px;padding:2px 6px;border-radius:4px;background:rgba(255,255,255,0.1);margin-bottom:8px;display:inline-block;">${escapeHtmlStudent(q.difficulty)}</span>`;
      
      document.getElementById('q-text').innerHTML = metaHtml + '<br>' + escapeHtmlStudent(qLabel);
-    document.getElementById('progress-text').innerText=`Question ${current+1} of ${questions.length}`;
+    /* PHASE 12B (GOSA parity): subject-aware position line —
+       "Mathematics · Q 3 of 10 (overall 13 of 40)". */
+    if(isMultiSubjectMode && multiSubjectsList.length){
+        let before=0; for(let i=0;i<activeSubjectIdx;i++) before+=multiSubjectsList[i].questions.length;
+        const total=before+current+1, grand=multiSubjectsList.reduce((a,c)=>a+c.questions.length,0);
+        document.getElementById('progress-text').innerText=`${multiSubjectsList[activeSubjectIdx].name} · Q ${current+1} of ${questions.length} (overall ${total} of ${grand})`;
+    } else {
+        document.getElementById('progress-text').innerText=`Question ${current+1} of ${questions.length}`;
+    }
     const fb=document.getElementById('flag-btn');
-    if(fb){if(flagged.has(current)){fb.classList.add('flagged');fb.innerText='🚩 Flagged';}else{fb.classList.remove('flagged');fb.innerText='🚩 Flag';}}
+    const _fk=isMultiSubjectMode?(activeSubjectIdx+'_'+current):current;   /* PHASE 12B FIX: flag state used the unprefixed position — wrong tab state in multi-subject papers */
+    if(fb){if(flagged.has(_fk)){fb.classList.add('flagged');fb.innerText='🚩 Flagged';}else{fb.classList.remove('flagged');fb.innerText='🚩 Flag';}}
 
     const box=document.getElementById('options-box');
     box.innerHTML=`<div class="qtype-badge ${qTypeCls(qtype)}">${qTypeLabel(qtype)}</div>`;
@@ -2287,7 +2404,15 @@ function showQ(prevIndex){
         _renderMCQ(q, origKey, box); // safe fallback
     }
 
-    document.getElementById('next-btn').innerText=current===questions.length-1?'Finish Exam ✓':'Next →';
+    /* PHASE 12B: the primary button now announces what it actually does —
+       "Next Subject: Physics →" at a subject boundary, "Finish Exam ✓" only
+       on the last question of the last subject. */
+    if(current===questions.length-1){
+        const isLastSubj=!(isMultiSubjectMode&&activeSubjectIdx<multiSubjectsList.length-1);
+        document.getElementById('next-btn').innerText=isLastSubj?'Finish Exam ✓':('Next Subject: '+multiSubjectsList[activeSubjectIdx+1].name+' →');
+    } else {
+        document.getElementById('next-btn').innerText='Next →';
+    }
     renderQNav();
     /* PHASE 10: instant-feedback verdict renders right after the answer
        re-renders the question (the renderers call showQ() on selection). */
@@ -2506,7 +2631,11 @@ function _renderNumeric(q, origKey, box){
 //   keys = left-item index (string), values = right-item index in shuffled right pool
 // q.ans   = '{"0":"0","1":"1","2":"2"}' — always identity mapping (pairs already ordered)
 function _renderMatching(q, origKey, box){
-    const pairs=q.pairs||[];
+    /* PHASE 12B FIX: CSV-bridge papers ship pairs/items as JSON *strings*;
+       the old `q.pairs||[]` kept the string and `.map` threw, leaving the
+       question blank. Every structured accessor now goes through the
+       tolerant helpers (School Connect cbt-types.js `itemsOf` parity). */
+    const pairs=_pairsOf(q);
     if(!pairs.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matching pairs defined.</p>';return;}
 
     // Build shuffled right-side pool: correct rights + distractors
@@ -2585,7 +2714,7 @@ function _renderMatching(q, origKey, box){
 // Student answer = '[2,0,1]' — student's current top-to-bottom arrangement of item indices
 // Scoring: 1 point per item in its correct position (partial credit)
 function _renderOrdering(q, origKey, box){
-    const items=q.items||[];
+    const items=_safeItems(q);
     if(!items.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No items defined for ordering.</p>';return;}
 
     // Parse current student order (array of original item indices)
@@ -2668,7 +2797,7 @@ function orderMoveItem(btn,dir,origKey){
 // q.items = ["answer1|alt1", "answer2|alt2"] — one entry per blank in question text.
 // Student answer = JSON array of typed responses.
 function _renderCloze(q, origKey, box){
-    const answersList=Array.isArray(q.items)?q.items:[];
+    const answersList=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;
     const count=answersList.length || ((q.q.match(/___/g)||[]).length) || 1;
     let current=[]; try{current=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):[];}catch(e){current=[];}
     const hint=document.createElement('div');
@@ -2715,7 +2844,7 @@ function _renderEssay(q, origKey, box){
 // ─── CATEGORIZATION ─────────────────────────────────────────────────────
 // q.items = [{item:"Whale", category:"Mammal"}, ...]
 function _renderCategorization(q, origKey, box){
-    const rows=Array.isArray(q.items)?q.items:[];
+    const rows=_safeItems(q);
     if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No categorization items defined.</p>';return;}
     let cur={};try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):{};}catch(e){cur={};}
     const categories=[...new Set(rows.map(r=>r.category).filter(Boolean))].sort();
@@ -2737,7 +2866,7 @@ function _renderCategorization(q, origKey, box){
 // ─── MULTI-PART NUMERIC ─────────────────────────────────────────────────
 // q.items = [{label:"a", answer:2, tolerance:0, unit:""}, ...]
 function _renderMultiNumeric(q, origKey, box){
-    const parts=Array.isArray(q.items)?q.items:[];
+    const parts=_safeItems(q);
     if(!parts.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No numeric parts defined.</p>';return;}
     let cur=[];try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):[];}catch(e){cur=[];}
     const hint=document.createElement('div');hint.className='numeric-hint';hint.innerHTML='<strong>Multi-part numeric:</strong> answer each part. Partial credit is awarded per correct part.';box.appendChild(hint);
@@ -2778,12 +2907,30 @@ function next(){
         if(g!==null){adaptiveAsked++;if(g)adaptiveCorrect++;}
         _adaptiveSwapNextIn();
     }
-    if(current<questions.length-1){current++;showQ(p);}else openSubmitModal();
+    if(current<questions.length-1){current++;showQ(p);}
+    /* PHASE 12B FIX (School Connect / GOSA parity): reaching the end of ONE
+       subject used to open the submit modal — the student thought the whole
+       paper was over. Now it flows into the next subject; only the very last
+       question of the last subject finishes the paper (tabs allow free
+       switching at any time). */
+    else if(isMultiSubjectMode && activeSubjectIdx < multiSubjectsList.length - 1){
+        const nxt=multiSubjectsList[activeSubjectIdx+1];
+        switchStudentExamSubject(activeSubjectIdx+1);
+        showToastStudent('📘 '+nxt.name+' — you can switch subjects anytime with the tabs above.');
+    }
+    else openSubmitModal();
 }
 function prev(){
     const p=current;
     if(isAdaptiveMode){showToastStudent('🧠 Adaptive mode moves forward only — like the real thing.');return;}
     if(current>0){current--;showQ(p);}
+    /* PHASE 12B: symmetric with next() — stepping back past the first question
+       of a subject returns to the END of the previous subject. */
+    else if(isMultiSubjectMode && activeSubjectIdx > 0){
+        const prv=multiSubjectsList[activeSubjectIdx-1];
+        switchStudentExamSubject(activeSubjectIdx-1,true);
+        showToastStudent('📘 Back in '+prv.name+'.');
+    }
 }
 
 // ═══════════════════════════════════════════
@@ -2931,6 +3078,23 @@ function openSubmitModal(){
       if(questions[i]&&!hasAnswer(questions[i]._orig))b.classList.add('unanswered-warn');
     });
   }else{warn.style.display='none';}
+  /* PHASE 12B (GOSA parity): per-subject progress right in the submit dialog —
+     the student sees exactly which subjects are complete before finishing. */
+  const subjBox=document.getElementById('sm-subjects');
+  if(subjBox){
+    if(isMultiSubjectMode&&multiSubjectsList.length){
+      subjBox.style.display='block';
+      subjBox.innerHTML='<div style="font-size:11px;color:#a1a1aa;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px;font-weight:800;">Subjects — you can still go back to any of them</div>'+
+        multiSubjectsList.map((s,si)=>{
+          let a=0;s.questions.forEach(q=>{const v=answers[`${si}_${q._orig}`];if(v!=null&&v!=='')a++;});
+          const complete=s.questions.length>0&&a>=s.questions.length;
+          const act=si===activeSubjectIdx;
+          return `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 10px;border-radius:8px;margin-bottom:4px;background:${act?'rgba(16,185,129,0.08)':'rgba(255,255,255,0.03)'};border:1px solid ${complete?'rgba(16,185,179,0.3)':'#27272a'};cursor:pointer;" onclick="document.getElementById('submit-modal').style.display='none';switchStudentExamSubject(${si})">
+            <span style="font-size:12.5px;font-weight:700;${act?'color:#10b981;':''}">${escapeHtmlStudent(s.name)}${act?' <span style="font-size:10px;opacity:.7;">(current)</span>':''}</span>
+            <span style="font-size:12px;font-weight:800;color:${complete?'#10b981':'#f59e0b'};">${a}/${s.questions.length}${complete?' ✓':' ⚠'}</span></div>`;
+        }).join('');
+    } else { subjBox.style.display='none'; }
+  }
   document.getElementById('submit-modal').style.display='flex';
 }
 function confirmSubmit(){
@@ -3118,7 +3282,7 @@ async function submitExam(){
 
 
         } else if(qtype==='cloze'){
-            const keys=Array.isArray(q.items)?q.items:[];
+            const keys=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;
             let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
             let cc=0;
             keys.forEach((key,i)=>{
@@ -3141,14 +3305,14 @@ async function submitExam(){
             if(pts>=0.8&&words>=minWords)correct++; else wrong++;
 
         } else if(qtype==='categorization'){
-            const rows=Array.isArray(q.items)?q.items:[];
+            const rows=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;
             let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}
             let cc=0;rows.forEach((r,i)=>{if(String(obj[i]||'').toLowerCase()===String(r.category||'').toLowerCase())cc++;});
             const partial=rows.length?cc/rows.length:0; score+=partial;
             if(partial===1)correct++; else wrong++;
 
         } else if(qtype==='multi_numeric'){
-            const parts=Array.isArray(q.items)?q.items:[];
+            const parts=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;
             let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
             let cc=0;parts.forEach((part,i)=>{const sv=parseFloat(arr[i]),cv=parseFloat(part.answer),tol=parseFloat(part.tolerance)||0;if(!isNaN(sv)&&!isNaN(cv)&&Math.abs(sv-cv)<=Math.abs(tol))cc++;});
             const partial=parts.length?cc/parts.length:0; score+=partial;
@@ -3407,7 +3571,7 @@ async function submitExam(){
                 let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}const text=String(sa||'').toLowerCase();const keywords=Array.isArray(rubric.keywords)?rubric.keywords:String(q.accept||q.ans||'').split('|').filter(Boolean);partialPts=keywords.length?keywords.filter(k=>text.includes(String(k).toLowerCase())).length/keywords.length:0.5;isCorrect=partialPts>=0.8;isPartial=partialPts>0&&!isCorrect;
 
             } else if(qtype==='matching'){
-                const pairs=q.pairs||[];
+                const pairs=_pairsOf(q);
                 let studentAns={};
                 try{studentAns=JSON.parse(sa||'{}');}catch(e){}
                 const pool=window[_matchPoolKeyOf(q)]||[];
@@ -3420,9 +3584,15 @@ async function submitExam(){
                 isCorrect=partialPts===1;
                 isPartial=partialPts>0&&partialPts<1;
             } else if(qtype==='ordering'){
-                const items=q.items||[];
+                const items=_safeItems(q);
                 let correctOrder=[],studentOrder=[];
                 try{correctOrder=JSON.parse(q.ans||'[]');}catch(e){correctOrder=items.map((_,i)=>i);}
+                /* PHASE 12B FIX: papers that ship no ordering key (CSV banks list
+                   the items in their CORRECT order) used to parse to [] and score
+                   0 no matter what the student did. Empty/invalid key now means
+                   "the items as published are the correct order" — same contract
+                   as the renderer's initial scramble. */
+                if(!Array.isArray(correctOrder)||!correctOrder.length)correctOrder=items.map((_,i)=>i);
                 try{studentOrder=JSON.parse(sa||'[]');}catch(e){studentOrder=[];}
                 let orderCorrect=0;
                 correctOrder.forEach((ci,pos)=>{if(studentOrder[pos]===ci)orderCorrect++;});
@@ -3430,16 +3600,16 @@ async function submitExam(){
                 isCorrect=partialPts===1;
                 isPartial=partialPts>0&&partialPts<1;
             } else if(qtype==='cloze'){
-                const keys=Array.isArray(q.items)?q.items:[];let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
+                const keys=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
                 let cc=0;keys.forEach((key,bi)=>{const accepted=String(key||'').split('|').map(x=>x.trim().toLowerCase()).filter(Boolean);if(accepted.includes(String(arr[bi]||'').trim().toLowerCase()))cc++;});
                 partialPts=keys.length?cc/keys.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
             } else if(qtype==='essay'){
                 let rubric={};try{rubric=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}
                 const text=String(sa||'').toLowerCase();const words=text.split(/\s+/).filter(Boolean).length;const minWords=Number(rubric.min_words||q.min_words||30);const keywords=Array.isArray(rubric.keywords)?rubric.keywords:(q.accept||'').split('|').filter(Boolean);let pts=keywords.length?keywords.filter(k=>text.includes(String(k).toLowerCase())).length/keywords.length:0.5;if(words<minWords)pts*=0.5;partialPts=Math.max(0,Math.min(1,pts));isCorrect=partialPts>=0.8&&words>=minWords;isPartial=!isCorrect&&partialPts>0;
             } else if(qtype==='categorization'){
-                const rows=Array.isArray(q.items)?q.items:[];let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}let cc=0;rows.forEach((r,ci)=>{if(String(obj[ci]||'').toLowerCase()===String(r.category||'').toLowerCase())cc++;});partialPts=rows.length?cc/rows.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
+                const rows=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}let cc=0;rows.forEach((r,ci)=>{if(String(obj[ci]||'').toLowerCase()===String(r.category||'').toLowerCase())cc++;});partialPts=rows.length?cc/rows.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
             } else if(qtype==='multi_numeric'){
-                const parts=Array.isArray(q.items)?q.items:[];let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}let cc=0;parts.forEach((part,mi)=>{const sv=parseFloat(arr[mi]),cv=parseFloat(part.answer),tol=parseFloat(part.tolerance)||0;if(!isNaN(sv)&&!isNaN(cv)&&Math.abs(sv-cv)<=Math.abs(tol))cc++;});partialPts=parts.length?cc/parts.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
+                const parts=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}let cc=0;parts.forEach((part,mi)=>{const sv=parseFloat(arr[mi]),cv=parseFloat(part.answer),tol=parseFloat(part.tolerance)||0;if(!isNaN(sv)&&!isNaN(cv)&&Math.abs(sv-cv)<=Math.abs(tol))cc++;});partialPts=parts.length?cc/parts.length:0;isCorrect=partialPts===1;isPartial=partialPts>0&&partialPts<1;
             }
         } // end if(!isSkipped)
 
@@ -3479,7 +3649,7 @@ async function submitExam(){
             correctDisplay='<strong>'+escapeHtmlStudent(q.ans)+(unit?' '+unit:'')+'</strong>'+(tol>0?' <em style="color:var(--text-muted);font-size:11px;">(±'+tol+')</em>':'');
             if(!isSkipped) studentDisplay='<span style="color:'+(isCorrect?'var(--primary)':'var(--danger)')+';">'+escapeHtmlStudent(sa)+(unit?' '+unit:'')+'</span>';
         } else if(qtype==='cloze'){
-            const keys=Array.isArray(q.items)?q.items:[];let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
+            const keys=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
             optionsDisplay=keys.map((key,bi)=>'<div style="font-size:13px;margin-bottom:5px;">Blank '+(bi+1)+': <span style="color:var(--primary);font-weight:700;">'+escapeHtmlStudent(String(key).replace(/\|/g,' or '))+'</span></div>').join('');
             studentDisplay=isSkipped?'':arr.map((v,bi)=>'Blank '+(bi+1)+': '+escapeHtmlStudent(v||'—')).join('; ');
             correctDisplay=Math.round(partialPts*100)+'% of blanks correct';
@@ -3489,12 +3659,12 @@ async function submitExam(){
             studentDisplay=isSkipped?'':'<div style="white-space:pre-wrap;line-height:1.6;">'+escapeHtmlStudent(sa||'')+'</div>';
             correctDisplay='Keyword/minimum-word score: '+Math.round(partialPts*100)+'%'+(keywords.length?' · Expected keywords: '+keywords.map(escapeHtmlStudent).join(', '):' · Teacher review recommended');
         } else if(qtype==='categorization'){
-            const rows=Array.isArray(q.items)?q.items:[];let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}
+            const rows=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let obj={};try{obj=JSON.parse(sa||'{}');}catch(e){}
             optionsDisplay=rows.map((r,ci)=>'<div style="font-size:13px;margin-bottom:5px;">'+escapeHtmlStudent(r.item)+' → Your: <span style="color:var(--warning);">'+escapeHtmlStudent(obj[ci]||'—')+'</span> · Correct: <span style="color:var(--primary);font-weight:700;">'+escapeHtmlStudent(r.category)+'</span></div>').join('');
             correctDisplay=Math.round(partialPts*100)+'% categorized correctly';
             studentDisplay='';
         } else if(qtype==='multi_numeric'){
-            const parts=Array.isArray(q.items)?q.items:[];let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
+            const parts=_safeItems(q)   /* PHASE 12B: tolerant to CSV-bridge string payloads */;let arr=[];try{arr=JSON.parse(sa||'[]');}catch(e){}
             optionsDisplay=parts.map((part,mi)=>'<div style="font-size:13px;margin-bottom:5px;">'+escapeHtmlStudent(part.label||('Part '+(mi+1)))+': Your <span style="color:var(--warning);">'+escapeHtmlStudent(arr[mi]||'—')+'</span> · Correct <span style="color:var(--primary);font-weight:700;">'+escapeHtmlStudent(part.answer)+(part.unit?' '+escapeHtmlStudent(part.unit):'')+'</span></div>').join('');
             correctDisplay=Math.round(partialPts*100)+'% of numeric parts correct';
             studentDisplay='';

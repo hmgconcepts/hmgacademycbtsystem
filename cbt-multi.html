@@ -327,6 +327,23 @@ async function publishMultiSubjectExam() {
     code += alphabet[buf[0] % alphabet.length];
   }
 
+  /* PHASE 12B (School Connect / GOSA Portal parity): every question is tagged
+     with its subject (Section), and the paper ships subject_breakdown metadata
+     [{name,start,end,count}] — the same dual representation the sibling
+     platforms publish. The student runner reads subjects_data first and falls
+     back to subject_breakdown, so multi-subject papers stay multi-subject in
+     every reader. */
+  subjectsList.forEach(sub => {
+    (sub.questions || []).forEach(q => { if(!q.section) q.section = sub.name; });
+  });
+  let _msStart = 0;
+  const subject_breakdown = subjectsList.map(sub => {
+    const n = (sub.questions || []).length;
+    const b = { name: sub.name, start: _msStart, count: n, end: _msStart + n - 1 };
+    _msStart += n;
+    return b;
+  });
+
   const payload = {
     teacher_id: teacherId,
     code,
@@ -351,6 +368,7 @@ async function publishMultiSubjectExam() {
     feedback_mode: document.getElementById('ms-feedback')?.value || 'end',          // PHASE 10
     score_model: document.getElementById('ms-score-model')?.value || 'standard',    // PHASE 10
     subjects_data: subjectsList.map(s => ({ name: s.name, subject_name: s.name, count: s.count, csv_data: s.questions, questions: s.questions })),
+    anti_cheat_config: { subject_breakdown, subjects: subjectsList.map(s => s.name), multi_subject: true },
     instructions
   };
 
@@ -365,7 +383,7 @@ async function publishMultiSubjectExam() {
       const msg = String(firstErr.message || '');
       if (/feedback_mode|score_model|adaptive|column/i.test(msg)) {
         const lean = { ...payload };
-        delete lean.feedback_mode; delete lean.score_model;
+        delete lean.feedback_mode; delete lean.score_model; delete lean.anti_cheat_config;   /* PHASE 12B: anti_cheat_config is also a later column — old DBs reject it too */
         await App.sbFetch('/rest/v1/exams', 'POST', lean);
         showToast('Published WITHOUT Phase 10 delivery options — run database/complete-schema.sql to enable them.', 'warning');
       } else {

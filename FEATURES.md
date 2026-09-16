@@ -458,3 +458,14 @@ phase build) plus three platform upgrades. Full report:
 
 **Navigation separation:**
 - Teacher navigation pane no longer lists the 10 administration consoles (Admin Panel, Data & Drive Sync, Disaster Recovery, Storage Manager, Platform Health, Roles & Approvals, Platform Settings, Site License, Audit Log, Client Monitor) — they live in the Admin Panel's own navigation, reached via Portals Home → Admin Sign In.
+
+## Phase 12B — Multi-Subject Student Experience (2026-09-16)
+
+**Structured types now work at the student end of CSV-published papers (live bug):**
+- Matching, ordering, categorization and multi-part numeric previously crashed or showed "no items defined" when the paper came through the CSV bridge (Pairs/Items columns are JSON strings). Every question is now normalised once at load — string or array, both render and grade. Multi-part numeric grading, ordering default keys, flag state and jump-to-unanswered also fixed.
+
+**UTME-style subject tabs (School Connect / GOSA Portal parity):**
+- Sticky subject tab bar visible from exam start, with live per-subject (answered/total) counters and ✓ when a subject is complete — counters update without rebuilding widgets under the student's finger.
+- `Next` at a subject boundary flows into the next subject ("Next Subject: Mathematics →"); `prev` at a subject start returns to the previous subject's end. The submit modal opens only after the final question of the final subject and lists every subject's progress (click a row to jump back).
+- Progress line shows "Subject · Q x of y (overall i of N)"; the phantom `prevQuestionRecordTime()` crash on subject switching is gone.
+- Legacy/external papers that ship flat `csv_data` + `subject_breakdown` metadata (the School Connect / GOSA representation) automatically get tabs; the multi-subject builder now publishes that metadata too.

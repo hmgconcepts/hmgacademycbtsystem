@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12-v1'; // PHASE 12: subscription-integrity client mode, teacher-nav fix, multi-subject csv_data fix
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12b-v1'; // PHASE 12: subscription-integrity client mode, teacher-nav fix, multi-subject csv_data fix
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
