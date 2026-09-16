@@ -141,6 +141,13 @@
         #q-text,#options-box{user-select:none;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;}
         .opt{padding:18px;border:1px solid var(--border);border-radius:12px;margin-bottom:11px;cursor:pointer;transition:0.15s ease;background:#111;font-size:15px;line-height:1.5;user-select:none;-webkit-user-select:none;}
         .opt:hover{border-color:var(--primary);}.opt.selected{border-color:var(--primary);background:rgba(16,185,129,0.1);}
+        /* PHASE 10 — instant-feedback practice mode */
+        .if-verdict{margin-top:14px;padding:14px 18px;border-radius:12px;font-size:14px;line-height:1.6;animation:ifPop .25s ease;}
+        .if-correct{border:1px solid rgba(16,185,129,.45);background:rgba(16,185,129,.1);color:#10b981;}
+        .if-wrong{border:1px solid rgba(239,68,68,.45);background:rgba(239,68,68,.1);color:#ef4444;}
+        .if-answer-correct{border-color:#10b981 !important;background:rgba(16,185,129,.14) !important;}
+        .if-answer-chosen-wrong{border-color:#ef4444 !important;background:rgba(239,68,68,.12) !important;text-decoration:line-through;opacity:.85;}
+        @keyframes ifPop{0%{transform:scale(.96);opacity:0}100%{transform:scale(1);opacity:1}}
         #timer{font-size:26px;font-weight:800;color:var(--primary);transition:color 0.5s;min-width:80px;text-align:right;}
         #timer.warn{color:var(--warning);}#timer.danger{color:var(--danger);animation:tick 1s ease-in-out infinite;}
         @keyframes tick{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
@@ -429,6 +436,7 @@
     </style>
 <script src="assets/js/site-help.js"></script>
 <script src="assets/js/cbt-exam-kit.js"></script>
+<script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>
 </head>
 <body>
@@ -684,6 +692,26 @@
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('submit-modal').style.display='none';" style="flex:1;padding:13px;background:transparent;color:#a1a1aa;border:1px solid #27272a;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">← Review</button>
       <button onclick="confirmSubmit()" id="confirm-submit-btn" style="flex:2;padding:13px;background:#10b981;color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">✓ Submit Now</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════
+     PHASE 10 — RESULT APPEAL / SCRIPT REVIEW REQUEST
+     Enterprise rescoring workflow: the candidate states
+     a reason; the teacher sees the queue in the Review
+     area and resolves it there.
+═══════════════════════════════════════════════ -->
+<div id="appeal-modal" style="position:fixed;inset:0;background:rgba(0,0,0,0.92);backdrop-filter:blur(6px);z-index:99997;display:none;justify-content:center;align-items:center;padding:20px;">
+  <div style="background:#18181b;border:1px solid #27272a;border-radius:20px;padding:28px;width:100%;max-width:480px;">
+    <div style="font-size:24px;text-align:center;margin-bottom:12px;">🧾</div>
+    <h2 style="text-align:center;margin-bottom:6px;font-size:18px;">Request a Script Review</h2>
+    <p style="text-align:center;font-size:13px;color:#a1a1aa;margin-bottom:16px;">Your teacher will re-check this script against the marking scheme. One pending request per exam.</p>
+    <textarea id="appeal-reason" rows="4" placeholder="Which question(s) do you believe were marked wrongly, and why?" style="width:100%;box-sizing:border-box;background:#09090b;border:1px solid #27272a;border-radius:10px;padding:12px;color:#fafafa;font-size:13px;font-family:inherit;resize:vertical;"></textarea>
+    <div id="appeal-status" style="display:none;margin-top:12px;border-radius:10px;padding:10px 14px;font-size:13px;font-weight:600;"></div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button onclick="closeAppealModal()" style="flex:1;padding:13px;background:transparent;color:#a1a1aa;border:1px solid #27272a;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">← Close</button>
+      <button onclick="submitAppealRequest()" id="appeal-send-btn" style="flex:2;padding:13px;background:#3b82f6;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;">📨 Send Request</button>
     </div>
   </div>
 </div>
@@ -981,6 +1009,10 @@ const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 
 // ═══ EXAM STATE ═══
 let exam=null, questions=[], current=0, answers={};
+/* PHASE 10 — delivery modes & live invigilation */
+let isAdaptiveMode=false, adaptiveAsked=0, adaptiveCorrect=0;
+let isImmediateFeedback=false, revealedKeys=new Set(), gamePoints=0, gameStreak=0, gameBestStreak=0;
+let livePingTimer=null, lastLivePingAt=0, _deviceId=null;
 let timeLeft=0, timerObj=null, attemptNum=1, examStartTime=0;
 let flagged=new Set(), questionTimes={}, questionStartTime=0;
 let examActive=false;
@@ -1110,6 +1142,17 @@ async function sbRpc(name, body){
         throw new Error(msg);
     }
     return data;
+}
+
+// Safe public probe: distinguishes a wrong code from a locked/scheduled/closed exam
+async function checkExamCodeStatus(code){
+    try{
+        const r=await sbRpc('check_exam_code_status',{p_code:code});
+        return Array.isArray(r)&&r.length?r[0]:null;
+    }catch(e){
+        console.warn('[CBT] Status probe RPC unavailable:',e.message);
+        return null;
+    }
 }
 
 async function fetchPublicExamByCode(code){
@@ -1382,7 +1425,23 @@ async function init(){
     document.getElementById('code-entry-box')?.classList.add('hidden');
     try{
         const data=await fetchPublicExamByCode(code);
-        if(!data.length){showStatusMsg('Exam not found or not open. Check your exam code or ask your teacher to resend/re-open the link/code. <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');return;}
+        if(!data.length){
+            const st=await checkExamCodeStatus(code);
+            let m;
+            if(st&&st.found){
+                if(st.starts_at&&new Date(st.starts_at).getTime()>Date.now()){
+                    m='This exam has not started yet. It opens automatically at <b>'+new Date(st.starts_at).toLocaleString()+'</b>. Please wait and refresh then. If you believe this is an error, contact your teacher.';
+                }else if(st.closes_at&&new Date(st.closes_at).getTime()<=Date.now()){
+                    m='This exam reached its scheduled closing time ('+new Date(st.closes_at).toLocaleString()+') and is no longer accepting entries. Contact your teacher if you believe this is an error.';
+                }else{
+                    m='This exam exists but is currently <b>LOCKED</b> by your teacher. Ask your teacher to open it (Assessments → ⋮ Actions → Open) and then refresh this page.';
+                }
+            }else{
+                m='Exam not found or not open. Check your exam code or ask your teacher to resend/re-open the link/code.';
+            }
+            showStatusMsg(m+' <button onclick="showCodeEntry()" style="width:auto;margin-left:8px;padding:6px 10px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);border-radius:8px;">Try another code</button>');
+            return;
+        }
         exam=data[0];
         applyExamIntegritySettings();
         if(!exam.is_open){showStatusMsg('This exam is currently closed. Contact your teacher.');return;}
@@ -1452,8 +1511,14 @@ function init_admission(){
         const totalQCount = multiSubjectsList.reduce((acc, cur) => acc + cur.questions.length, 0);
 
         studentMode = exam.exam_mode || 'open';
+        /* PHASE 10: practice feedback works per-question inside each subject
+           tab; adaptive delivery is single-subject-only this phase. */
+        isAdaptiveMode=false;
+        isImmediateFeedback=(exam.feedback_mode==='immediate');
         renderEntryForm();
-        showStatusMsg(`Combined Multi-Subject Exam (${multiSubjectsList.length} Subjects · ${totalQCount} Total Questions) · ${exam.duration} mins`,'info');
+        showStatusMsg(`Combined Multi-Subject Exam (${multiSubjectsList.length} Subjects · ${totalQCount} Total Questions) · ${exam.duration} mins`
+            +(isImmediateFeedback?' · ⚡ Practice (instant feedback)':'')
+            +(exam.score_model==='utme400'?' · UTME /400 scoring':''),'info');
         return;
     }
 
@@ -1480,8 +1545,15 @@ function init_admission(){
     if(Number(exam.select_count)>0)questions=questions.slice(0,Number(exam.select_count));
 
     studentMode=exam.exam_mode||'open';
+    /* PHASE 10 delivery modes — old databases return undefined for both,
+       which the classic engine treats exactly as before. */
+    isAdaptiveMode=(exam.adaptive===true)&&questions.length>=5;
+    isImmediateFeedback=(exam.feedback_mode==='immediate');
     renderEntryForm();
-    showStatusMsg(`${questions.length} questions · ${exam.duration} minutes · Pass mark: ${m.passmark}%`,'info');
+    showStatusMsg(`${questions.length} questions · ${exam.duration} minutes · Pass mark: ${m.passmark}%`
+        +(isAdaptiveMode?' · 🧠 Adaptive difficulty':'')
+        +(isImmediateFeedback?' · ⚡ Practice (instant feedback)':'')
+        +(exam.score_model==='utme400'?' · UTME /400 scoring':''),'info');
 }
 
 function startWaitRoom(){
@@ -1699,8 +1771,187 @@ function switchStudentExamSubject(idx){
     showQ();
 }
 
+/* ═══════════════════════════════════════════════════════════════
+   PHASE 10 — ADAPTIVE DELIVERY · INSTANT-FEEDBACK PRACTICE ·
+              LIVE INVIGILATION PINGS · ACCOMMODATED TIMING
+   All rule-based, free, no AI API. Each block is independent:
+   an older database that lacks the new columns simply leaves the
+   flags unset and every feature degrades to the classic engine.
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ---- 1. ADAPTIVE DIFFICULTY (Quizizz/ALEKS-style, rule-based) ----
+   Requires: single-subject paper, ≥5 questions, exam.adaptive=true.
+   The paper stays the same size; only the ORDER adapts. Question
+   difficulty comes from the bank's existing `difficulty` field.
+   Accuracy so far  ≥70% → serve from the HARD bucket
+                    30–69% → MEDIUM bucket
+                    <30%   → EASY bucket
+   Delivery is forward-only (real computerised-adaptive tests never
+   let candidates go back), so prev() and the jump grid are parked. */
+function _adaptiveBucketOf(q){
+    const d=String((q&&q.difficulty)||'').toLowerCase();
+    if(['hard','difficult','high','h','advanced'].includes(d))return 'hard';
+    if(['easy','low','e','basic'].includes(d))return 'easy';
+    return 'medium';
+}
+function _adaptiveTargetBucket(){
+    if(adaptiveAsked===0)return 'medium';
+    const acc=adaptiveCorrect/adaptiveAsked;
+    if(acc>=0.7)return 'hard';
+    if(acc>=0.3)return 'medium';
+    return 'easy';
+}
+function _adaptiveSwapNextIn(){
+    /* Move the best-bucket unused question into position current+1 */
+    if(current>=questions.length-1)return;
+    const target=_adaptiveTargetBucket();
+    let pick=questions.slice(current+1).findIndex(q=>_adaptiveBucketOf(q)===target);
+    if(pick===-1)pick=questions.slice(current+1).findIndex(()=>true); // any remaining
+    if(pick===-1)return;
+    const realIdx=current+1+pick;
+    const tmp=questions[current+1];questions[current+1]=questions[realIdx];questions[realIdx]=tmp;
+}
+function _adaptiveGradeCurrent(){
+    /* Right/wrong for the question being left (drives bucket choice).
+       Only clean 0/1 types participate; open-ended types never do. */
+    const q=questions[current];if(!q)return null;
+    const t=getQType(q);
+    const sa=answers[q._orig];
+    if(sa===undefined||sa===null||sa==='')return null;
+    if(t==='mcq'||t==='tf'||t==='image_mcq'||t==='assertion_reason'||t==='hot_text'){
+        return String(sa).toUpperCase()===String(q.ans||'').toUpperCase();
+    }
+    if(t==='mrq'){
+        const cs=new Set(String(q.ans||'').split(',').map(x=>x.trim()).filter(Boolean));
+        const ss=new Set(String(sa||'').split(',').map(x=>x.trim()).filter(Boolean));
+        return [...cs].every(v=>ss.has(v))&&[...ss].every(v=>cs.has(v));
+    }
+    return null;
+}
+
+/* ---- 2. INSTANT-FEEDBACK PRACTICE MODE (Quizizz study mode) ----
+   exam.feedback_mode==='immediate'. After a candidate locks an
+   auto-gradable answer, the verdict + correct answer + explanation
+   appear at once, the options freeze, and a Kahoot-style score chip
+   counts points (10 per correct + 5×streak bonus). Grading at submit
+   is UNCHANGED — this only changes what the candidate sees. */
+function _ifVerdictFor(q){
+    const t=getQType(q);
+    const sa=answers[isMultiSubjectMode?(activeSubjectIdx+'_'+q._orig):q._orig];
+    if(sa===undefined||sa===null||sa==='')return null;
+    if(t==='mcq'||t==='tf'||t==='image_mcq'||t==='assertion_reason'||t==='hot_text'){
+        return String(sa).toUpperCase()===String(q.ans||'').toUpperCase();
+    }
+    if(t==='mrq'){
+        const cs=new Set(String(q.ans||'').split(',').map(x=>x.trim()).filter(Boolean));
+        const ss=new Set(String(sa||'').split(',').map(x=>x.trim()).filter(Boolean));
+        return [...cs].every(v=>ss.has(v))&&[...ss].every(v=>cs.has(v));
+    }
+    return null; /* open-ended: no instant verdict, teacher grades */
+}
+function _ifReveal(){
+    const q=questions[current];if(!q)return;
+    const rk=isMultiSubjectMode?(activeSubjectIdx+'_'+current):String(current);
+    const key=isMultiSubjectMode?(activeSubjectIdx+'_'+q._orig):String(q._orig);
+    if(revealedKeys.has(rk))return; /* already scored */
+    const verdict=_ifVerdictFor(q);
+    if(verdict===null)return; /* nothing to reveal yet / not gradable */
+    revealedKeys.add(rk);
+    /* score chip */
+    if(verdict){gameStreak++;gameBestStreak=Math.max(gameBestStreak,gameStreak);gamePoints+=10+5*(gameStreak-1);}
+    else gameStreak=0;
+    _ifRenderChip();
+    /* verdict panel under the options */
+    const box=document.getElementById('options-box');
+    if(box){
+        const v=document.createElement('div');
+        const correctTxt=String(q.ans||'').split(',').join(', ');
+        v.className='if-verdict '+(verdict?'if-correct':'if-wrong');
+        v.innerHTML=(verdict?'✓ <strong>Correct!</strong>'
+                   :'✗ <strong>Not quite.</strong> Correct answer: <strong>'+escapeHtmlStudent(correctTxt)+'</strong>')
+                   +(verdict&&gameStreak>=3?' &nbsp;🔥 '+gameStreak+'-in-a-row!':'')
+                   +(q.exp?'<div style="margin-top:8px;font-size:13px;opacity:.92;">💡 '+escapeHtmlStudent(q.exp)+'</div>':'');
+        box.appendChild(v);
+        /* freeze the options so the reveal is the last word */
+        box.querySelectorAll('.opt,.mrq-opt,.tf-opt').forEach(el=>{el.onclick=null;el.style.cursor='default';});
+        /* colour the chosen / correct options */
+        const chosen=String(answers[key]||'').toUpperCase();
+        box.querySelectorAll('.opt,.mrq-opt,.tf-opt').forEach(el=>{
+            const m=el.innerHTML.match(/<strong>([A-D])\.<\/strong>/);
+            const L=m?m[1]:'';
+            if(L&&L===String(q.ans||'').toUpperCase())el.classList.add('if-answer-correct');
+            else if(L&&chosen.split(',').includes(L))el.classList.add('if-answer-chosen-wrong');
+        });
+    }
+}
+function _ifRenderChip(){
+    let chip=document.getElementById('game-chip');
+    if(!chip){
+        chip=document.createElement('div');chip.id='game-chip';
+        chip.style.cssText='position:fixed;top:14px;right:16px;z-index:60;background:linear-gradient(135deg,#6d28d9,#db2777);color:#fff;padding:8px 14px;border-radius:999px;font-weight:800;font-size:13px;box-shadow:0 6px 18px rgba(219,39,119,.35);pointer-events:none;transition:transform .15s;';
+        document.body.appendChild(chip);
+    }
+    chip.innerHTML='⭐ '+gamePoints+' pts &nbsp;·&nbsp; 🔥 '+gameStreak+' streak';
+    chip.style.transform='scale(1.15)';
+    setTimeout(()=>{chip.style.transform='scale(1)';},160);
+}
+
+/* ---- 3. LIVE INVIGILATION PINGS (teacher's live monitor) ----
+   One tiny RPC upsert every ~45s while a paper is in progress.
+   Failures are swallowed on purpose — monitoring must NEVER be able
+   to disturb or block a candidate's exam. */
+function _deviceFingerprint(){
+    if(_deviceId)return _deviceId;
+    try{
+        _deviceId=localStorage.getItem('hmg_cbt_device');
+        if(!_deviceId){
+            _deviceId='dev-'+Math.random().toString(36).slice(2,10)+Date.now().toString(36);
+            localStorage.setItem('hmg_cbt_device',_deviceId);
+        }
+    }catch(e){_deviceId='dev-unknown';}
+    return _deviceId;
+}
+function _liveSessionPayload(finished){
+    const list=typeof _gradingList==='function'?_gradingList():[];
+    const answered=list.filter(({q,sIdx})=>hasAnswer(q._orig)).length;
+    return {
+        exam_id: exam.id,
+        student_key: (finalStudentName||'—')+'|'+(finalStudentClass||'—')+'|'+(finalStudentId||''),
+        device_id: _deviceFingerprint(),
+        progress: list.length?Math.round(100*answered/list.length):0,
+        answered: answered,
+        total_questions: list.length,
+        current_subject: isMultiSubjectMode?activeSubjectIdx:0,
+        current_question: current+1,
+        violations: violationCount,
+        finished: !!finished
+    };
+}
+function _pingLiveSession(force){
+    if(!exam||!exam.id)return;
+    const now=Date.now();
+    if(!force&&now-lastLivePingAt<40000)return;
+    lastLivePingAt=now;
+    try{
+        sbRpc('upsert_live_session',{p_session:_liveSessionPayload(false)})
+          .catch(()=>{}); /* silent by design */
+    }catch(e){}
+}
+function _startLivePings(){
+    _stopLivePings();
+    _pingLiveSession(true);
+    livePingTimer=setInterval(()=>_pingLiveSession(false),45000);
+}
+function _stopLivePings(){
+    if(livePingTimer){clearInterval(livePingTimer);livePingTimer=null;}
+}
+
 function _beginExam(){
     examActive=true;
+    /* PHASE 10: per-attempt reset (retakes start clean). */
+    adaptiveAsked=0;adaptiveCorrect=0;revealedKeys=new Set();
+    gamePoints=0;gameStreak=0;gameBestStreak=0;
+    const _oldChip=document.getElementById('game-chip');if(_oldChip)_oldChip.remove();
     questionStartTime=Date.now();
     const m=decodeMeta(exam.subject);
     document.getElementById('exam-subject').innerText=m.subject;
@@ -1716,8 +1967,21 @@ function _beginExam(){
         strip.style.display='flex';
     }
 
-    timeLeft=Number(exam.duration)*60;
+    /* PHASE 10 — per-candidate accommodation: approved extra time.
+       Comes from the roster (students.extra_time_pct) through
+       verify_student_for_exam. The multiplier is applied SILENTLY to the
+       clock; per accessibility best practice (ETS/ADA) the accommodation
+       is never shown on the result slip or to other candidates. */
+    let _baseSec=Number(exam.duration)*60;
+    const _etp=Number(verifiedStudent&&verifiedStudent.extra_time_pct)||0;
+    if(_etp>0){
+        _baseSec=Math.round(_baseSec*(1+Math.min(200,_etp)/100));
+        showToastStudent('⏱ Approved extra time applied ('+_etp+'%).');
+    }
+    timeLeft=_baseSec;
     examStartTime=Date.now();
+    /* PHASE 10 — live invigilation pings (harmless on old databases) */
+    _startLivePings();
     timerObj=setInterval(()=>{
         timeLeft--;
         const mm=Math.floor(timeLeft/60),ss=timeLeft%60;
@@ -1912,7 +2176,8 @@ function renderQNav(){
         const fk=isMultiSubjectMode?(activeSubjectIdx+'_'+i):i;
         if(flagged.has(fk))cls+=' flagged';
         b.className=cls;b.innerText=i+1;b.title=flagged.has(fk)?'Flagged':'';
-        b.onclick=()=>{const p=current;current=i;showQ(p);};
+        if(isAdaptiveMode){b.disabled=true;b.title='Adaptive mode — forward only';}
+        else b.onclick=()=>{const p=current;current=i;showQ(p);};
         g.appendChild(b);
     });
     const n=questions.filter(q=>hasAnswer(q._orig)).length;
@@ -2011,6 +2276,9 @@ function showQ(prevIndex){
 
     document.getElementById('next-btn').innerText=current===questions.length-1?'Finish Exam ✓':'Next →';
     renderQNav();
+    /* PHASE 10: instant-feedback verdict renders right after the answer
+       re-renders the question (the renderers call showQ() on selection). */
+    if(isImmediateFeedback)_ifReveal();
 }
 
 function _renderMCQ(q, origKey, box){
@@ -2488,8 +2756,22 @@ function _renderCodeAnswer(q, origKey, box){ let rubric={};try{rubric=typeof q.i
 function escapeHtmlStudent(s){
     return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
-function next(){const p=current;if(current<questions.length-1){current++;showQ(p);}else openSubmitModal();}
-function prev(){const p=current;if(current>0){current--;showQ(p);}}
+function next(){
+    const p=current;
+    if(isAdaptiveMode){
+        /* PHASE 10: grade the question being left, then pull the best-bucket
+           question into the next slot before advancing. */
+        const g=_adaptiveGradeCurrent();
+        if(g!==null){adaptiveAsked++;if(g)adaptiveCorrect++;}
+        _adaptiveSwapNextIn();
+    }
+    if(current<questions.length-1){current++;showQ(p);}else openSubmitModal();
+}
+function prev(){
+    const p=current;
+    if(isAdaptiveMode){showToastStudent('🧠 Adaptive mode moves forward only — like the real thing.');return;}
+    if(current>0){current--;showQ(p);}
+}
 
 // ═══════════════════════════════════════════
 // DRAFT ANSWER SAVING (localStorage)
@@ -2575,6 +2857,48 @@ function stopDraftSave(){clearInterval(_draftTimer);}
 // ═══════════════════════════════════════════
 // CONFIRM SUBMIT — enhanced modal
 // ═══════════════════════════════════════════
+/* ═════════════════════════════════════════════
+   PHASE 10 — RESULT APPEAL (candidate side)
+   ═════════════════════════════════════════════ */
+function openAppealModal(){
+    if(!exam||!exam.id){showToastStudent('Cannot request a review for this session.');return;}
+    document.getElementById('appeal-reason').value='';
+    const st=document.getElementById('appeal-status');st.style.display='none';st.innerText='';
+    document.getElementById('appeal-send-btn').disabled=false;
+    document.getElementById('appeal-modal').style.display='flex';
+}
+function closeAppealModal(){document.getElementById('appeal-modal').style.display='none';}
+async function submitAppealRequest(){
+    const reason=document.getElementById('appeal-reason').value.trim();
+    const st=document.getElementById('appeal-status');
+    const btn=document.getElementById('appeal-send-btn');
+    if(reason.length<10){st.style.display='block';st.style.background='rgba(239,68,68,.08)';st.style.border='1px solid rgba(239,68,68,.3)';st.style.color='#ef4444';st.innerText='Please describe your reason (at least 10 characters).';return;}
+    btn.disabled=true;btn.innerText='Sending…';
+    try{
+        const okResp=await sbRpc('submit_appeal',{
+            p_exam_id: exam.id,
+            p_student_name: finalStudentName||'—',
+            p_student_class: finalStudentClass||'',
+            p_attempt_number: attemptNum||1,
+            p_reason: reason
+        });
+        st.style.display='block';
+        if(okResp===true){
+            st.style.background='rgba(16,185,129,.08)';st.style.border='1px solid rgba(16,185,129,.3)';st.style.color='#10b981';
+            st.innerText='✓ Review requested. Your teacher will look at this script and respond.';
+            btn.innerText='✓ Sent';
+        }else{
+            st.style.background='rgba(245,158,11,.08)';st.style.border='1px solid rgba(245,158,11,.3)';st.style.color='#f59e0b';
+            st.innerText='A review request already exists for this exam, or the result is not eligible yet.';
+            btn.innerText='📨 Send Request';btn.disabled=false;
+        }
+    }catch(e){
+        st.style.display='block';st.style.background='rgba(239,68,68,.08)';st.style.border='1px solid rgba(239,68,68,.3)';st.style.color='#ef4444';
+        st.innerText='Could not send the request — check your connection and try again.';
+        btn.innerText='📨 Send Request';btn.disabled=false;
+    }
+}
+
 function openSubmitModal(){
   // FIX (C1/M5): the submit summary now reflects the WHOLE multi-subject paper,
   // and the per-button warning uses the subject-prefixed answer key.
@@ -2608,6 +2932,10 @@ async function submitExam(){
     if(!examActive)return;
     examActive=false;
     clearInterval(timerObj);
+    /* PHASE 10 — final live-invigilation ping marks the session finished,
+       then the interval stops. Silent failure by design. */
+    _stopLivePings();
+    try{ sbRpc('upsert_live_session',{p_session:_liveSessionPayload(true)}).catch(()=>{}); }catch(e){}
     stopDraftSave();
     clearDraft();
     stopProctoring();
@@ -2648,6 +2976,7 @@ async function submitExam(){
     const _subjectStats=isMultiSubjectMode?multiSubjectsList.map(()=>({score:0,correct:0,wrong:0,skipped:0,total:0})):null;
     // MRQ partial credit: each correctly selected option = 1/(total options) of the question's point
     // All-or-nothing for MRQ is also supported via q.mrq_aon=true
+    const _correctnessMap={}; // PHASE 10: per-question 0/1 outcome for psychometrics
     _gradeList.forEach(({q,sIdx})=>{
         const origKey=q._orig;
         const qtype=getQType(q);
@@ -2820,6 +3149,9 @@ async function submitExam(){
             if(correct>_scoreCorrectBefore)_subjectStats[sIdx].correct++;
             else if(wrong>_scoreWrongBefore)_subjectStats[sIdx].wrong++;
         }
+        // PHASE 10: full-credit boolean per question — feeds the teacher's
+        // psychometric report (difficulty/discrimination/distractor analysis).
+        _correctnessMap[String(isMultiSubjectMode?(sIdx+'_'+q._orig):q._orig)]=(correct>_scoreCorrectBefore);
     });
     const total=_gradeList.length;
 
@@ -2851,6 +3183,20 @@ async function submitExam(){
         };
     }):null;
 
+    /* PHASE 10 — UTME /400 aggregate (JAMB-style).
+       Multi-subject: each subject contributes its percentage × 1, so 4
+       subjects → /400 exactly like the real UTME. Single subject: the
+       percentage × 4 → /400. The classic percentage stays everywhere
+       else (pass/fail, grade ring) — this is an ADDITIONAL headline. */
+    let utmeAggregate=null;
+    if(exam.score_model==='utme400'){
+        if(isMultiSubjectMode&&subjectBreakdown){
+            utmeAggregate=Math.round(subjectBreakdown.reduce((acc,x)=>acc+(x.total?(x.score/x.total)*100:0),0));
+        }else{
+            utmeAggregate=Math.round(percentage*4);
+        }
+    }
+
     // Debug log — visible in browser DevTools console
     console.log('[CBT] Scoring complete:',{
         scoreInt, totalInt, percentage,
@@ -2863,6 +3209,7 @@ async function submitExam(){
     // Switch views
     document.getElementById('exam-card').classList.add('hidden');
     document.getElementById('result-view').classList.remove('hidden');
+    const _chipGone=document.getElementById('game-chip');if(_chipGone)_chipGone.remove();
     document.getElementById('calc-btn').classList.add('hidden');
     document.getElementById('math-kbd-btn').classList.add('hidden');
     document.getElementById('calculator').style.display='none';
@@ -2911,6 +3258,40 @@ async function submitExam(){
     document.getElementById('stat-skipped').innerText=skipped;
     document.getElementById('stat-time').innerText=`${Math.floor(timeTaken/60)}m ${timeTaken%60}s`;
     document.getElementById('ring-sub').innerText=`${scoreInt}/${totalInt}`;
+
+    /* PHASE 10 — extra result headlines (UTME aggregate, practice points). */
+    try{
+        const oldX=document.getElementById('phase10-result-extras');if(oldX)oldX.remove();
+        const extras=document.createElement('div');extras.id='phase10-result-extras';
+        let xHtml='';
+        if(utmeAggregate!==null){
+            xHtml+=`<div style="margin:14px 0 0;padding:14px 18px;border-radius:14px;border:1px solid rgba(59,130,246,.35);background:rgba(59,130,246,.08);text-align:center;">
+                <div style="font-size:12px;letter-spacing:2px;font-weight:800;color:#3b82f6;">UTME-STYLE AGGREGATE</div>
+                <div style="font-size:34px;font-weight:900;color:#3b82f6;margin-top:4px;">${utmeAggregate} <span style="font-size:16px;color:var(--text-muted);">/ 400</span></div>
+                <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Each subject contributes up to 100 points, exactly like the real UTME.</div>
+            </div>`;
+        }
+        if(isImmediateFeedback){
+            xHtml+=`<div style="margin:14px 0 0;padding:12px 18px;border-radius:12px;border:1px solid rgba(168,85,247,.35);background:rgba(168,85,247,.08);text-align:center;font-weight:800;color:#a855f7;">
+                🎮 Practice complete — ${gamePoints} points · best streak 🔥 ${gameBestStreak}
+            </div>`;
+        }
+        if(xHtml)extras.innerHTML=xHtml;
+        /* PHASE 10 — appeal / rescoring request (only when the result is
+           released; the RPC enforces one pending request per candidate). */
+        let appealAdded=false;
+        if(releaseNow){
+            const ap=document.createElement('div');
+            ap.id='appeal-box';
+            ap.style.cssText='margin:18px 0 0;padding:14px 16px;border-radius:12px;border:1px dashed var(--border);text-align:center;';
+            ap.innerHTML=`<button onclick="openAppealModal()" style="background:none;border:none;color:var(--info,#3b82f6);font-weight:700;font-size:13px;cursor:pointer;text-decoration:underline;">🧾 Not happy with a score? Request a script review</button>`;
+            extras.appendChild(ap);appealAdded=true;
+        }
+        if(xHtml||appealAdded){
+            const anchor=document.getElementById('stat-time')?.closest('.result-stats')||document.getElementById('result-title');
+            if(anchor&&anchor.parentElement)anchor.parentElement.insertBefore(extras,anchor.nextSibling);
+        }
+    }catch(e){console.warn('[CBT] result extras skipped:',e);}
     if(!releaseNow){
         rf.style.strokeDashoffset=427;
         document.getElementById('ring-pct').innerText='HELD';
@@ -3200,6 +3581,19 @@ async function submitExam(){
     // plus a __subjects breakdown. The teacher dashboard normalises these keys on read.
     const answersData={ time_analytics: questionTimes, scoring_summary:{raw_score:rawScore,negative_mark:negativeMark,penalty,adjusted_score:scoreRaw,percentage} };
     if(subjectBreakdown)answersData.__subjects=subjectBreakdown;
+    /* PHASE 10 — session meta: delivery mode, UTME aggregate, practice-game
+       tally and device evidence (TestGorilla-style device consistency is
+       reviewed by the teacher; nothing here is shown to candidates). */
+    answersData.__meta={
+        score_model: exam.score_model||'standard',
+        utme_aggregate: utmeAggregate,
+        adaptive: isAdaptiveMode,
+        feedback_mode: exam.feedback_mode||'end',
+        game_points: gamePoints, game_best_streak: gameBestStreak,
+        device_id: _deviceFingerprint(),
+        user_agent: (navigator.userAgent||'').slice(0,180),
+        screen: (window.screen?window.screen.width+'x'+window.screen.height:'')
+    };
     _gradeList.forEach(({q,sIdx})=>{
         const origKey=String(isMultiSubjectMode?(sIdx+'_'+q._orig):q._orig);
         const qtype=getQType(q);
@@ -3208,6 +3602,8 @@ async function submitExam(){
         const entry={
             answer:   rawAns !== undefined ? rawAns : null,
             qtype:    qtype,
+            is_correct: _correctnessMap[origKey]===undefined?undefined:_correctnessMap[origKey], // PHASE 10 psychometrics
+            time_ms: Math.round((questionTimes[_timeKeyOf(q)]||0)*1000), // PHASE 10 anomaly analysis
             time_sec: questionTimes[_timeKeyOf(q)]||0,
             flagged:  isMultiSubjectMode ? flagged.has(sIdx+'_'+(multiSubjectsList[sIdx]?.questions||[]).indexOf(q)) : flagged.has(questions.indexOf(q)),
             subject:  isMultiSubjectMode ? (multiSubjectsList[sIdx]?.name||'') : undefined,

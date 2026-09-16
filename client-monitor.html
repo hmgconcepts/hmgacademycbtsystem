@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Client Monitor • HMG Academy CBT Pro</title>
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Client Subscription Monitor — Builder Console</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📡 Client Monitor</h1>
+      <p>The builder-side registry for the platforms you deliver. Register each client once, then check their <b>live</b> subscription status any time — and keep every platform renewable with one click.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-primary" onclick="checkAllClients()">🔎 Check all now</button>
+      <button class="btn btn-outline" onclick="loadClients(true)">🔄 Refresh registry</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <h2>➕ Register / update a client deployment</h2>
+    <div class="grid-2">
+      <div><label>Client name *</label><input type="text" id="cm-name" placeholder="e.g. God of Seed Academy"></div>
+      <div><label>Slug * (registry key)</label><input type="text" id="cm-slug" placeholder="e.g. godofseed"></div>
+      <div><label>Deploy URL</label><input type="text" id="cm-deploy" placeholder="https://godofseed-cbt.vercel.app"></div>
+      <div><label>Model</label><select id="cm-model"><option value="subscription">subscription</option><option value="lifetime">lifetime (one-time)</option></select></div>
+      <div><label>Client Supabase URL</label><input type="text" id="cm-sburl" placeholder="https://xxxx.supabase.co"></div>
+      <div><label>Client anon key (public read-only)</label><input type="text" id="cm-sbkey" placeholder="eyJ…"></div>
+    </div>
+    <label>Notes</label>
+    <input type="text" id="cm-notes" placeholder="plan, cycle, payment history, contact…">
+    <div style="display:flex;gap:8px;margin-top:10px;align-items:center;">
+      <button class="btn btn-primary" onclick="saveClient()">💾 Save client</button>
+      <button class="btn btn-outline" onclick="clearForm()">Clear</button>
+      <span id="cm-form-note" style="font-size:12px;color:var(--text-muted);"></span>
+    </div>
+    <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">
+      The anon key only ever READS the client's public <span class="code-chip">site_license</span> row — it is public by design on every deployment (lock screens render pre-login). No secrets, no writes to client data. Everything is stored in your own Supabase via admin-gated, audit-logged RPCs.
+    </p>
+  </div>
+
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:10px;">
+      <h2 style="margin:0;">📋 Registered clients <span id="cm-count" style="font-weight:400;color:var(--text-muted);font-size:.85rem;"></span></h2>
+    </div>
+    <div id="cm-clients"></div>
+  </div>
+
+  <div class="card" style="margin-top:18px;">
+    <h2>🧭 How monitoring, renewal &amp; bypass work</h2>
+    <ol style="line-height:1.9;color:var(--text-muted);font-size:.9rem;padding-left:20px;margin:0;">
+      <li><b>Monitor:</b> "Check all now" polls every client's real license row over their public REST endpoint and shows the truth: 🟢 active/lifetime · 🟡 warning (days left) · 🟠 grace · 🔴 expired (days over) · ⏸ suspended · ❌ unreachable (usually a paused Supabase project — restore it, then re-check).</li>
+      <li><b>Renew (from inside their platform):</b> the License console and Admin sign-in stay reachable even while a client's portal is locked — quick-extend +30/+90/+365 days re-activates instantly.</li>
+      <li><b>Bypass / override (from your side):</b> each client card generates the exact <b>license-registry JSON</b> — extend the expiry, flip status to active, or convert to lifetime. Paste it into the registry file you host (Settings → license registry URL on their platform, or baked by the Generator). The registry always beats local values.</li>
+      <li><b>Never goes dark:</b> even expired platforms keep heartbeating (site-visit pings + the scheduled GitHub workflow), so Supabase never pauses them for inactivity — renewal is always one action away, zero rebuild, zero data loss.</li>
+    </ol>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-license.js"></script>
+<script>
+let CLIENTS = [];
+let editingId = null;
+
+function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+function requireAdmin() {
+  const s = App.getSession();
+  if (!s || !s.access_token) {
+    document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:system-ui;">🔒 Admin sign-in required. <a href="admin.html">Go to admin login</a>.</div>';
+    return false;
+  }
+  return true;
+}
+
+async function loadClients(showToastMsg) {
+  try {
+    CLIENTS = await App.sbFetch('/rest/v1/rpc/admin_list_client_registrations', 'POST', {});
+    if (!Array.isArray(CLIENTS)) CLIENTS = [];
+    renderClients();
+    if (showToastMsg) showToast(`Registry refreshed — ${CLIENTS.length} client(s).`, 'success');
+  } catch (e) {
+    document.getElementById('cm-clients').innerHTML =
+      `<div style="color:var(--danger);background:var(--danger-dim);border-radius:var(--radius-sm);padding:14px;">
+        ❌ Could not read the client registry: ${esc(e.message)}<br>
+        <small>Run <span class="code-chip">database/complete-schema.sql</span> once (idempotent) to install the client-monitor RPCs, then reload.</small></div>`;
+  }
+}
+
+async function saveClient() {
+  const name = document.getElementById('cm-name').value.trim();
+  const slug = document.getElementById('cm-slug').value.trim().toLowerCase();
+  if (!name || !slug) { showToast('Client name and slug are required.', 'warning'); return; }
+  const payload = {
+    id: editingId || '',
+    name, slug,
+    deploy_url: document.getElementById('cm-deploy').value.trim(),
+    model: document.getElementById('cm-model').value,
+    supabase_url: document.getElementById('cm-sburl').value.trim(),
+    supabase_anon_key: document.getElementById('cm-sbkey').value.trim(),
+    notes: document.getElementById('cm-notes').value.trim()
+  };
+  try {
+    await App.sbFetch('/rest/v1/rpc/admin_upsert_client_registration', 'POST', { p_client: payload });
+    showToast(editingId ? '✅ Client updated.' : '✅ Client registered.', 'success');
+    clearForm();
+    await loadClients();
+  } catch (e) {
+    showToast('Save failed: ' + e.message, 'danger');
+  }
+}
+
+function editClient(id) {
+  const c = CLIENTS.find(x => x.id === id);
+  if (!c) return;
+  editingId = c.id;
+  document.getElementById('cm-name').value = c.name || '';
+  document.getElementById('cm-slug').value = c.slug || '';
+  document.getElementById('cm-deploy').value = c.deploy_url || '';
+  document.getElementById('cm-model').value = c.model === 'lifetime' ? 'lifetime' : 'subscription';
+  document.getElementById('cm-sburl').value = c.supabase_url || '';
+  document.getElementById('cm-sbkey').value = c.supabase_anon_key || '';
+  document.getElementById('cm-notes').value = c.notes || '';
+  document.getElementById('cm-form-note').textContent = 'Editing: ' + c.name + ' — save to apply changes.';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+async function deleteClient(id) {
+  const c = CLIENTS.find(x => x.id === id);
+  if (!c) return;
+  if (!confirm(`Remove ${c.name} from the registry? (Their platform is not touched — this only removes your monitoring entry.)`)) return;
+  try {
+    await App.sbFetch('/rest/v1/rpc/admin_delete_client_registration', 'POST', { p_id: id });
+    showToast('Client removed from registry.', 'success');
+    await loadClients();
+  } catch (e) { showToast('Delete failed: ' + e.message, 'danger'); }
+}
+
+function clearForm() {
+  editingId = null;
+  ['cm-name','cm-slug','cm-deploy','cm-sburl','cm-sbkey','cm-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('cm-model').value = 'subscription';
+  document.getElementById('cm-form-note').textContent = '';
+}
+
+/* ── Live status: read the client's PUBLIC site_license row directly ── */
+async function checkClient(id) {
+  const c = CLIENTS.find(x => x.id === id);
+  if (!c) return null;
+  const cell = document.getElementById('cm-status-' + id);
+  if (cell) cell.innerHTML = '<span class="badge">⏳ checking…</span>';
+  if (!c.supabase_url || !c.supabase_anon_key) {
+    const r = { state: 'no-creds' };
+    if (cell) cell.innerHTML = statusChip(r);
+    c._live = r;
+    return r;
+  }
+  try {
+    const ctl = new AbortController();
+    const t = setTimeout(() => ctl.abort(), 8000);
+    const res = await fetch(c.supabase_url.replace(/\/+$/, '') + '/rest/v1/site_license?id=eq.1&select=model,plan,cycle,started_on,expires_on,grace_days,status,renew_url', {
+      headers: { 'apikey': c.supabase_anon_key, 'Authorization': 'Bearer ' + c.supabase_anon_key },
+      signal: ctl.signal, cache: 'no-store'
+    });
+    clearTimeout(t);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const rows = await res.json();
+    if (!rows || !rows.length) throw new Error('no license row (schema not run yet)');
+    const lic = rows[0];
+    const ev = window.SiteSub ? SiteSub.evaluate(lic) : { state: lic.model === 'subscription' ? 'active' : 'lifetime', lic };
+    c._live = { state: ev.state, lic: ev.lic || lic, result: ev };
+    if (cell) cell.innerHTML = statusChip(c._live);
+    return c._live;
+  } catch (e) {
+    const r = { state: 'unreachable', why: e.message };
+    c._live = r;
+    if (cell) cell.innerHTML = statusChip(r);
+    return r;
+  }
+}
+
+async function checkAllClients() {
+  showToast('Checking ' + CLIENTS.length + ' client(s)…', 'info');
+  await Promise.all(CLIENTS.map(c => checkClient(c.id)));
+  showToast('✅ Live check complete.', 'success');
+}
+
+function statusChip(live) {
+  if (!live) return '<span class="badge">— not checked</span>';
+  switch (live.state) {
+    case 'lifetime': return '<span class="badge badge-primary">🟢 LIFETIME (one-time)</span>';
+    case 'active': return '<span class="badge badge-primary">🟢 ACTIVE' + (live.result && live.result.daysLeft ? ' · ' + live.result.daysLeft + 'd left' : '') + '</span>';
+    case 'warning': return '<span class="badge badge-warning">🟡 EXPIRES IN ' + (live.result ? live.result.daysLeft : '?') + ' DAY(S)</span>';
+    case 'grace': return '<span class="badge badge-warning">🟠 GRACE · ' + (live.result ? live.result.daysLeft : '?') + ' day(s) left</span>';
+    case 'expired': return '<span class="badge badge-danger">🔴 EXPIRED · ' + (live.result ? live.result.daysOver : '?') + ' day(s) over</span>';
+    case 'suspended': return '<span class="badge badge-danger">⏸ SUSPENDED</span>';
+    case 'no-creds': return '<span class="badge badge-warning">⚪ NO SUPABASE CREDENTIALS SAVED</span>';
+    case 'unreachable': return '<span class="badge badge-danger" title="' + esc(live.why || '') + '">❌ UNREACHABLE — possibly paused; restore then re-check</span>';
+    default: return '<span class="badge">— ' + esc(live.state) + '</span>';
+  }
+}
+
+/* ── Override / bypass: generate the license-registry JSON snippet ── */
+function overrideSnippet(id) {
+  const c = CLIENTS.find(x => x.id === id);
+  if (!c) return;
+  const live = c._live;
+  const lic = (live && live.lic) || {};
+  const base = new Date();
+  const ymd = d => d.toISOString().slice(0, 10);
+  const inDays = n => ymd(new Date(base.getTime() + n * 86400000));
+  const cur = lic.expires_on ? String(lic.expires_on).slice(0, 10) : ymd(base);
+  const snippet = JSON.stringify({
+    sites: {
+      [c.slug]: {
+        model: 'subscription',
+        status: 'active',
+        expires_on: inDays(30),
+        grace_days: 7,
+        plan: lic.plan || (c.name + ' subscription'),
+        renew_url: lic.renew_url || (c.deploy_url || '')
+      }
+    }
+  }, null, 2);
+  const msg =
+`REGISTRY OVERRIDE for ${c.name} (slug: ${c.slug})
+
+Paste this into the license-registry.json you host, then bump the ?v= cache or wait for the client's 15-minute re-check. The registry always WINS over the client's local license row.
+
+• Extend by 30 days (edit expires_on / status as needed):
+${snippet}
+
+• COURTESY / PERMANENT BYPASS (convert to lifetime — no more renewals):
+${JSON.stringify({ sites: { [c.slug]: { model: 'lifetime', status: 'active', plan: 'Courtesy lifetime access (granted by HMG)' } } }, null, 2)}
+
+• Current live state: ${live ? live.state : 'not checked'}${lic.expires_on ? ' · expires_on ' + cur : ''}
+• Remote alternative: sign into their platform → License console → quick-extend (+30/+90/+365) — the console stays reachable even while their portal is locked.
+
+Registry URL is configured per client: Settings → license registry URL, or baked by the Generator wizard.`;
+  copyText(msg, 'Override snippet for ' + c.name + ' copied — paste it into your hosted license-registry.json');
+}
+
+function copyText(txt, okMsg) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(() => showToast('📋 ' + okMsg, 'success'))
+      .catch(() => fallbackCopy(txt, okMsg));
+  } else fallbackCopy(txt, okMsg);
+}
+function fallbackCopy(txt, okMsg) {
+  const ta = document.createElement('textarea');
+  ta.value = txt; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); showToast('📋 ' + okMsg, 'success'); }
+  catch (e) { showToast('Copy failed — select the text manually.', 'danger'); }
+  ta.remove();
+}
+
+function renderClients() {
+  const box = document.getElementById('cm-clients');
+  document.getElementById('cm-count').textContent = CLIENTS.length ? `(${CLIENTS.length})` : '';
+  if (!CLIENTS.length) {
+    box.innerHTML = '<p style="color:var(--text-muted);">No clients registered yet. Add your first delivered platform above — or, if you expected entries, run <span class="code-chip">database/complete-schema.sql</span> and reload.</p>';
+    return;
+  }
+  box.innerHTML = CLIENTS.map(c => `
+    <div style="border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;background:var(--surface-2);">
+      <div class="flex-between" style="flex-wrap:wrap;gap:8px;">
+        <div>
+          <strong style="color:var(--primary);">${esc(c.name)}</strong>
+          <span class="code-chip">${esc(c.slug)}</span>
+          <span class="badge">${esc(c.model || 'subscription')}</span>
+          ${c.deploy_url ? `<a href="${esc(c.deploy_url)}" target="_blank" rel="noopener" style="font-size:12px;">↗ open platform</a>` : ''}
+        </div>
+        <div id="cm-status-${c.id}">${c._live ? statusChip(c._live) : '<span class="badge">— not checked</span>'}</div>
+      </div>
+      ${c.notes ? `<p style="font-size:12px;color:var(--text-muted);margin:6px 0 0;">📝 ${esc(c.notes)}</p>` : ''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        <button class="btn btn-sm btn-outline" onclick="checkClient('${c.id}')">🔎 Check now</button>
+        <button class="btn btn-sm btn-outline" onclick="overrideSnippet('${c.id}')">🧩 Override / bypass snippet</button>
+        <button class="btn btn-sm btn-outline" onclick="editClient('${c.id}')">✏️ Edit</button>
+        <button class="btn btn-sm btn-danger" onclick="deleteClient('${c.id}')">🗑 Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAdmin()) return;
+  await loadClients();
+});
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

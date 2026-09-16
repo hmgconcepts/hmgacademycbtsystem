@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v10-enterprise-v6'; // FIX (m1): bumped — cache list changed (question-types.html added)
+const CACHE_NAME = 'hmg-cbt-shell-v10-phase10-v7'; // PHASE 10: bumped — student/teacher/cbt-multi engines + psychometrics.js changed
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [

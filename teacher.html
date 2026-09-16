@@ -378,6 +378,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
 </style>
 <script src="assets/js/site-help.js"></script>
 <script src="assets/js/csv-bridge.js"></script>
+<script src="assets/js/psychometrics.js"></script><!-- PHASE 10: psychometric analytics engine -->
 </head>
 <body>
 
@@ -430,6 +431,47 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
       <button onclick="document.getElementById('dup-modal').classList.add('hidden')" class="btn-sm btn-ghost" style="flex:1;padding:11px;">Cancel</button>
       <button onclick="confirmDuplicate()" id="dup-confirm-btn" style="flex:2;padding:11px;background:var(--primary);color:#000;">✓ Duplicate</button>
     </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PHASE 10 — ACCOMMODATION MODAL (roster)
+════════════════════════════════════ -->
+<div id="accommodation-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:460px;">
+    <div class="modal-header">
+      <div style="font-size:16px;font-weight:700;">⏱ Exam Accommodation</div>
+      <button class="btn-sm btn-danger" onclick="document.getElementById('accommodation-modal').classList.add('hidden')">✕</button>
+    </div>
+    <div id="accommodation-student" style="background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin:12px 0;font-size:13px;font-weight:600;"></div>
+    <p style="font-size:12px;color:var(--text-muted);line-height:1.6;margin-bottom:10px;">Applies to <strong>registered-mode exams only</strong> (the candidate must be on this roster). The extra time is applied silently — per accessibility best practice (ETS/ADA), accommodated candidates are never singled out on result slips or reports.</p>
+    <label>Approved Extra Time</label>
+    <select id="accommodation-pct">
+      <option value="0">None — standard time</option>
+      <option value="25">+25% time</option>
+      <option value="50">+50% time (1.5×, most common)</option>
+      <option value="100">+100% time (2×)</option>
+    </select>
+    <label style="margin-top:10px;">Private Note (teachers only — never shown to candidates)</label>
+    <textarea id="accommodation-note" rows="2" placeholder="e.g. Approved by DRC, term 1, documentation on file" style="width:100%;box-sizing:border-box;"></textarea>
+    <div style="display:flex;gap:10px;margin-top:14px;">
+      <button onclick="document.getElementById('accommodation-modal').classList.add('hidden')" class="btn-sm btn-ghost" style="flex:1;padding:11px;">Cancel</button>
+      <button onclick="saveAccommodation()" id="accommodation-save-btn" style="flex:2;padding:11px;background:var(--primary);color:#000;border:none;border-radius:8px;font-weight:700;cursor:pointer;">✓ Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════
+     PHASE 10 — GENERIC TOOLKIT MODAL
+     (Psychometrics · Integrity · Live · Appeals · Leaderboard)
+════════════════════════════════════ -->
+<div id="p10-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:960px;">
+    <div class="modal-header">
+      <div id="p10-title" style="font-size:16px;font-weight:700;"></div>
+      <button class="btn-sm btn-danger" onclick="closeP10Modal()">✕ Close</button>
+    </div>
+    <div id="p10-body" style="max-height:70vh;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -948,8 +990,8 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
 <div style="margin-bottom:20px;">
           <label>Open Exam Immediately?</label>
           <select id="ex-open-now">
-            <option value="false">No — Keep locked until I open it manually</option>
-            <option value="true">Yes — Open as soon as I publish</option>
+            <option value="true" selected>Yes — Open as soon as I publish (recommended)</option>
+            <option value="false">No — Keep locked until I open it manually (for pre-loading ahead)</option>
           </select>
         </div>
 
@@ -972,6 +1014,33 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
           <div class="grid-2" style="margin-top:12px;margin-bottom:0;">
             <div><label>Violation Limit Before Auto-Submit</label><input type="number" id="ac-max" min="1" max="20" value="5" style="margin-bottom:0;"></div>
             <div><label>On-screen Math/Science Keyboard</label><select id="ex-math-keyboard" style="margin-bottom:0;"><option value="true">Enable for typed answers</option><option value="false">Disable</option></select></div>
+          </div>
+        </div>
+
+        <!-- ═══ PHASE 10 — DELIVERY & SCORING ═══ -->
+        <hr class="divider">
+        <div class="form-section-title">Delivery &amp; Scoring — Phase 10 Options</div>
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:16px;">
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:12px;">Modern CBT engines borrowed from Quizizz, ALEKS and JAMB practice apps. All are <strong>rule-based</strong> — no AI service, no extra cost. Leave everything off for the classic exam experience.</p>
+          <div class="grid-2" style="margin-bottom:0;">
+            <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="ex-adaptive" style="width:auto;margin-top:2px;"> 🧠 Adaptive difficulty — questions get harder when the candidate is doing well, easier when struggling (needs difficulty tags on questions; single-subject papers; forward-only like real CAT)</label>
+            <div>
+              <label>Feedback Mode</label>
+              <select id="ex-feedback" style="margin-bottom:0;">
+                <option value="end">🔒 Standard — results at the end (exam conditions)</option>
+                <option value="immediate">⚡ Practice — instant right/wrong + explanation after each question, with points &amp; streaks (Quizizz-style homework)</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top:12px;margin-bottom:0;">
+            <div>
+              <label>Score Model</label>
+              <select id="ex-score-model" style="margin-bottom:0;">
+                <option value="standard">Percent — classic percentage score</option>
+                <option value="utme400">UTME /400 — JAMB-style aggregate (each subject contributes up to 100)</option>
+              </select>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6;align-self:end;">UTME /400 shines on combined multi-subject papers: 4 subjects × 100 = 400, exactly like the real thing. The classic percentage is still shown everywhere else.</div>
           </div>
         </div>
         <hr class="divider">
@@ -1336,6 +1405,11 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
             <button class="btn-sm btn-outline" onclick="bulkPrintFilteredResults()">🖨 Print Listed Results</button>
             <button class="btn-sm btn-outline" onclick="bulkPrintFilteredCertificates()">🎓 Print Listed Certificates</button>
             <button class="btn-sm btn-outline" onclick="exportItemAnalysisCSV()">🧩 Item Analysis CSV</button>
+            <button class="btn-sm btn-outline" id="p10-leaderboard-btn" onclick="toggleLeaderboardView()" style="border-color:rgba(168,85,247,.4);">🏆 Leaderboard</button>
+            <button class="btn-sm btn-outline" onclick="openPsychometricReport()" style="border-color:rgba(59,130,246,.4);">📊 Psychometric Report</button>
+            <button class="btn-sm btn-outline" onclick="openIntegritySignals()" style="border-color:rgba(239,68,68,.35);">🛡 Integrity Signals</button>
+            <button class="btn-sm btn-outline" onclick="openLiveMonitor()" style="border-color:rgba(16,185,129,.4);">👁 Live Monitor</button>
+            <button class="btn-sm btn-outline" id="p10-appeals-btn" onclick="openAppealsQueue()" style="border-color:rgba(245,158,11,.4);">🧾 Appeals</button>
             <button class="btn-sm btn-outline" onclick="loadResults().then(()=>showToast('✅ Results refreshed.'))" title="Reload latest results from database" style="font-size:12px;">🔄 Refresh</button>
             <button class="btn-sm btn-ghost" onclick="navigate('analytics')" style="font-size:12px;">📈 Analytics</button>
           </div>
@@ -1497,6 +1571,7 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
                 <th>Full Name</th>
                 <th>Student ID</th>
                 <th>Class</th>
+                <th>Accommodation</th>
                 <th>Added</th>
                 <th class="no-print">Action</th>
               </tr>
@@ -2300,6 +2375,23 @@ SELECT 'Run database/complete-schema.sql for the canonical HMG Academy CBT v3.1 
           <div><label>Violation Limit Before Auto-Submit</label><input type="number" id="edit-ac-max" min="1" max="20" value="5" style="margin-bottom:0;"></div>
           <div><label>On-screen Math/Science Keyboard</label><select id="edit-ex-math-keyboard" style="margin-bottom:0;"><option value="true">Enable</option><option value="false">Disable</option></select></div>
         </div>
+        <div class="grid-2" style="margin-top:12px;margin-bottom:0;">
+          <label style="display:flex;gap:9px;align-items:flex-start;font-size:13px;text-transform:none;letter-spacing:0;color:var(--text);"><input type="checkbox" id="edit-ex-adaptive" style="width:auto;margin-top:2px;"> 🧠 Adaptive difficulty delivery</label>
+          <div>
+            <label>Feedback Mode</label>
+            <select id="edit-ex-feedback" style="margin-bottom:0;">
+              <option value="end">🔒 Standard — results at the end</option>
+              <option value="immediate">⚡ Practice — instant feedback + points</option>
+            </select>
+          </div>
+        </div>
+        <div style="margin-top:12px;margin-bottom:0;">
+          <label>Score Model</label>
+          <select id="edit-ex-score-model" style="margin-bottom:0;">
+            <option value="standard">Percent — classic percentage score</option>
+            <option value="utme400">UTME /400 — JAMB-style aggregate</option>
+          </select>
+        </div>
       </div>
       <hr class="divider">
       <div class="form-section-title">Add Questions to This Exam</div>
@@ -2358,15 +2450,386 @@ async function saveExamPayloadWithFallback(payload, method='POST', examId=''){
   const url=method==='PATCH'?`/rest/v1/exams?id=eq.${examId}`:'/rest/v1/exams';
   try{return await sbFetch(url,method,payload);}catch(e){
     const msg=String(e.message||'');
-    if(/anti_cheat_config|math_keyboard|proctoring|certificate_enabled|certificate_valid_days|column/i.test(msg)){
+    if(/anti_cheat_config|math_keyboard|proctoring|certificate_enabled|certificate_valid_days|adaptive|feedback_mode|score_model|column/i.test(msg)){
       const lean={...payload};
       delete lean.anti_cheat_config; delete lean.proctoring; delete lean.math_keyboard; delete lean.certificate_enabled; delete lean.certificate_valid_days;
+      delete lean.adaptive; delete lean.feedback_mode; delete lean.score_model; // PHASE 10 columns missing on old DBs
       const res=await sbFetch(url,method,lean);
       showToast('⚠️ Saved without newest enterprise columns. Run database/complete-schema.sql to enable anti-cheat/certificate settings.');
       return res;
     }
     throw e;
   }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   PHASE 10 TEACHER TOOLKIT
+   Psychometric report · Leaderboard · Integrity signals ·
+   Live invigilation monitor · Appeals queue · Accommodations.
+   Everything is rule-based and free: no AI API, no paid service.
+   ══════════════════════════════════════════════════════════════════ */
+
+/* HTML-escape for injected names/notes (defence-in-depth for roster data). */
+function escapeHtml(str){
+  return String(str===undefined||str===null?'':str)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+/* Global RPC helper — also repairs the tutor-audit trail, which called
+   sbRpc() before it existed and silently failed ever since. */
+async function sbRpc(name, body){
+  const token = session ? session.access_token : SB_KEY;
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${name}`, {
+    method:'POST',
+    headers:{ 'apikey':SB_KEY, 'Authorization':`Bearer ${token}`, 'Content-Type':'application/json' },
+    body: JSON.stringify(body||{})
+  });
+  if(!res.ok){
+    let msg=`HTTP ${res.status}`;
+    try{ const e=await res.json(); msg=e.message||e.error||msg; }catch(_){}
+    throw new Error(msg);
+  }
+  const text=await res.text();
+  try{ return text?JSON.parse(text):null; }catch(_){ return text; }
+}
+
+/* ---------- modal plumbing ---------- */
+function _p10Open(title, html){
+  document.getElementById('p10-title').innerHTML=title;
+  document.getElementById('p10-body').innerHTML=html;
+  document.getElementById('p10-modal').classList.remove('hidden');
+}
+function closeP10Modal(){
+  document.getElementById('p10-modal').classList.add('hidden');
+  stopLiveMonitorPolling();
+}
+function _p10ExamOptions(){
+  return allExams.map(e=>{
+    const m=decodeMeta(e.subject);
+    return `<option value="${e.id}">${escapeHtml(`${m.subject} — ${m.cls} (${m.term})`)}</option>`;
+  }).join('');
+}
+function _p10ResultsFor(examId){ return allResults.filter(r=>r.exam_id===examId); }
+function _p10QuestionsFor(exam){
+  /* single-subject papers use csv_data; multi-subject uses subjects_data */
+  if(exam.is_multi_subject && exam.subjects_data){
+    let qs=[]; let idx=0;
+    try{
+      const subs=typeof exam.subjects_data==='string'?JSON.parse(exam.subjects_data):exam.subjects_data;
+      subs.forEach(s=>{
+        const arr=parseQuestionData(s.csv_data||[]);
+        arr.forEach(q=>{ q._orig=String(idx++)+'_'; qs.push(q); });
+      });
+    }catch(e){}
+    return qs;
+  }
+  const arr=parseQuestionData(exam.csv_data||[]);
+  arr.forEach((q,i)=>{ q._orig=String(i); });
+  return arr;
+}
+
+/* ---------- 1. PSYCHOMETRIC REPORT (ExamSoft-style, client-side) ---------- */
+function openPsychometricReport(){
+  if(!allExams.length)return showToast('No exams yet.');
+  _p10Open('📊 Psychometric Report',
+    `<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Exam-level reliability (KR-20, SEM) and per-question difficulty, discrimination and distractor analysis — computed from your own submissions. Question banks with <strong>difficulty tags</strong> and option-level data give the richest report.</p>
+     <div class="grid-2" style="margin-bottom:14px;">
+       <div><label>Exam</label><select id="p10-psy-exam">${_p10ExamOptions()}</select></div>
+       <div style="align-self:end;"><button class="btn-sm btn-primary" onclick="renderPsychometricReport()" style="width:auto;padding:10px 18px;">Generate Report</button></div>
+     </div>
+     <div id="p10-psy-out"></div>`);
+}
+function renderPsychometricReport(){
+  const examId=document.getElementById('p10-psy-exam').value;
+  const exam=allExams.find(e=>e.id===examId);
+  const results=_p10ResultsFor(examId);
+  const out=document.getElementById('p10-psy-out');
+  if(!exam||!results.length){out.innerHTML='<div style="padding:14px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--warning);font-size:13px;">No submissions for this exam yet.</div>';return;}
+  const m=decodeMeta(exam.subject);
+  const questions=_p10QuestionsFor(exam);
+  const rep=window.Psychometrics.computeExam(results,questions,{passmark:m.passmark||50});
+  const E=rep.exam;
+  const fmt=(v,unit)=>v===null||v===undefined?'n/a':v+(unit||'');
+  let html=`<div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:14px;">
+    <div style="font-weight:700;margin-bottom:10px;">${escapeHtml(m.subject)} — exam-level statistics</div>
+    <div class="grid-4" style="gap:10px;">
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:var(--info);">${E.n}</div><div style="font-size:11px;color:var(--text-muted);">Candidates</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;">${fmt(E.mean,'%')}</div><div style="font-size:11px;color:var(--text-muted);">Mean score</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;">${fmt(E.sd)}</div><div style="font-size:11px;color:var(--text-muted);">Std deviation</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;">${fmt(E.median,'%')}</div><div style="font-size:11px;color:var(--text-muted);">Median</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:var(--primary);">${fmt(E.kr20)}</div><div style="font-size:11px;color:var(--text-muted);">KR-20 reliability</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;">${fmt(E.sem,'±')}</div><div style="font-size:11px;color:var(--text-muted);">SEM (±% points)</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;color:var(--success,#10b981);">${fmt(E.passRate,'%')}</div><div style="font-size:11px;color:var(--text-muted);">Pass rate</div></div>
+      <div style="text-align:center;"><div style="font-size:20px;font-weight:800;">${E.min}% – ${E.max}%</div><div style="font-size:11px;color:var(--text-muted);">Range</div></div>
+    </div>
+    <div style="margin-top:12px;padding:10px 14px;border-radius:8px;background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.25);font-size:12.5px;line-height:1.6;">
+      <strong>KR-20 ${fmt(E.kr20)} — ${escapeHtml(E.reliabilityLabel)}.</strong>
+      ${E.sem!==null?` A candidate's true score likely lies within ±${E.sem} points of the observed score.`:''}
+      Guide: ≥.90 excellent · .80–.89 very good · .70–.79 acceptable for classroom tests · &lt;.60 low.
+    </div>
+  </div>`;
+  if(rep.items.length){
+    html+=`<div style="border:1px solid var(--border);border-radius:12px;overflow:auto;">
+      <table style="font-size:12px;min-width:760px;">
+        <thead><tr>
+          <th>Q</th><th>Type</th><th>Difficulty p</th><th>Discrimination D</th><th>Point-biserial</th><th>Mean time</th><th>Response spread</th><th>Flags</th>
+        </tr></thead><tbody>`;
+    rep.items.forEach((it,i)=>{
+      const pPct=Math.round(it.p*100);
+      const pCol=it.p>0.8?'#10b981':(it.p<0.2?'#ef4444':'var(--text)');
+      const dCol=(it.d===null)?'var(--text-muted)':(it.d>=0.2?'#10b981':(it.d<0?'#ef4444':'#f59e0b'));
+      const spread=Object.entries(it.counts).map(([L,c])=>{
+        const tot=it.answeredN||1;
+        const pc=Math.round(100*c/tot);
+        return `<span title="${L}: ${c} of ${it.answeredN} answered" style="margin-right:8px;${pc===0?'opacity:.35;':''}">${L} ${pc}%</span>`;
+      }).join('')+(it.blank?`<span style="opacity:.6;">— ${it.blank} blank</span>`:'');
+      html+=`<tr>
+        <td>${i+1}</td><td style="color:var(--text-muted);">${escapeHtml(it.type)}</td>
+        <td style="color:${pCol};font-weight:700;">${it.p} (${pPct}%)</td>
+        <td style="color:${dCol};font-weight:700;">${it.d===null?'—':it.d}</td>
+        <td>${it.rpb===null?'—':it.rpb}</td>
+        <td>${it.meanTime===null?'—':it.meanTime+'s'}</td>
+        <td style="font-size:11px;">${spread}</td>
+        <td>${it.flags.length?it.flags.map(f=>`<span style="display:inline-block;margin:1px 3px 1px 0;padding:1px 7px;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;font-size:10.5px;font-weight:700;">${escapeHtml(f)}</span>`).join(''):'<span style="color:var(--success,#10b981);">healthy</span>'}</td>
+      </tr>`;
+    });
+    html+=`</tbody></table></div>
+    <p style="font-size:11.5px;color:var(--text-muted);line-height:1.7;margin-top:10px;">
+      <strong>How to read it:</strong> <em>p</em> = proportion correct (above .80 too easy, below .20 too hard) ·
+      <em>D</em> = upper-27% minus lower-27% success (≥.20 acceptable; ≈0 or negative = weak or defective item) ·
+      <em>point-biserial</em> = correlation with total score (≥.20 good) ·
+      a <em>functioning distractor</em> attracts ≥5% of candidates and pulls weaker ones; one that attracts top performers (flagged) usually means a mis-key.
+    </p>`;
+  }else{
+    html+='<div style="padding:12px;font-size:13px;color:var(--text-muted);">No auto-gradable (MCQ/TF/MRQ) items in this paper — item statistics apply to dichotomous items only.</div>';
+  }
+  out.innerHTML=html;
+}
+
+/* ---------- 2. LEADERBOARD (hideable — Quizizz norm) ---------- */
+let _leaderboardVisible=false;
+function toggleLeaderboardView(){
+  if(!window.Psychometrics)return showToast('Psychometrics module not loaded.');
+  _leaderboardVisible=!_leaderboardVisible;
+  const btn=document.getElementById('p10-leaderboard-btn');
+  btn.style.background=_leaderboardVisible?'rgba(168,85,247,.15)':'';
+  const host=document.getElementById('p10-leaderboard-panel');
+  if(!_leaderboardVisible){ if(host)host.remove(); renderResults(getFilteredResults()); return; }
+  const results=getFilteredResults();
+  const rows=window.Psychometrics.leaderboard(results);
+  const examId=document.getElementById('f-exam').value;
+  const exam=examId?allExams.find(e=>e.id===examId):null;
+  const title=exam?`${decodeMeta(exam.subject).subject} — `:'';
+  const body=rows.length?rows.map(r=>`
+    <tr>
+      <td style="font-weight:800;color:var(--text-muted);">${r.medal||r.rank}</td>
+      <td style="font-weight:600;">${escapeHtml(r.row.name)}${r.row.cls?` <span style="font-size:11px;color:var(--text-muted);">(${escapeHtml(r.row.cls)})</span>`:''}</td>
+      <td style="font-weight:800;color:${r.row.pct>=50?'var(--success,#10b981)':'#ef4444'};">${Math.round(r.row.pct)}%</td>
+      <td style="color:var(--text-muted);font-size:12px;">${r.row.score}/${r.row.total}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${r.row.time?Math.floor(r.row.time/60)+'m '+r.row.time%60+'s':'—'}</td>
+      <td>${r.percentile}th</td>
+      <td>${r.badges.map(b=>`<span style="display:inline-block;margin-right:4px;padding:2px 8px;border-radius:8px;background:rgba(168,85,247,.12);color:#a855f7;font-size:10.5px;font-weight:700;">${b}</span>`).join('')}</td>
+    </tr>`).join('')
+    :'<tr><td colspan="7" style="padding:14px;color:var(--text-muted);">No released results in the current filter.</td></tr>';
+  let panel=document.getElementById('p10-leaderboard-panel');
+  if(!panel){
+    panel=document.createElement('div');
+    panel.id='p10-leaderboard-panel';
+    panel.style.cssText='margin:0 0 16px;';
+    const anchor=document.querySelector('#page-results .card');
+    if(anchor&&anchor.parentElement)anchor.parentElement.insertBefore(panel,anchor);
+  }
+  panel.innerHTML=`
+    <div class="card" style="border:1px solid rgba(168,85,247,.3);">
+      <div class="flex-between" style="margin-bottom:10px;">
+        <div>
+          <h3 style="margin:0;">🏆 Leaderboard — ${escapeHtml(title)}best attempt per candidate</h3>
+          <p style="font-size:11.5px;color:var(--text-muted);margin:4px 0 0;">Shown to the teacher only. For class display, project deliberately — some students find public ranking stressful (that is why Quizizz made leaderboards hideable).</p>
+        </div>
+        <button class="btn-sm btn-ghost" onclick="toggleLeaderboardView()">Hide</button>
+      </div>
+      <div style="overflow:auto;"><table style="font-size:12.5px;min-width:640px;">
+        <thead><tr><th>Rank</th><th>Candidate</th><th>Best %</th><th>Raw</th><th>Time</th><th>Percentile</th><th>Badges</th></tr></thead>
+        <tbody>${body}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* ---------- 3. INTEGRITY SIGNALS (TestGorilla-style evidence) ---------- */
+function openIntegritySignals(){
+  if(!window.Psychometrics)return showToast('Psychometrics module not loaded.');
+  const results=getFilteredResults();
+  const sig=window.Psychometrics.integritySignals(results);
+  const flagged=sig.rows.filter(r=>r.signals.length);
+  const sw=sig.deviceSwitchers;
+  let html=`<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Answer-speed anomalies, violation counts and device consistency across attempts — computed from data the engine already records. <strong>Evidence, not verdicts:</strong> always look at the script before drawing conclusions.</p>`;
+  html+=`<div class="grid-2" style="margin-bottom:14px;">
+    <div class="stat-box"><div class="stat-num" style="color:${flagged.length?'#ef4444':'var(--success,#10b981)'};">${flagged.length}</div><div class="stat-label">Attempts with signals</div></div>
+    <div class="stat-box"><div class="stat-num" style="color:${sw.length?'#f59e0b':'var(--success,#10b981)'};">${sw.length}</div><div class="stat-label">Candidates switching devices</div></div>
+  </div>`;
+  if(sw.length){
+    html+=`<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.3);border-radius:10px;padding:10px 14px;margin-bottom:12px;font-size:12.5px;">
+      <strong>Device switching:</strong> ${sw.map(x=>`${escapeHtml(x.name)} (${x.devices} devices across ${x.attempts} attempts)`).join(' · ')}. Multiple devices are not proof of cheating — shared school computers cut both ways — but worth a look for impersonation patterns.</div>`;
+  }
+  html+='<div style="overflow:auto;"><table style="font-size:12px;min-width:640px;"><thead><tr><th>Candidate</th><th>Attempt</th><th>Avg / question</th><th>Fast corrects</th><th>Device</th><th>Signals</th></tr></thead><tbody>';
+  (flagged.length?flagged:sig.rows).forEach(r=>{
+    html+=`<tr>
+      <td style="font-weight:600;">${escapeHtml(r.name)}${r.cls?` <span style="color:var(--text-muted);">(${escapeHtml(r.cls)})</span>`:''}</td>
+      <td>#${r.attempt}</td>
+      <td>${r.avgSeconds||'—'}${r.avgSeconds?'s':''}</td>
+      <td>${r.timedCorrect?`${r.fastCorrect}/${r.timedCorrect}`:'—'}</td>
+      <td style="font-family:monospace;font-size:11px;">${escapeHtml(r.device_id||'—')}</td>
+      <td>${r.signals.length?r.signals.map(x=>`<span style="display:inline-block;margin:1px 4px 1px 0;padding:1px 7px;border-radius:8px;background:rgba(239,68,68,.1);color:#ef4444;font-size:10.5px;font-weight:700;">${escapeHtml(x)}</span>`).join(''):'<span style="color:var(--success,#10b981);">clean</span>'}</td>
+    </tr>`;
+  });
+  html+='</tbody></table></div>';
+  html+='<p style="font-size:11.5px;color:var(--text-muted);margin-top:10px;"><strong>fast-answers</strong> = at least half of the correct answers were locked in under 2 seconds (needs ≥5 timed correct answers). <strong>very-fast-pace</strong> = average under 3s/question across the paper. Both can have innocent causes (repeated retakes, drilling) — check attempts and the script review view.</p>';
+  _p10Open('🛡 Integrity Signals', html);
+}
+
+/* ---------- 4. LIVE INVIGILATION MONITOR ---------- */
+let _livePollTimer=null, _liveExamId=null;
+function openLiveMonitor(){
+  const openExams=allExams.filter(e=>e.is_open&&!e.is_archived);
+  if(!openExams.length)return showToast('No open exams to monitor.');
+  _p10Open('👁 Live Invigilation Monitor',
+    `<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Everyone currently sitting the selected exam — progress, violations and how long since their last heartbeat (a session pings every ~45s while the paper is in progress). Rows refresh automatically.</p>
+     <div class="grid-2" style="margin-bottom:14px;">
+       <div><label>Exam</label><select id="p10-live-exam" onchange="startLiveMonitorPolling()">${openExams.map(e=>`<option value="${e.id}">${escapeHtml(decodeMeta(e.subject).subject+' — '+decodeMeta(e.subject).cls)}</option>`).join('')}</select></div>
+       <div style="align-self:end;font-size:12px;color:var(--text-muted);" id="p10-live-updated">—</div>
+     </div>
+     <div id="p10-live-out"></div>`);
+  startLiveMonitorPolling();
+}
+function startLiveMonitorPolling(){
+  stopLiveMonitorPolling();
+  _liveExamId=document.getElementById('p10-live-exam')?.value;
+  pollLiveSessions();
+  _livePollTimer=setInterval(pollLiveSessions,15000);
+}
+function stopLiveMonitorPolling(){
+  if(_livePollTimer){clearInterval(_livePollTimer);_livePollTimer=null;}
+}
+async function pollLiveSessions(){
+  const out=document.getElementById('p10-live-out');
+  if(!out||!_liveExamId)return;
+  try{
+    const rows=await sbRpc('list_live_sessions',{p_exam_id:_liveExamId});
+    const upd=document.getElementById('p10-live-updated');
+    if(upd)upd.innerText='Updated '+new Date().toLocaleTimeString()+' · auto-refresh 15s';
+    if(!rows||!rows.length){out.innerHTML='<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">No live sessions right now. Candidates appear here the moment they start.</div>';return;}
+    out.innerHTML=`<div style="overflow:auto;"><table style="font-size:12.5px;min-width:680px;">
+      <thead><tr><th>Candidate</th><th>Status</th><th>Progress</th><th>On Q</th><th>Violations</th><th>Last ping</th><th>Device</th></tr></thead><tbody>`+
+      rows.map(r=>{
+        const stale=Date.now()-new Date(r.last_seen).getTime()>120000;
+        const bits=String(r.student_key||'').split('|');
+        const cls=r.current_subject>0?` · subject ${r.current_subject+1}`:'';
+        return `<tr>
+          <td style="font-weight:600;">${escapeHtml(bits[0]||'—')}${bits[1]?` <span style="color:var(--text-muted);">(${escapeHtml(bits[1])})</span>`:''}</td>
+          <td>${r.finished?'<span style="color:var(--success,#10b981);font-weight:700;">✓ Finished</span>':(stale?'<span style="color:#f59e0b;font-weight:700;">⚠ Stale</span>':'<span style="color:var(--info);font-weight:700;">● Live</span>')}</td>
+          <td><div style="display:flex;align-items:center;gap:8px;"><div style="flex:1;height:7px;border-radius:4px;background:var(--bg);overflow:hidden;"><div style="width:${r.progress}%;height:100%;background:linear-gradient(90deg,var(--primary),var(--info));"></div></div><span style="font-size:11px;color:var(--text-muted);white-space:nowrap;">${r.answered}/${r.total_questions} (${r.progress}%)</span></div></td>
+          <td>Q${r.current_question}${cls}</td>
+          <td style="color:${r.violations>0?'#ef4444':'var(--text-muted)'};font-weight:${r.violations>0?'800':'400'};">${r.violations}</td>
+          <td>${stale?'<span style="color:#f59e0b;">':''}${_ago(new Date(r.last_seen))}${stale?'</span>':''}</td>
+          <td style="font-family:monospace;font-size:11px;">${escapeHtml(r.device_id||'—')}</td>
+        </tr>`;
+      }).join('')+'</tbody></table></div>';
+  }catch(e){
+    out.innerHTML=`<div style="padding:14px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--warning);font-size:13px;">Could not load live sessions (${escapeHtml(e.message)}). Run database/complete-schema.sql (Phase 10 section) to create the live monitor RPCs.</div>`;
+  }
+}
+function _ago(ts){
+  const s=Math.max(0,Math.round((Date.now()-new Date(ts).getTime())/1000));
+  if(s<60)return s+'s ago';
+  if(s<3600)return Math.floor(s/60)+'m ago';
+  return Math.floor(s/3600)+'h ago';
+}
+
+/* ---------- 5. APPEALS QUEUE ---------- */
+async function openAppealsQueue(){
+  let rows=[];
+  try{ rows=await sbRpc('list_appeals',{p_exam_id:null})||[]; }
+  catch(e){
+    _p10Open('🧾 Appeals',`<div style="padding:14px;border-radius:10px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.3);color:var(--warning);font-size:13px;">Could not load appeals (${escapeHtml(e.message)}). Run database/complete-schema.sql (Phase 10 section) first.</div>`);
+    return;
+  }
+  let html=`<p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">Candidates can request a script review from their result screen. Grant or decline each request — the decision note is for your records. Use the Review Queue to re-open and adjust the script itself.</p>`;
+  if(!rows.length){
+    html+='<div style="padding:18px;text-align:center;color:var(--text-muted);font-size:13px;">No appeals yet. When a candidate requests a script review it appears here instantly.</div>';
+  }else{
+    html+='<div style="overflow:auto;"><table style="font-size:12.5px;min-width:720px;"><thead><tr><th>Exam</th><th>Candidate</th><th>Reason</th><th>Status</th><th>When</th><th class="no-print">Decision</th></tr></thead><tbody>';
+    rows.forEach(a=>{
+      const st={pending:'<span style="padding:2px 9px;border-radius:8px;background:rgba(245,158,11,.12);color:var(--warning);font-weight:700;">pending</span>',
+                granted:'<span style="padding:2px 9px;border-radius:8px;background:rgba(16,185,129,.12);color:#10b981;font-weight:700;">granted</span>',
+                declined:'<span style="padding:2px 9px;border-radius:8px;background:rgba(239,68,68,.12);color:#ef4444;font-weight:700;">declined</span>'}[a.status]||escapeHtml(a.status);
+      html+=`<tr>
+        <td>${escapeHtml(a.exam_title||'—')}</td>
+        <td style="font-weight:600;">${escapeHtml(a.student_name)}${a.student_class?` <span style="color:var(--text-muted);">(${escapeHtml(a.student_class)})</span>`:''} <span style="color:var(--text-muted);font-size:11px;">#${a.attempt_number}</span></td>
+        <td style="max-width:260px;font-size:12px;">${escapeHtml(a.reason)}</td>
+        <td>${st}</td>
+        <td style="color:var(--text-muted);font-size:11.5px;">${new Date(a.created_at).toLocaleString()}</td>
+        <td class="no-print">${a.status==='pending'
+          ?`<button class="btn-sm btn-outline" style="margin-right:4px;color:#10b981;border-color:rgba(16,185,129,.4);" onclick="resolveAppealInline('${a.id}','granted')">✓ Grant</button>
+            <button class="btn-sm btn-outline" style="color:#ef4444;border-color:rgba(239,68,68,.4);" onclick="resolveAppealInline('${a.id}','declined')">✗ Decline</button>`
+          :(a.resolution_note?`<span style="font-size:11px;color:var(--text-muted);">${escapeHtml(a.resolution_note)}</span>`:'—')}</td>
+      </tr>`;
+    });
+    html+='</tbody></table></div>';
+  }
+  _p10Open('🧾 Appeals — script review requests', html);
+}
+async function updateAppealsBadge(){
+  const btn=document.getElementById('p10-appeals-btn');
+  if(!btn||!session)return;
+  try{
+    const rows=await sbRpc('list_appeals',{p_exam_id:null})||[];
+    const pending=rows.filter(a=>a.status==='pending').length;
+    btn.innerText=pending>0?`🧾 Appeals (${pending})`:'🧾 Appeals';
+    btn.style.borderColor=pending>0?'rgba(245,158,11,.8)':'rgba(245,158,11,.4)';
+  }catch(e){/* old DB — keep the plain button */}
+}
+async function resolveAppealInline(id, status){
+  const note=prompt('Decision note (kept with the record):')||'';
+  try{
+    const ok=await sbRpc('resolve_appeal',{p_appeal_id:id,p_status:status,p_note:note});
+    if(ok!==true)throw new Error('Already resolved or not yours.');
+    showToast('✅ Appeal '+status+'.');
+    openAppealsQueue();
+  }catch(e){showToast('Could not resolve appeal: '+e.message);}
+}
+
+/* ---------- 6. ROSTER ACCOMMODATIONS ---------- */
+let _accommodationStudentId=null;
+function openAccommodationModal(id){
+  const st=allStudents.find(x=>x.id===id);if(!st)return;
+  _accommodationStudentId=id;
+  document.getElementById('accommodation-student').innerText=`${st.full_name} · ${st.class||st.student_class||'—'} · ${st.student_id}`;
+  const pct=String(Math.max(0,Math.min(100,Number(st.extra_time_pct)||0)));
+  document.getElementById('accommodation-pct').value=pct;
+  document.getElementById('accommodation-note').value=st.accommodation_note||'';
+  document.getElementById('accommodation-modal').classList.remove('hidden');
+}
+async function saveAccommodation(){
+  if(!_accommodationStudentId)return;
+  const pct=Math.max(0,Math.min(100,Number(document.getElementById('accommodation-pct').value)||0));
+  const note=(document.getElementById('accommodation-note').value||'').slice(0,500);
+  const btn=document.getElementById('accommodation-save-btn');
+  btn.disabled=true;btn.innerText='Saving…';
+  try{
+    /* PATCH students — old databases without the Phase 10 columns reject
+       the write; tell the teacher exactly what to run instead of failing
+       silently. */
+    await sbFetch(`/rest/v1/students?id=eq.${_accommodationStudentId}`,'PATCH',{extra_time_pct:pct,accommodation_note:note});
+    const st=allStudents.find(x=>x.id===_accommodationStudentId);
+    if(st){st.extra_time_pct=pct;st.accommodation_note=note;}
+    renderStudentRoster();
+    document.getElementById('accommodation-modal').classList.add('hidden');
+    showToast(pct>0?`✅ ${st?.full_name||'Student'} gets +${pct}% exam time on registered exams.`:'✅ Accommodation removed.');
+  }catch(e){
+    showToast('⚠️ Could not save — run database/complete-schema.sql (Phase 10 columns): '+e.message);
+  }
+  btn.disabled=false;btn.innerText='✓ Save';
 }
 
 function getAntiCheatConfig(prefix='ac'){
@@ -2433,6 +2896,7 @@ function navigate(page){
     const b=document.getElementById('results-badge');
     if(b){b.classList.add('hidden');b.innerText='0';}
     lastResultCount=allResults.length;
+    updateAppealsBadge(); // PHASE 10: pending script-review requests
   }
   if(page==='create'){
     const closeInput=document.getElementById('ex-close-at');
@@ -4542,11 +5006,21 @@ async function createExam(){
     anti_cheat_config: getAntiCheatConfig('ac'),
     proctoring: document.getElementById('ac-proctor')?.checked === true,
     math_keyboard: document.getElementById('ex-math-keyboard')?.value !== 'false',
+    adaptive:      document.getElementById('ex-adaptive')?.checked === true,          // PHASE 10
+    feedback_mode: document.getElementById('ex-feedback')?.value || 'end',           // PHASE 10
+    score_model:   document.getElementById('ex-score-model')?.value || 'standard',   // PHASE 10
     close_at:      closeAtVal ? new Date(closeAtVal).toISOString() : null
   };
   try{
     await saveExamPayloadWithFallback(payload,'POST');
-    showToast('✅ Assessment published! Code: '+payload.code+' — link and code are available in Assessments.');
+    if(payload.is_open){
+      showToast('✅ Assessment published & OPEN! Code: '+payload.code+' — share the link, students can enter right away.');
+    }else{
+      const scheduled = payload.start_at && new Date(payload.start_at).getTime() > Date.now();
+      showToast(scheduled
+        ? '✅ Assessment published (scheduled). Code: '+payload.code+' — it unlocks automatically at the start time.'
+        : '⚠️ Published but LOCKED. Code: '+payload.code+' — students CANNOT enter yet. Open it under Assessments → ⋮ Actions → Open, then share.');
+    }
     ['ex-sub','ex-class','ex-topic','ex-session','ex-dur','ex-count','ex-start-at'].forEach(id=>document.getElementById(id).value='');
     document.getElementById('ex-term').value='';document.getElementById('ex-type').value='';
     document.getElementById('ex-passmark').value='50';document.getElementById('ex-limit').value='1';
@@ -4731,8 +5205,16 @@ function copyExamCode(code){
 
 function copyExamLink(code){
   const baseUrl=window.location.href.replace(/[?#].*$/,'').replace(/\/teacher(\.html)?$/i,'/student.html');
+  const ex0=allExams.find(e=>e.code===code);
+  if(ex0 && !ex0.is_open && !(ex0.start_at && new Date(ex0.start_at).getTime() > Date.now())){
+    showToast('⚠️ This exam is LOCKED — students will see “Exam not found or not open”. Open it first under Assessments → ⋮ Actions → Open.');
+  }
   navigator.clipboard.writeText(`${baseUrl}?code=${code}`)
-    .then(()=>showToast('✅ Exam link copied!'))
+    .then(()=>{
+      const ex=allExams.find(e=>e.code===code);
+      const locked=ex && !ex.is_open && !(ex.start_at && new Date(ex.start_at).getTime() > Date.now());
+      showToast(locked ? '✅ Link copied — ⚠️ but this exam is LOCKED. Open it under Assessments → ⋮ Actions → Open so students can enter.' : '✅ Exam link copied!');
+    })
     .catch(()=>showToast('Copy failed — try long-pressing the link.'));
 }
 
@@ -4823,14 +5305,23 @@ function printExamAccessSheet(code){
   const link=`${baseUrl}?code=${code}`;
   const exam=allExams.find(e=>e.code===code);
   const m=exam?decodeMeta(exam.subject):{subject:'Assessment',cls:'—',term:'—',type:'—',topic:'—',passmark:50};
+  const schedStart=(exam&&exam.start_at)?new Date(exam.start_at):null;
+  const schedClose=(exam&&exam.close_at)?new Date(exam.close_at):null;
+  const statusHtml=(!exam)?'<div style="margin:10px 0;padding:12px 16px;border-radius:10px;background:#fef3c7;border:1px solid #f59e0b;font-weight:700;">⚠️ Status unknown — this assessment was not found in your current list.</div>'
+    :(exam.is_open?'<div style="margin:10px 0;padding:12px 16px;border-radius:10px;background:#dcfce7;border:1px solid #16a34a;font-weight:700;">🟢 OPEN — students can enter with this code now.</div>'
+    :(schedStart&&schedStart.getTime()>Date.now()
+      ?'<div style="margin:10px 0;padding:12px 16px;border-radius:10px;background:#dbeafe;border:1px solid #2563eb;font-weight:700;">🔒 SCHEDULED — unlocks automatically at '+schedStart.toLocaleString()+'.</div>'
+      :'<div style="margin:10px 0;padding:12px 16px;border-radius:10px;background:#fee2e2;border:1px solid #dc2626;font-weight:700;">🔴 LOCKED — open it under Assessments → ⋮ Actions → Open BEFORE handing out this sheet.</div>'));
   const w=window.open('','_blank','width=900,height=700');
   w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>HMG CBT Access Sheet</title>
   <style>body{font-family:Arial,sans-serif;padding:34px;color:#111}.head{display:flex;gap:18px;align-items:center;border-bottom:3px solid #10b981;padding-bottom:18px;margin-bottom:24px}.logo{width:96px;height:96px;object-fit:cover;border-radius:18px}.brand{font-size:12px;text-transform:uppercase;letter-spacing:1px;color:#059669;font-weight:800}.title{font-size:28px;font-weight:900;margin:4px 0}.meta{color:#555;line-height:1.7}.code{font-size:56px;letter-spacing:8px;font-weight:900;text-align:center;border:3px dashed #10b981;border-radius:18px;padding:24px;margin:24px 0;background:#f0fdf4}.link{word-break:break-all;background:#f8fafc;border:1px solid #ddd;border-radius:12px;padding:16px;font-family:monospace}.rules li{margin-bottom:8px}.foot{margin-top:30px;border-top:1px solid #ddd;padding-top:14px;font-size:12px;color:#666}@media print{button{display:none}}</style>
 </head><body>
   <button onclick="window.print()" style="float:right;padding:10px 18px;background:#10b981;color:#000;border:0;border-radius:8px;font-weight:800;">Print</button>
   <div class="head"><img class="logo" src="assets/hmg-academy-logo.png"><div><div class="brand">HMG Academy CBT Pro · Enterprise Access Sheet</div><div class="title">${m.subject}</div><div class="meta">${m.cls} · ${m.term} · ${m.type}${m.topic&&m.topic!=='—'?' · '+m.topic:''}<br>Duration: ${exam?exam.duration:'—'} minutes · Pass mark: ${m.passmark}%</div></div></div>
+  ${statusHtml}
   <h2>Student Access Code</h2><div class="code">${code}</div>
   <h2>Direct Link</h2><div class="link">${link}</div>
+  ${(schedStart||schedClose)?'<div style="color:#555;font-size:13px;margin-top:8px">'+(schedStart?'Opens: '+schedStart.toLocaleString():'')+(schedStart&&schedClose?' · ':'')+(schedClose?'Closes: '+schedClose.toLocaleString():'')+'</div>':''}
   <h2>Student Instructions</h2><ol class="rules"><li>Open the link above OR visit the Student Portal and enter the access code.</li><li>Enter correct name/class or Student ID if registered mode is enabled.</li><li>Accept the integrity pledge before starting.</li><li>Do not leave the exam tab, open developer tools, copy questions, or exit fullscreen.</li><li>Submit before the timer ends.</li></ol>
   <div class="foot">Generated ${new Date().toLocaleString()} · HMG Concepts · Learning Deliberately. Teaching Authentically.</div>
 </body></html>`);
@@ -4913,7 +5404,7 @@ function importExamPackage(file){
       document.getElementById('ex-count').value=Number(ex.select_count||0)||'';
       document.getElementById('ex-passmark').value=ex.passmark||50;
       const mode=document.getElementById('ex-mode'); if(mode)mode.value=ex.exam_mode||'open';
-      const openNow=document.getElementById('ex-open-now'); if(openNow)openNow.value='false';
+      const openNow=document.getElementById('ex-open-now'); if(openNow)openNow.value='true';
       const closeAt=document.getElementById('ex-close-at'); if(closeAt)closeAt.value='';
       questionsPool=qs;
       updatePoolCount();
@@ -4934,10 +5425,12 @@ function shareWhatsApp(code){
   const baseUrl=window.location.href.replace(/[?#].*$/,'').replace(/\/teacher(\.html)?$/i,'/student.html');
   const link=`${baseUrl}?code=${code}`;
   const exam=allExams.find(e=>e.code===code);
+  const lockNote=(exam && !exam.is_open && !(exam.start_at && new Date(exam.start_at).getTime() > Date.now()))
+    ? '\n\n⚠️ TEACHER NOTE: this assessment is currently LOCKED. Open it under Assessments → ⋮ Actions → Open before students try to enter.' : '';
   let msg='';
   if(exam){
     const m=decodeMeta(exam.subject);
-    msg=`*HMG Academy CBT Exam*\n${m.subject} — ${m.type}\n${m.cls} | ${m.term}\nDuration: ${exam.duration} min\n\nOption 1 — Open link:\n${link}\n\nOption 2 — Enter access code on the Student Portal:\n*${code}*`;
+    msg=`*HMG Academy CBT Exam*\n${m.subject} — ${m.type}\n${m.cls} | ${m.term}\nDuration: ${exam.duration} min\n\nOption 1 — Open link:\n${link}\n\nOption 2 — Enter access code on the Student Portal:\n*${code}*`+lockNote;
   }else{
     msg=`Open this HMG Academy CBT link:\n${link}\n\nOr enter this access code on student.html: *${code}*`;
   }
@@ -5614,8 +6107,14 @@ function renderStudentRoster(){
       <td style="font-weight:600;">${s.full_name}</td>
       <td style="font-family:monospace;font-size:13px;color:var(--primary);">${s.student_id}</td>
       <td><span style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(245,158,11,0.12);color:var(--warning);">${cls}</span></td>
+      <td>${Number(s.extra_time_pct)>0
+            ?`<span title="${(s.accommodation_note||'').replace(/"/g,'&quot;')}" style="padding:3px 9px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(59,130,246,.12);color:var(--info);">⏱ +${Number(s.extra_time_pct)}% time</span>`
+            :'<span style="color:var(--text-muted);font-size:12px;">—</span>'}</td>
       <td style="color:var(--text-muted);font-size:12px;">${new Date(s.created_at||Date.now()).toLocaleDateString('en-GB')}</td>
-      <td class="no-print"><button class="btn-sm btn-danger" onclick="deleteStudent('${s.id}','${s.full_name.replace(/'/g,"\'")}')">Remove</button></td>
+      <td class="no-print" style="white-space:nowrap;">
+        <button class="btn-sm btn-outline" title="Extra time / accommodation" onclick="openAccommodationModal('${s.id}')">⏱</button>
+        <button class="btn-sm btn-danger" onclick="deleteStudent('${s.id}','${s.full_name.replace(/'/g,"\'")}')">Remove</button>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -5798,7 +6297,8 @@ async function confirmDuplicate(){
     subject:encodeMeta('[COPY] '+m.subject,m.cls,m.term,m.topic,m.type,m.session,m.passmark),
     duration:exam.duration,attempt_limit:exam.attempt_limit,select_count:exam.select_count,
     code:newCode,csv_data:parseQuestionData(exam.csv_data),teacher_id:session.user.id,
-    exam_mode:exam.exam_mode,is_open:false,close_at:null,anti_cheat_config:normalizeAntiCheatConfig(exam),proctoring:normalizeAntiCheatConfig(exam).proctoring,math_keyboard:exam.math_keyboard!==false
+    exam_mode:exam.exam_mode,is_open:false,close_at:null,anti_cheat_config:normalizeAntiCheatConfig(exam),proctoring:normalizeAntiCheatConfig(exam).proctoring,math_keyboard:exam.math_keyboard!==false,
+    adaptive:exam.adaptive===true,feedback_mode:exam.feedback_mode||'end',score_model:exam.score_model||'standard' /* PHASE 10 */
   };
   try{
     await saveExamPayloadWithFallback(payload,'POST');
@@ -5838,6 +6338,10 @@ function openEditExamModal(id) {
   document.getElementById('edit-ex-passmark').value = m.passmark || 50;
   document.getElementById('edit-ex-open-now').value = exam.is_open ? 'true' : 'false';
   document.getElementById('edit-ex-mode').value = exam.exam_mode || 'open';
+  /* PHASE 10 delivery & scoring */
+  document.getElementById('edit-ex-adaptive').checked = exam.adaptive === true;
+  document.getElementById('edit-ex-feedback').value = exam.feedback_mode || 'end';
+  document.getElementById('edit-ex-score-model').value = exam.score_model || 'standard';
   const acfg = normalizeAntiCheatConfig(exam);
   setAntiCheatForm('edit', acfg);
   const editMk=document.getElementById('edit-ex-math-keyboard'); if(editMk)editMk.value = exam.math_keyboard === false ? 'false' : 'true';
@@ -5941,6 +6445,9 @@ async function saveExamEdits() {
       anti_cheat_config: getAntiCheatConfig('edit'),
       proctoring: document.getElementById('edit-ac-proctor')?.checked === true,
       math_keyboard: document.getElementById('edit-ex-math-keyboard')?.value !== 'false',
+      adaptive: document.getElementById('edit-ex-adaptive')?.checked === true,          // PHASE 10
+      feedback_mode: document.getElementById('edit-ex-feedback')?.value || 'end',       // PHASE 10
+      score_model: document.getElementById('edit-ex-score-model')?.value || 'standard', // PHASE 10
       close_at: closeAt,
       updated_at: new Date().toISOString()
     };
@@ -7792,6 +8299,7 @@ if('serviceWorker' in navigator && location.protocol !== 'file:'){
 
 </script>
 <script src="pwa_install_enforcer.js"></script>
+<script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>
 </body>
 </html>

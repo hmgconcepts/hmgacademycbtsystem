@@ -29,7 +29,9 @@ const SiteHelp = {
       sections: [
         { name: 'Access (link or code)', desc: 'Enter the link OR the 6-character code, then your Full Name and Class (Open mode) or your registered Student ID (Registered mode — the teacher\'s roster is checked before you can start).' },
         { name: 'Identity & Proctoring Gate', desc: 'If the teacher enabled proctoring: the webcam captures 3 baseline photos, then periodic snapshots; multi-face and voice activity can raise integrity flags. Photos stay in your school\'s database.' },
-        { name: 'Exam Screen', desc: 'Timer top-right, question navigator grid (green = answered, amber = flagged, blue = current), Previous/Next, Flag for review. In multi-subject exams, subject tabs switch papers without losing answers.' },
+        { name: 'Exam Screen', desc: 'Timer top-right, question navigator grid (green = answered, amber = flagged, blue = current), Previous/Next, Flag for review. In multi-subject exams, subject tabs switch papers without losing answers. JAMB-style 8-key shortcuts work throughout: A/B/C/D pick an option, N/→ next, P/← previous, R flag, S submit.' },
+        { name: '⚡ Practice Mode & 🧠 Adaptive Papers', desc: 'If your teacher set the exam to Practice mode, each answer is marked instantly — ✓/✗ with the correct answer and explanation, options lock after the reveal, and a score chip counts points and streak bonuses. Adaptive papers get easier when you struggle and harder when you cruise — they move forward only, exactly like the real computerised-adaptive tests. Approved extra time (accommodation) is applied to your clock automatically and never appears on your result slip.' },
+        { name: '🧾 Result & Script Review', desc: 'The result screen shows your score, per-subject breakdown (and a UTME-style /400 aggregate on JAMB-mode papers). If you believe a question was marked wrongly, tap "Request a script review", give your reason, and your teacher will re-check the script — one pending request per exam.' },
         { name: 'On-screen Scientific Calculator', desc: 'Full Casio-style engine: trig (sin/cos/tan/sec/csc/cot + inverses), hyperbolics, logs (ln, log, log₂, logb), powers/roots, nCr/nPr, factorial, statistics (median, mode, std, variance, range), DEG/RAD, memory (MC/MR/M+/M−/MS), Ans, ↑↓ history recall, percent handling (50% = 0.5; 10 % 3 = modulo), and ⤵ Use result which types the answer straight into your answer box. Shortcut: Alt+C.' },
         { name: 'Maths & Science Keyboard', desc: '300+ searchable symbols across 20 groups — Greek (all 48 letters), calculus, sets & logic, number sets, geometry, vectors & matrices, statistics, brackets, fractions, relations, chemistry (H₂O, SO₄²⁻…), physics units, arrows, super/subscripts. Tap your answer box first, then tap a symbol. Shortcut: Alt+K.' },
         { name: 'Safety Nets During the Exam', desc: 'Answers auto-save to this device every 10 seconds; if the browser crashes, the draft is restored on return. An offline backup file can be downloaded if the network dies mid-exam.' },
@@ -49,20 +51,25 @@ const SiteHelp = {
         { name: 'Students & Rosters', desc: 'Import a class list (FullName, StudentID, Class CSV) or add students manually; registered students must sign the roster to enter — stopping impersonation.' },
         { name: 'Results & Analytics', desc: 'Live submissions table with per-question item analysis, class statistics, charts, exports. Bulk select for delete/print. The 🧑‍⚖️ Review Queue badge shows how many scripts need your audit.' },
         { name: 'Manual Review Queue (Tutor Score Audit)', desc: 'Scripts containing essay / code / short-answer / case-study questions are AUTO-FLAGGED here the moment they are submitted. Open a script, read the marking scheme panel (expected keywords, minimum words, the provisional keyword score), then ✏️ Audit each open-ended question: assign 0.0–1.0, add feedback, optionally release the result. When every open-ended question is audited, the script leaves the queue automatically and the score revision is written to the audit trail.' },
-        { name: 'Bank Export (both platforms)', desc: 'Export any question bank as the standard HMG CSV or as a School Connect / GOSA format CSV that imports into those platforms unchanged — and vice versa.' }
+        { name: 'Bank Export (both platforms)', desc: 'Export any question bank as the standard HMG CSV or as a School Connect / GOSA format CSV that imports into those platforms unchanged — and vice versa.' },
+        { name: '🧠 Phase 10 — Delivery & Scoring', desc: 'When creating or editing an exam: **Adaptive difficulty** re-orders the paper live from each question\u2019s Difficulty tag (accuracy ≥70% → hard bucket, 30–69% → medium, below 30% → easy; forward-only like real CAT). **Feedback mode = Practice** reveals ✓/✗, the correct answer and your explanation after each question with points and streaks — ideal for homework. **Score model = UTME /400** gives a JAMB-style aggregate (each subject contributes up to 100).' },
+        { name: '📊 Phase 10 — Psychometric Report', desc: 'Results page → 📊 Psychometric Report: ExamSoft-style statistics computed in your browser from your own submissions — exam-level KR-20 reliability, SEM, mean/median/SD, and per-question difficulty index, discrimination index (upper vs lower 27%), point-biserial, response spread and distractor quality, with automatic flags (too easy/hard, negative discrimination, dead distractors, fast answers).' },
+        { name: '👁 Phase 10 — Live Invigilation & Integrity', desc: 'Results page → 👁 Live Monitor: everyone currently sitting an open exam with live progress bars, current question, violations and heartbeat freshness (auto-refresh 15s). Results page → 🛡 Integrity Signals: fast-answer anomalies, violation counts and device-switching evidence across attempts — leads to investigate, not verdicts.' },
+        { name: '🧾 Phase 10 — Appeals & Accommodations', desc: 'Candidates request a script review straight from their result screen; resolve each request (grant/decline + note) in Results → 🧾 Appeals. On the Students page, every roster student has an ⏱ accommodation button — +25/50/100% extra time, applied silently on registered-mode exams per accessibility best practice (never flagged on reports).' }
       ],
-      tips: ['Paste a School Connect CSV as-is — the format is detected and type names (true_false, multi_select, fill_blank…) are translated automatically.', 'Use Review Queue after every exam with essays; keyword scores are only provisional.', 'Item Analysis shows which questions the class missed most — your revision plan writes itself.']
+      tips: ['Paste a School Connect CSV as-is — the format is detected and type names (true_false, multi_select, fill_blank…) are translated automatically.', 'Use Review Queue after every exam with essays; keyword scores are only provisional.', 'Item Analysis shows which questions the class missed most — your revision plan writes itself.', 'Run the Psychometric Report after every major exam — KR-20 below 0.70 means the test itself is ranking candidates weakly, not just teaching gaps.', 'Keep Live Monitor open on a second screen during sittings — ⚠ Stale rows (no ping for 2+ minutes) are worth a hallway glance.']
     },
     'cbt-multi.html': {
       title: '🧪 Multi-Subject Builder — UTME / JAMB packages',
       who: 'Teachers preparing combined papers (e.g. 4-subject UTME mocks).',
       summary: 'Bundles several subject papers into ONE package with one code, one timer and subject tabs for the candidate.',
       sections: [
-        { name: 'Combined Parameters', desc: 'Package title, target class, total combined duration (e.g. 120 minutes across 4 subjects), attempt limit, negative marking and shared instructions.' },
-        { name: 'Subjects Manager', desc: 'Add each subject with its own question bank (CSV or JSON) and question count. The package stores them separately; candidates switch tabs freely and their answers persist per subject.' },
-        { name: 'Publishing', desc: 'Publishing creates one exam with a single access code; the Teacher Hub and analytics show a per-subject breakdown (e.g. English 82% · Maths 64% · Physics 71%).' }
+        { name: 'Combined Parameters', desc: 'Package title, target class, term, session, paper type, pass mark, total combined duration (e.g. 120 minutes across 4 subjects), attempt limit, negative marking and shared instructions.' },
+        { name: '⚡ Fast Lane — one combined CSV', desc: 'The recommended path. Take the ONE file the AI Prompts Studio multi-subject pack produces (every question tagged with its subject in the Section column), paste or upload it, click 🪄 Split into subjects — the subject blocks fill themselves automatically. School Connect / GOSA Portal combined CSVs work unchanged; JSON arrays work too. The ⬇️ Sample CSV shows the exact format.' },
+        { name: 'Subjects Manager', desc: 'Add each subject with its own question bank (CSV or JSON) and question count — or let the Fast Lane fill them. Files parse through the universal CSV bridge (quoted multi-line fields, any header order, type aliases). The package stores subjects separately; candidates switch tabs freely and their answers persist per subject.' },
+        { name: 'Publishing', desc: 'Publishing creates one exam with a single access code — open immediately, just like Teacher Hub papers. Candidates see a tab per subject at the top of the exam; the Teacher Hub and analytics show a per-subject breakdown (e.g. English 82% · Maths 64% · Physics 71%). Phase 10 options at publish time: Feedback mode (Standard, or ⚡ Practice with instant marking) and Score model — UTME /400 (each subject contributes up to 100, exactly like the real UTME) is the recommended default here.' }
       ],
-      tips: ['Set the combined duration honestly — candidates get ONE timer for all subjects.', 'Give each subject\'s CSV its own Section name so breakdowns stay clean.']
+      tips: ['Set the combined duration honestly — candidates get ONE timer for all subjects.', 'Questions with no Section value land in a "General" block — tag them before publishing.', 'Subjects left empty get SAMPLE placeholder questions so you can test the flow — replace them before the real exam.']
     },
     'cbt-prompts.html': {
       title: '🤖 AI Questions Prompts Studio — 24 packs, zero API cost',
@@ -189,7 +196,7 @@ const SiteHelp = {
         { name: 'Offline Perpetual Token', desc: 'The v3 HMAC certificate: institution, plan, issue/expiry, candidate limit — verifiable with zero network, savable to the license row, printable.' },
         { name: 'Honest Note', desc: 'Code on client-controlled hosting can never be 100% tamper-proof. These layers make bypass non-trivial and keep the authoritative status in the proprietor\'s hands (optional registry).' }
       ],
-      tips: ['Grace days keep the school running over a payment weekend.', 'The lock screen never interrupts an in-progress exam.']
+      tips: ['Grace days keep the school running over a payment weekend.', 'The lock screen never interrupts an in-progress exam.', 'Locked out? This console and the Admin sign-in stay reachable on purpose — renew from inside, any time.', 'An expired platform is never allowed to go silent: the heartbeat keeps the Supabase database warm so renewal is instant.']
     },
     'activity_log.html': {
       title: '📊 Audit & Activity Log',
@@ -235,6 +242,18 @@ const SiteHelp = {
       sections: [
         { name: 'Recovery Instructions', desc: 'Answers are in this device\'s storage; reconnect (or reopen) and the draft restore brings you back to the exact question.' }
       ]
+    },
+    'client-monitor.html': {
+      title: '📡 Client Monitor — builder-side subscription registry',
+      who: 'The platform owner / builder (HMG) — admin accounts only.',
+      summary: 'Register every client deployment you deliver and watch their live subscription status in one table — the builder-side control room for subscription business models.',
+      sections: [
+        { name: 'Client Registry', desc: 'Register each delivered platform: name, slug, deploy URL, and the client\'s Supabase URL + anon key. The key only ever reads the client\'s PUBLIC site_license row (public by design so lock screens render pre-login) — no secrets, no writes to client data.' },
+        { name: 'Live Status Board', desc: 'Check Now polls every client\'s actual license row and shows the truth: 🟢 active / lifetime · 🟡 warning (days left) · 🟠 grace (days left) · 🔴 expired (days over) · ⏸ suspended · ❌ unreachable (possibly paused — with the restore guide). Ages show how fresh each reading is.' },
+        { name: 'Override / Bypass Generator', desc: 'One click builds the exact license-registry JSON snippet for a client — extend the expiry, flip status back to active, or convert to lifetime (courtesy/permanent access). Paste it into the registry file you host; the client platform checks it and the registry always wins over local values.' },
+        { name: 'Why clients never go dark', desc: 'Expired platforms keep their heartbeat running (site-visit pings + scheduled workflows), so Supabase never pauses them for inactivity — renewal is always a single action away, with zero rebuild or data loss.' }
+      ],
+      tips: ['Run Check Now before every renewal conversation — quote the client their exact state and days.', 'Unreachable ≠ expired: it usually means the client\'s Supabase project is paused — restore it first, then re-check.', 'Every registry change is audit-logged server-side.']
     },
     'deployment_validator.html': {
       title: '✅ Deployment Validator',

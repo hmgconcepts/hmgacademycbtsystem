@@ -64,6 +64,7 @@ BEGIN
       AND p.proname IN (
       'admin_browse_table',
       'admin_bulk_set_profile_status',
+      'admin_delete_client_registration',
       'admin_delete_profile',
       'admin_delete_table_rows',
       'admin_get_all_exams',
@@ -74,6 +75,7 @@ BEGIN
       'admin_get_drive_backups',
       'admin_get_institutions',
       'admin_get_platform_stats',
+      'admin_list_client_registrations',
       'admin_purge_audit_logs',
       'admin_purge_old_results',
       'admin_purge_test_results',
@@ -82,6 +84,13 @@ BEGIN
       'admin_set_profile_role',
       'admin_set_profile_status',
       'admin_table_stats',
+      'admin_upsert_client_registration',
+      'list_appeals',
+      'list_live_sessions',
+      'resolve_appeal',
+      'submit_appeal',
+      'upsert_live_session',
+      'check_exam_code_status',
       'extend_site_license',
       'get_exam_attempt_count',
       'get_exam_teacher_id',
@@ -190,6 +199,9 @@ CREATE TABLE IF NOT EXISTS public.exams (
   anti_cheat_config JSONB NOT NULL DEFAULT '{"tab_switch":true,"window_blur":true,"copy_paste":true,"right_click":true,"fullscreen":true,"devtools":true,"proctoring":false,"audio":false,"max_violations":5}'::jsonb,
   instructions TEXT DEFAULT '',
   is_multi_subject BOOLEAN NOT NULL DEFAULT false,
+  adaptive BOOLEAN NOT NULL DEFAULT false,          -- Phase 10: adaptive difficulty delivery
+  feedback_mode TEXT NOT NULL DEFAULT 'end',        -- 'end' | 'immediate' (practice mode)
+  score_model TEXT NOT NULL DEFAULT 'standard',     -- 'standard' (%) | 'utme400' (UTME /400 aggregate)
   subjects_data JSONB NOT NULL DEFAULT '[]'::jsonb, -- Array of [{subject_name, count, csv_data, passmark}]
   csv_data JSONB NOT NULL DEFAULT '[]'::jsonb,
   start_at TIMESTAMPTZ,
@@ -227,6 +239,8 @@ CREATE TABLE IF NOT EXISTS public.results (
 -- 2.5 Registered Students Roster
 CREATE TABLE IF NOT EXISTS public.students (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  extra_time_pct INTEGER NOT NULL DEFAULT 0,        -- Phase 10: approved accommodation, % extra exam time (0/25/50/100)
+  accommodation_note TEXT DEFAULT '',               -- Phase 10: private note for the teacher (never shown to candidates)
   institution_id UUID REFERENCES public.institutions(id) ON DELETE SET NULL,
   teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   full_name TEXT NOT NULL,
@@ -328,6 +342,65 @@ CREATE TABLE IF NOT EXISTS public.platform_settings (
   signature_data_uri        TEXT DEFAULT '',                      -- official signature image
   updated_at                TIMESTAMPTZ DEFAULT NOW(),
   CONSTRAINT platform_settings_single_row CHECK (id = 1)
+);
+
+-- 2.11 Client Registrations (builder-side registry — powers client-monitor.html)
+--      Used by the PLATFORM OWNER / BUILDER (e.g. HMG) to track the client
+--      deployments they deliver: each row points at one client platform and
+--      stores only that client's PUBLIC connection details (their Supabase
+--      URL + anon key — the license row is public-by-design so lock screens
+--      render pre-login). Access is RPC-only (admin-gated); RLS denies all
+--      direct table access. On client deployments this table simply sits
+--      empty unless that owner also resells platforms.
+CREATE TABLE IF NOT EXISTS public.client_registrations (
+  id               UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name             TEXT NOT NULL,
+  slug             TEXT NOT NULL,
+  deploy_url       TEXT DEFAULT '',
+  supabase_url     TEXT DEFAULT '',
+  supabase_anon_key TEXT DEFAULT '',
+  model            TEXT DEFAULT 'subscription',      -- 'subscription' | 'lifetime'
+  notes            TEXT DEFAULT '',
+  created_by       UUID,
+  created_at       TIMESTAMPTZ DEFAULT NOW(),
+  updated_at       TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2.12 Live Invigilation Sessions (Phase 10 — the teacher's live exam monitor)
+--      Written by the student engine during an exam (one upsert per candidate
+--      every ~45s), read by the owning teacher. Rows are evidence, not history:
+--      only recent sessions are listed by the RPC.
+CREATE TABLE IF NOT EXISTS public.live_sessions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_key TEXT NOT NULL,                       -- name|class|id as shown on the roster
+  device_id TEXT DEFAULT '',
+  progress INTEGER NOT NULL DEFAULT 0,             -- % of questions answered
+  answered INTEGER NOT NULL DEFAULT 0,
+  total_questions INTEGER NOT NULL DEFAULT 0,
+  current_subject INTEGER NOT NULL DEFAULT 0,
+  current_question INTEGER NOT NULL DEFAULT 0,
+  violations INTEGER NOT NULL DEFAULT 0,
+  finished BOOLEAN NOT NULL DEFAULT false,
+  last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  CONSTRAINT live_sessions_one_per_candidate UNIQUE (exam_id, student_key)
+);
+
+-- 2.13 Result Appeals (Phase 10 — candidate-initiated rescoring requests)
+--      A candidate asks for a script review from the result screen; the
+--      teacher resolves it from the Review area. One pending appeal per
+--      candidate per exam.
+CREATE TABLE IF NOT EXISTS public.appeals (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  student_class TEXT DEFAULT '',
+  attempt_number INTEGER NOT NULL DEFAULT 1,
+  reason TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',          -- 'pending' | 'granted' | 'declined'
+  resolution_note TEXT DEFAULT '',
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  resolved_at TIMESTAMPTZ
 );
 
 -- ============================================================================
@@ -563,6 +636,49 @@ ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS lock_message TEXT DEFAU
 ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS license_token TEXT DEFAULT '';
 ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS signature TEXT DEFAULT '';
 ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+-- exams (Phase 10 delivery & scoring options)
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS adaptive BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS feedback_mode TEXT NOT NULL DEFAULT 'end';
+ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS score_model TEXT NOT NULL DEFAULT 'standard';
+-- students (Phase 10 accommodations)
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS extra_time_pct INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS accommodation_note TEXT DEFAULT '';
+-- live_sessions (Phase 10 live invigilation)
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE DEFAULT gen_random_uuid();
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS student_key TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS device_id TEXT DEFAULT '';
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS progress INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS answered INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS total_questions INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS current_subject INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS current_question INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS violations INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS finished BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.live_sessions ADD COLUMN IF NOT EXISTS last_seen TIMESTAMPTZ NOT NULL DEFAULT NOW();
+-- appeals (Phase 10 result appeals)
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE DEFAULT gen_random_uuid();
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS student_name TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS student_class TEXT DEFAULT '';
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS attempt_number INTEGER NOT NULL DEFAULT 1;
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS reason TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'pending';
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS resolution_note TEXT DEFAULT '';
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE public.appeals ADD COLUMN IF NOT EXISTS resolved_at TIMESTAMPTZ;
+-- client_registrations
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS name TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS slug TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS deploy_url TEXT DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS supabase_url TEXT DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS supabase_anon_key TEXT DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS model TEXT DEFAULT 'subscription';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS notes TEXT DEFAULT '';
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS created_by UUID;
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.client_registrations ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 -- sc_heartbeat
 ALTER TABLE public.sc_heartbeat ADD COLUMN IF NOT EXISTS id INTEGER PRIMARY KEY;
 ALTER TABLE public.sc_heartbeat ADD COLUMN IF NOT EXISTS last_ping TIMESTAMPTZ NOT NULL DEFAULT NOW();
@@ -1011,6 +1127,104 @@ BEGIN
 END;
 $$;
 
+-- 7.5 List client registrations (ADMIN ONLY) — powers client-monitor.html.
+--      The builder-side registry of delivered client platforms.
+CREATE OR REPLACE FUNCTION public.admin_list_client_registrations()
+RETURNS TABLE (id UUID, name TEXT, slug TEXT, deploy_url TEXT, supabase_url TEXT,
+               supabase_anon_key TEXT, model TEXT, notes TEXT,
+               created_at TIMESTAMPTZ, updated_at TIMESTAMPTZ)
+LANGUAGE plpgsql
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  RETURN QUERY
+  SELECT r.id, r.name, r.slug, r.deploy_url, r.supabase_url,
+         r.supabase_anon_key, r.model, r.notes, r.created_at, r.updated_at
+  FROM public.client_registrations r
+  ORDER BY r.created_at DESC;
+END;
+$$;
+
+-- 7.6 Upsert a client registration (ADMIN ONLY, audit-logged).
+--      p_client: {id?, name, slug, deploy_url, supabase_url,
+--                 supabase_anon_key, model, notes}
+CREATE OR REPLACE FUNCTION public.admin_upsert_client_registration(p_client JSONB)
+RETURNS TABLE (client_id UUID)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE v_id UUID; v_name TEXT; v_slug TEXT;
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  v_name := NULLIF(trim(p_client->>'name'), '');
+  v_slug := lower(NULLIF(trim(p_client->>'slug'), ''));
+  IF v_name IS NULL OR v_slug IS NULL THEN
+    RAISE EXCEPTION 'Client name and slug are required';
+  END IF;
+  IF p_client->>'id' IS NOT NULL AND p_client->>'id' <> '' THEN
+    v_id := (p_client->>'id')::UUID;
+    UPDATE public.client_registrations r
+       SET name = v_name, slug = v_slug,
+           deploy_url = COALESCE(p_client->>'deploy_url',''),
+           supabase_url = COALESCE(p_client->>'supabase_url',''),
+           supabase_anon_key = COALESCE(p_client->>'supabase_anon_key',''),
+           model = COALESCE(NULLIF(p_client->>'model',''),'subscription'),
+           notes = COALESCE(p_client->>'notes',''),
+           updated_at = NOW()
+     WHERE r.id = v_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'Client registration % not found', v_id;
+    END IF;
+  ELSE
+    INSERT INTO public.client_registrations
+      (name, slug, deploy_url, supabase_url, supabase_anon_key, model, notes, created_by)
+    VALUES
+      (v_name, v_slug,
+       COALESCE(p_client->>'deploy_url',''),
+       COALESCE(p_client->>'supabase_url',''),
+       COALESCE(p_client->>'supabase_anon_key',''),
+       COALESCE(NULLIF(p_client->>'model',''),'subscription'),
+       COALESCE(p_client->>'notes',''),
+       auth.uid())
+    RETURNING client_registrations.id INTO v_id;
+  END IF;
+  PERFORM public.log_audit_event('admin_upsert_client_registration', 'client_registrations', v_id::TEXT,
+                                 jsonb_build_object('name', v_name, 'slug', v_slug));
+  RETURN QUERY SELECT v_id;
+END;
+$$;
+
+-- 7.7 Delete a client registration (ADMIN ONLY, audit-logged).
+CREATE OR REPLACE FUNCTION public.admin_delete_client_registration(p_id UUID)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE v_name TEXT;
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  SELECT name INTO v_name FROM public.client_registrations WHERE id = p_id;
+  IF v_name IS NULL THEN
+    RAISE EXCEPTION 'Client registration not found';
+  END IF;
+  DELETE FROM public.client_registrations WHERE id = p_id;
+  PERFORM public.log_audit_event('admin_delete_client_registration', 'client_registrations', p_id::TEXT,
+                                 jsonb_build_object('name', v_name));
+  RETURN TRUE;
+END;
+$$;
+
 -- ============================================================================
 -- SECTION 8 — PUBLIC & STUDENT RPCS (SAFE ANONYMOUS ACCESS)
 -- ============================================================================
@@ -1034,6 +1248,9 @@ RETURNS TABLE (
   math_keyboard BOOLEAN,
   certificate_enabled BOOLEAN,
   is_multi_subject BOOLEAN,
+  adaptive BOOLEAN,
+  feedback_mode TEXT,
+  score_model TEXT,
   subjects_data JSONB,
   start_at TIMESTAMPTZ,
   close_at TIMESTAMPTZ,
@@ -1063,6 +1280,9 @@ AS $$
     e.math_keyboard,
     e.certificate_enabled,
     e.is_multi_subject,
+    e.adaptive,
+    e.feedback_mode,
+    e.score_model,
     e.subjects_data,
     e.start_at,
     e.close_at,
@@ -1080,15 +1300,37 @@ AS $$
   LIMIT 1;
 $$;
 
--- 8.2 Verify Student For Exam
-CREATE OR REPLACE FUNCTION public.verify_student_for_exam(p_exam_id UUID, p_student_id TEXT)
-RETURNS TABLE (id UUID, full_name TEXT, student_id TEXT, class TEXT)
+-- 8.1b Check Exam Code Status (safe public probe — no question data leaked)
+-- Lets the Student Portal tell the difference between a wrong code and a
+-- correct code for an exam that is locked / scheduled / already closed.
+CREATE OR REPLACE FUNCTION public.check_exam_code_status(p_code TEXT)
+RETURNS TABLE (found BOOLEAN, is_open BOOLEAN, starts_at TIMESTAMPTZ, closes_at TIMESTAMPTZ)
 LANGUAGE SQL
 SECURITY DEFINER
 STABLE
 SET search_path = public, pg_temp
 AS $$
-  SELECT s.id, s.full_name, s.student_id, s.class
+  SELECT
+    TRUE,
+    e.is_open,
+    e.start_at,
+    e.close_at
+  FROM public.exams e
+  WHERE upper(trim(e.code)) = upper(trim(p_code))
+    AND e.is_archived = false
+  LIMIT 1;
+$$;
+GRANT EXECUTE ON FUNCTION public.check_exam_code_status(TEXT) TO anon, authenticated;
+
+-- 8.2 Verify Student For Exam
+CREATE OR REPLACE FUNCTION public.verify_student_for_exam(p_exam_id UUID, p_student_id TEXT)
+RETURNS TABLE (id UUID, full_name TEXT, student_id TEXT, class TEXT, extra_time_pct INTEGER, accommodation_note TEXT)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT s.id, s.full_name, s.student_id, s.class, s.extra_time_pct, s.accommodation_note
   FROM public.students s
   JOIN public.exams e ON e.id = p_exam_id
   WHERE s.teacher_id = e.teacher_id
@@ -1227,6 +1469,158 @@ AS $$
   ORDER BY r.created_at DESC
   LIMIT 1;
 $$;
+
+-- 8.14 Upsert Live Invigilation Session (Phase 10 — called by the student engine)
+--      Anonymous: a candidate in an active exam reports their progress every
+--      ~45 seconds. The exam must be open and not closed, and the write is an
+--      UPSERT on (exam_id, student_key) so pings never duplicate rows.
+CREATE OR REPLACE FUNCTION public.upsert_live_session(p_session JSONB)
+RETURNS VOID
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  INSERT INTO public.live_sessions (exam_id, student_key, device_id, progress, answered,
+        total_questions, current_subject, current_question, violations, finished, last_seen)
+  VALUES (
+    (p_session->>'exam_id')::UUID,
+    left(coalesce(p_session->>'student_key',''),120),
+    left(coalesce(p_session->>'device_id',''),64),
+    GREATEST(0, LEAST(100, COALESCE((p_session->>'progress')::INT, 0))),
+    GREATEST(0, COALESCE((p_session->>'answered')::INT, 0)),
+    GREATEST(0, COALESCE((p_session->>'total_questions')::INT, 0)),
+    GREATEST(0, COALESCE((p_session->>'current_subject')::INT, 0)),
+    GREATEST(0, COALESCE((p_session->>'current_question')::INT, 0)),
+    GREATEST(0, COALESCE((p_session->>'violations')::INT, 0)),
+    COALESCE((p_session->>'finished')::BOOLEAN, false),
+    NOW()
+  )
+  ON CONFLICT (exam_id, student_key) DO UPDATE
+  SET device_id        = EXCLUDED.device_id,
+      progress         = EXCLUDED.progress,
+      answered         = EXCLUDED.answered,
+      total_questions  = EXCLUDED.total_questions,
+      current_subject  = EXCLUDED.current_subject,
+      current_question = EXCLUDED.current_question,
+      violations       = GREATEST(live_sessions.violations, EXCLUDED.violations),
+      finished         = EXCLUDED.finished,
+      last_seen        = NOW()
+  WHERE public.live_sessions.exam_id IN (
+    SELECT id FROM public.exams
+    WHERE is_archived = false AND (close_at IS NULL OR close_at > NOW())
+  );
+END;
+$$;
+
+-- 8.15 List Live Invigilation Sessions (Phase 10 — teacher's live monitor)
+--      Teacher-only (ownership enforced). Only sessions seen in the last 3
+--      hours are returned, newest activity first.
+CREATE OR REPLACE FUNCTION public.list_live_sessions(p_exam_id UUID)
+RETURNS TABLE (id UUID, student_key TEXT, device_id TEXT, progress INTEGER, answered INTEGER,
+               total_questions INTEGER, current_subject INTEGER, current_question INTEGER,
+               violations INTEGER, finished BOOLEAN, last_seen TIMESTAMPTZ)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT ls.id, ls.student_key, ls.device_id, ls.progress, ls.answered, ls.total_questions,
+         ls.current_subject, ls.current_question, ls.violations, ls.finished, ls.last_seen
+  FROM public.live_sessions ls
+  JOIN public.exams e ON e.id = ls.exam_id
+  WHERE ls.exam_id = p_exam_id
+    AND e.teacher_id = auth.uid()
+    AND ls.last_seen > NOW() - INTERVAL '3 hours'
+  ORDER BY ls.finished ASC, ls.last_seen DESC;
+$$;
+
+-- 8.16 Submit Result Appeal (Phase 10 — candidate-initiated rescoring request)
+--      Anonymous: only for released results on an open exam; one pending appeal
+--      per candidate per exam is allowed (a second request returns false).
+CREATE OR REPLACE FUNCTION public.submit_appeal(p_exam_id UUID, p_student_name TEXT, p_student_class TEXT,
+                                                p_attempt_number INTEGER, p_reason TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  -- Exam must exist, be open, not archived
+  IF NOT EXISTS (SELECT 1 FROM public.exams e
+                 WHERE e.id = p_exam_id AND e.is_open = true AND e.is_archived = false) THEN
+    RETURN false;
+  END IF;
+  -- Candidate must have a released result on this exam
+  IF NOT EXISTS (SELECT 1 FROM public.results r
+                 WHERE r.exam_id = p_exam_id
+                   AND r.student_name = p_student_name
+                   AND r.is_released = true) THEN
+    RETURN false;
+  END IF;
+  -- One pending appeal per candidate per exam
+  IF EXISTS (SELECT 1 FROM public.appeals a
+             WHERE a.exam_id = p_exam_id AND a.student_name = p_student_name
+               AND a.status = 'pending') THEN
+    RETURN false;
+  END IF;
+  INSERT INTO public.appeals (exam_id, student_name, student_class, attempt_number, reason)
+  VALUES (p_exam_id, left(trim(p_student_name),120), left(coalesce(p_student_class,''),60),
+          GREATEST(1, COALESCE(p_attempt_number,1)), left(trim(coalesce(p_reason,'')),1000));
+  RETURN true;
+END;
+$$;
+
+-- 8.17 List Appeals (Phase 10 — teacher queue)
+CREATE OR REPLACE FUNCTION public.list_appeals(p_exam_id UUID DEFAULT NULL)
+RETURNS TABLE (id UUID, exam_id UUID, exam_title TEXT, student_name TEXT, student_class TEXT,
+               attempt_number INTEGER, reason TEXT, status TEXT, resolution_note TEXT,
+               created_at TIMESTAMPTZ, resolved_at TIMESTAMPTZ)
+LANGUAGE SQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT a.id, a.exam_id, e.subject, a.student_name, a.student_class, a.attempt_number,
+         a.reason, a.status, a.resolution_note, a.created_at, a.resolved_at
+  FROM public.appeals a
+  JOIN public.exams e ON e.id = a.exam_id
+  WHERE e.teacher_id = auth.uid()
+    AND (p_exam_id IS NULL OR a.exam_id = p_exam_id)
+  ORDER BY (a.status = 'pending') DESC, a.created_at DESC
+  LIMIT 200;
+$$;
+
+-- 8.18 Resolve Appeal (Phase 10 — teacher decision: granted / declined)
+CREATE OR REPLACE FUNCTION public.resolve_appeal(p_appeal_id UUID, p_status TEXT, p_note TEXT)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF p_status NOT IN ('granted','declined') THEN
+    RETURN false;
+  END IF;
+  UPDATE public.appeals a
+  SET status = p_status,
+      resolution_note = left(coalesce(p_note,''),1000),
+      resolved_at = NOW()
+  FROM public.exams e
+  WHERE a.id = p_appeal_id
+    AND e.id = a.exam_id
+    AND e.teacher_id = auth.uid()
+    AND a.status = 'pending';
+  RETURN FOUND;
+END;
+$$;
+
+
+GRANT EXECUTE ON FUNCTION public.upsert_live_session(JSONB) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.list_live_sessions(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.submit_appeal(UUID, TEXT, TEXT, INTEGER, TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.list_appeals(UUID) TO authenticated;
+GRANT EXECUTE ON FUNCTION public.resolve_appeal(UUID, TEXT, TEXT) TO authenticated;
 
 -- ============================================================================
 -- SECTION 9 — ADMIN SUPERVISOR RPCS (ADMIN ROLE PROTECTED)
@@ -1633,7 +2027,7 @@ BEGIN
   IF NOT public.is_platform_admin() THEN
     RAISE EXCEPTION 'Not authorized: admin access required';
   END IF;
-  IF p_table NOT IN ('exams','results','students','profiles','audit_logs','system_backups','institutions') THEN
+  IF p_table NOT IN ('exams','results','students','profiles','audit_logs','system_backups','institutions','client_registrations') THEN
     RAISE EXCEPTION 'Table % is not browsable through this RPC', p_table;
   END IF;
 
@@ -1902,6 +2296,10 @@ ALTER TABLE public.system_backups ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.site_license ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.platform_settings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.sc_heartbeat ENABLE ROW LEVEL SECURITY;
+-- Phase 10: no direct policies on live_sessions / appeals — all access goes
+-- through the SECURITY DEFINER RPCs above (student pings + teacher queues).
+ALTER TABLE public.live_sessions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.appeals ENABLE ROW LEVEL SECURITY;
 
 -- 11.1 Institutions
 DROP POLICY IF EXISTS "Public read institutions" ON public.institutions;
@@ -1983,6 +2381,13 @@ DROP POLICY IF EXISTS "Admins write site license" ON public.site_license;
 CREATE POLICY "Admins write site license" ON public.site_license FOR ALL
   USING (public.is_platform_admin()) WITH CHECK (public.is_platform_admin());
 
+-- 11.8b Client Registrations — RPC-only access (admin-gated RPCs read/write
+--      through SECURITY DEFINER; direct table access is denied to everyone).
+ALTER TABLE public.client_registrations ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "No direct client registry access" ON public.client_registrations;
+CREATE POLICY "No direct client registry access" ON public.client_registrations
+  FOR ALL USING (false) WITH CHECK (false);
+
 -- 11.9 Platform Settings — public read (login-page branding + lockdown
 --      notice + license state; contains no secrets), admin write.
 DROP POLICY IF EXISTS "Public read platform settings" ON public.platform_settings;
@@ -1995,6 +2400,13 @@ CREATE POLICY "Admins write platform settings" ON public.platform_settings FOR A
 -- 11.10 Heartbeat — intentionally NO policies: direct table access is denied
 --      to everyone; only the SECURITY DEFINER RPC can touch it.
 REVOKE ALL ON TABLE public.sc_heartbeat FROM anon, authenticated;
+
+-- 11.11 Phase 10 live_sessions / appeals — same pattern: direct table access
+--      revoked; students ping through upsert_live_session(), candidates file
+--      appeals through submit_appeal(), teachers read/resolve through their
+--      ownership-checked RPCs. No REST access for either role.
+REVOKE ALL ON TABLE public.live_sessions FROM anon, authenticated;
+REVOKE ALL ON TABLE public.appeals FROM anon, authenticated;
 
 -- ============================================================================
 -- SECTION 12 — FILE-STORAGE ARCHIVE VAULT (free-tier database offloading)
@@ -2066,6 +2478,11 @@ CREATE TRIGGER trg_site_license_updated_at
 DROP TRIGGER IF EXISTS trg_platform_settings_updated_at ON public.platform_settings;
 CREATE TRIGGER trg_platform_settings_updated_at
   BEFORE UPDATE ON public.platform_settings
+  FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS trg_client_registrations_updated_at ON public.client_registrations;
+CREATE TRIGGER trg_client_registrations_updated_at
+  BEFORE UPDATE ON public.client_registrations
   FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 DROP TRIGGER IF EXISTS trg_results_updated_at ON public.results;

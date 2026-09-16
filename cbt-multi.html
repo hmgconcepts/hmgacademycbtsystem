@@ -36,7 +36,7 @@
     <!-- Exam General Settings -->
     <div class="card">
       <h2>⚙️ Combined Exam Parameters</h2>
-      
+
       <label>Package Title</label>
       <input type="text" id="ms-title" value="UTME 2026 Mega Mock Assessment" placeholder="e.g. JAMB UTME Comprehensive Practice">
 
@@ -62,8 +62,46 @@
         </div>
       </div>
 
+      <div class="grid-2">
+        <div>
+          <label>Term</label>
+          <select id="ms-term">
+            <option value="1st Term">1st Term</option>
+            <option value="2nd Term">2nd Term</option>
+            <option value="3rd Term">3rd Term</option>
+          </select>
+        </div>
+        <div>
+          <label>Session</label>
+          <input type="text" id="ms-session" value="2025/2026" placeholder="e.g. 2025/2026">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Paper Type</label>
+          <input type="text" id="ms-type" value="UTME / Common Entrance" placeholder="e.g. UTME / Common Entrance">
+        </div>
+        <div>
+          <label>Pass Mark (%)</label>
+          <input type="number" id="ms-passmark" value="50" min="1" max="100">
+        </div>
+      </div>
+
       <label>Exam Instructions</label>
       <textarea id="ms-instructions" style="height:80px;" placeholder="e.g. You have 2 hours to complete all 4 subjects. You can switch between subjects at any time."></textarea>
+
+      <!-- PHASE 10 — delivery & scoring -->
+      <label style="margin-top:10px;">Feedback Mode (Phase 10)</label>
+      <select id="ms-feedback">
+        <option value="end">🔒 Standard — results at the end (exam conditions)</option>
+        <option value="immediate">⚡ Practice — instant right/wrong + explanation per question, with points &amp; streaks</option>
+      </select>
+      <label style="margin-top:10px;">Score Model (Phase 10)</label>
+      <select id="ms-score-model">
+        <option value="utme400">UTME /400 — JAMB-style aggregate (each subject contributes up to 100) — recommended</option>
+        <option value="standard">Percent — classic percentage</option>
+      </select>
     </div>
 
     <!-- Subjects Manager -->
@@ -72,7 +110,29 @@
         <h2>📚 Subjects in Package</h2>
         <button class="btn btn-sm btn-outline" onclick="addSubjectSlot()">➕ Add Subject</button>
       </div>
-      <p style="font-size:12px;">Add each subject and attach its question bank (CSV or JSON).</p>
+
+      <!-- ⚡ FAST LANE: one combined CSV (what the AI Prompt Studio multi-subject
+           pack produces). The Section column names each row's subject — this
+           splits the file into subject blocks automatically, exactly like the
+           School Connect / GOSA Portal multi-subject builder. -->
+      <div style="border:2px dashed var(--primary);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;background:var(--surface-2);">
+        <strong style="color:var(--primary);">⚡ Fast lane — one combined CSV (recommended)</strong>
+        <p style="font-size:12px;color:var(--text-muted);margin:6px 0 8px;">
+          Got ONE file with a <code>Section</code> column naming each row's subject — what the
+          <a href="cbt-prompts.html">AI Prompts Studio</a> multi-subject pack (UTME / Common Entrance) produces?
+          Paste or upload it here and the subject blocks below fill themselves.
+          School Connect / GOSA Portal CSVs work unchanged too.
+        </p>
+        <textarea id="ms-combined" rows="4" style="font-family:monospace;font-size:.78rem;width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);padding:8px;" placeholder="Question,A,B,C,D,CorrectAnswer,Explanation,Type,...,Section  (one file, all subjects)"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+          <input type="file" accept=".csv,.json,.txt" onchange="readCombinedFile(this)" style="font-size:11px;max-width:240px;">
+          <button class="btn btn-sm btn-primary" onclick="importCombinedCSV()">🪄 Split into subjects</button>
+          <a class="btn btn-sm btn-outline" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample CSV</a>
+          <span id="ms-combined-note" style="font-size:11px;color:var(--text-muted);"></span>
+        </div>
+      </div>
+
+      <p style="font-size:12px;">…or add one block per subject manually. Attach that subject's CSV or JSON question bank. Need questions? Open the <a href="cbt-prompts.html">AI Prompts Studio</a>.</p>
 
       <div id="subject-slots-container"></div>
     </div>
@@ -84,6 +144,7 @@
 </footer>
 
 <script src="assets/js/app.js"></script>
+<script src="assets/js/csv-bridge.js"></script>
 <script>
 let subjectsList = [
   { name: 'Use of English', count: 60, questions: [] },
@@ -106,12 +167,12 @@ function renderSubjectSlots() {
           <input type="text" value="${escapeHtml(s.name)}" oninput="subjectsList[${idx}].name = this.value.trim()" style="margin-bottom:6px;">
         </div>
         <div>
-          <label>Question Count</label>
+          <label>Question Count (0 = all loaded)</label>
           <input type="number" value="${s.count}" oninput="subjectsList[${idx}].count = Number(this.value)" style="margin-bottom:6px;">
         </div>
       </div>
       <div style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
-        <span>Loaded: <strong>${s.questions.length} questions</strong></span>
+        <span>Loaded: <strong>${s.questions.length} questions</strong>${s.questions.length ? ` · types: ${[...new Set(s.questions.map(q => q.type || 'mcq'))].join(', ')}` : ''}</span>
         <input type="file" accept=".csv,.json" onchange="loadSubjectFile(${idx}, this.files[0])" style="font-size:11px;">
       </div>
     </div>
@@ -128,31 +189,72 @@ function removeSubjectSlot(idx) {
   renderSubjectSlots();
 }
 
+/* ── Parse ANY question file (CSV text or JSON text) with the platform's
+   universal bridge — handles the HMG 17-column layout, School Connect /
+   GOSA Portal headers, headerless positional layouts, quoted multi-line
+   fields and type-name aliases. Never the naive line-split. ── */
+function parseQuestionFileText(text) {
+  const t = String(text || '').trim();
+  if (!t) return [];
+  if (t.startsWith('[')) {
+    const arr = JSON.parse(t);
+    return Array.isArray(arr) ? arr : [];
+  }
+  if (t.startsWith('{')) {
+    const o = JSON.parse(t);
+    return Array.isArray(o.questions) ? o.questions : [];
+  }
+  const res = window.CSVBridge ? CSVBridge.parse(t) : { questions: [] };
+  return res.questions || [];
+}
+
+/* ── FAST LANE: one combined CSV (or JSON array) → subjects split by the
+   Section column. Lossless: every structured column (Pairs, Items,
+   Tolerance…) survives because the bridge's parsed objects are used
+   directly — no re-serialising. ── */
+function readCombinedFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('ms-combined').value = String(r.result); importCombinedCSV(); };
+  r.readAsText(f);
+}
+
+function importCombinedCSV() {
+  const note = document.getElementById('ms-combined-note');
+  const raw = document.getElementById('ms-combined').value.trim();
+  if (!raw) { note.textContent = 'Paste or upload the combined CSV first.'; return; }
+
+  let qs;
+  try { qs = parseQuestionFileText(raw); }
+  catch (e) { note.textContent = '❌ Could not read that file: ' + e.message; return; }
+  if (!qs.length) { note.textContent = '❌ No questions found in that file.'; return; }
+
+  /* group by Section (fallback: Subject field, then a single block) */
+  const groups = new Map();
+  for (const q of qs) {
+    const sec = String(q.section || q.subject || '').trim() || 'General';
+    if (!groups.has(sec)) groups.set(sec, []);
+    groups.get(sec).push(q);
+  }
+
+  subjectsList = Array.from(groups.entries()).map(([name, questions]) => ({
+    name, count: questions.length, questions
+  }));
+
+  renderSubjectSlots();
+  const types = [...new Set(qs.map(q => q.type || 'mcq'))].join(', ');
+  note.textContent = `✅ Split ${qs.length} questions into ${subjectsList.length} subject${subjectsList.length > 1 ? 's' : ''} (${Array.from(groups.keys()).join(' · ')}) · types: ${types}. Review each block, then publish.`;
+  showToast(`🪄 Split ${qs.length} questions into ${subjectsList.length} subjects — students will get one code with subject tabs.`, 'success');
+}
+
 function loadSubjectFile(idx, file) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
-      const text = e.target.result;
-      if (text.startsWith('[') || text.startsWith('{')) {
-        subjectsList[idx].questions = JSON.parse(text);
-      } else {
-        const lines = text.split(/\r?\n/).filter(l => l.trim());
-        const dataLines = /^(question|q\b)/i.test(lines[0]) ? lines.slice(1) : lines;
-        subjectsList[idx].questions = dataLines.map((line, i) => {
-          const p = line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/).map(s => s.replace(/^"|"$/g, '').trim());
-          return {
-            q: p[0] || `Question ${i+1}`,
-            a: p[1] || '',
-            b: p[2] || '',
-            c: p[3] || '',
-            d: p[4] || '',
-            ans: p[5] || 'A',
-            exp: p[6] || '',
-            type: p[7] || 'mcq'
-          };
-        });
-      }
+      subjectsList[idx].questions = parseQuestionFileText(e.target.result);
+      subjectsList[idx].count = subjectsList[idx].questions.length || subjectsList[idx].count;
       showToast(`Loaded ${subjectsList[idx].questions.length} questions for ${subjectsList[idx].name}!`, 'success');
       renderSubjectSlots();
     } catch (err) {
@@ -169,7 +271,15 @@ async function publishMultiSubjectExam() {
   const attempts = Number(document.getElementById('ms-attempts').value) || 1;
   const negative = Number(document.getElementById('ms-negative').value) || 0;
   const instructions = document.getElementById('ms-instructions').value.trim();
+  const term = document.getElementById('ms-term').value || '1st Term';
+  const session = document.getElementById('ms-session').value.trim() || String(new Date().getFullYear());
+  const paperType = document.getElementById('ms-type').value.trim() || 'Combined';
+  const passmark = Number(document.getElementById('ms-passmark').value) || 50;
 
+  const empty = subjectsList.filter(s => !s.questions.length);
+  if (empty.length) {
+    if (!confirm(`${empty.length} subject(s) have no questions loaded (${empty.map(s => s.name).join(', ')}).\n\nSample placeholder questions will be generated for them so you can test the flow — but remember to replace them before the real exam. Continue?`)) return;
+  }
   // Create mock questions if not loaded from file
   subjectsList.forEach(s => {
     if (!s.questions.length) {
@@ -181,36 +291,58 @@ async function publishMultiSubjectExam() {
     }
   });
 
-  const session = App.getSession();
+  const session_ = App.getSession();
   // FIX: publishing without a teacher session used a placeholder UUID that failed
   // RLS with a cryptic database error. Fail fast with clear guidance instead.
-  if(!session?.user?.id){
+  if(!session_?.user?.id){
     showToast('⚠️ Please open the Teacher Hub and sign in first — multi-subject packages must be owned by a teacher account.', 'warning');
     return;
   }
-  const teacherId = session.user.id;
-  // FIX (m5): always produce a full 6-character access code
-  let _c='';while(_c.length<6){_c+=Math.random().toString(36).substring(2).replace(/[^a-z0-9]/g,'');}
-  const code = _c.substring(0,6).toUpperCase();
+  const teacherId = session_.user.id;
+  // 6-character access code, same contract as the Teacher Hub generator
+  let code = '';
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  while (code.length < 6) {
+    const buf = new Uint32Array(1);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(buf) : (buf[0] = Math.floor(Math.random() * 0xFFFFFFFF));
+    code += alphabet[buf[0] % alphabet.length];
+  }
 
   const payload = {
     teacher_id: teacherId,
     code,
-    subject: `${title}|${cls}|Combined|Mock|UTME|2026|50`,
+    subject: `${title}|${cls}|${term}|Combined|${paperType}|${session}|${passmark}`,
     duration,
     attempt_limit: attempts,
     select_count: 0,
     negative_mark: negative,
     is_open: true,
     is_multi_subject: true,
-    subjects_data: subjectsList,
+    feedback_mode: document.getElementById('ms-feedback')?.value || 'end',          // PHASE 10
+    score_model: document.getElementById('ms-score-model')?.value || 'standard',    // PHASE 10
+    subjects_data: subjectsList.map(s => ({ name: s.name, subject_name: s.name, count: s.count, questions: s.questions })),
     instructions
   };
 
   try {
     showToast('Publishing multi-subject package...', 'info');
-    await App.sbFetch('/rest/v1/exams', 'POST', payload);
-    alert(`🎉 Combined Exam Published Successfully!\n\nStudent Access Code: ${code}\nStudent Link: student.html?code=${code}`);
+    try {
+      await App.sbFetch('/rest/v1/exams', 'POST', payload);
+    } catch (firstErr) {
+      /* PHASE 10 resilience: an older database without the new delivery
+         columns rejects the write — retry once without them so the exam
+         still publishes (classic delivery), with clear guidance. */
+      const msg = String(firstErr.message || '');
+      if (/feedback_mode|score_model|adaptive|column/i.test(msg)) {
+        const lean = { ...payload };
+        delete lean.feedback_mode; delete lean.score_model;
+        await App.sbFetch('/rest/v1/exams', 'POST', lean);
+        showToast('Published WITHOUT Phase 10 delivery options — run database/complete-schema.sql to enable them.', 'warning');
+      } else {
+        throw firstErr;
+      }
+    }
+    alert(`🎉 Combined Exam Published Successfully!\n\nStudent Access Code: ${code}\nStudent Link: student.html?code=${code}\n\nStudents will see a tab for each subject (${subjectsList.map(s => s.name).join(', ')}) at the top of the exam.`);
     window.location.href = 'teacher.html';
   } catch (e) {
     showToast('Publish failed: ' + e.message, 'danger');
@@ -219,6 +351,7 @@ async function publishMultiSubjectExam() {
 
 document.addEventListener('DOMContentLoaded', renderSubjectSlots);
 </script>
+<script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>
 </body>
 </html>

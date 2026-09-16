@@ -356,3 +356,27 @@ Full audit trail of this release: **PHASE3_AUDIT_AND_FIXES.md**.
 7. **Help system, comprehensive** — 20 pages × 78 sections documented in-page, Help Center modal (4 role paths, glossary, FAQ), and a 36-intent offline assistant bot with quick-question chips.
 8. **GOOGLE_DRIVE_BACKUP.md** — the unambiguous setup/restore/troubleshooting manual (every error, honestly).
 9. **Protection manual v2 (research-verified)** — the 7-day pause rule, why dashboard visits don't count, why external pingers are mandatory, and the free external-scheduler menu (cron-job.org / n8n / extensions) alongside the shipped GitHub Actions + UptimeRobot + Vercel stack.
+
+## Phase 10 (2026-09-16) — Enterprise features from industry research
+
+Deep Internet research across enterprise CBT platforms (Questionmark, D2L,
+Mettl, ExamSoft, TestGorilla, ClassMarker), the JAMB/UTME practice-app
+ecosystem, and gamification/accessibility practice (Quizizz, Kahoot, ETS, ADA)
+drove this gap-closing release. Full detail: **PHASE10_ENTERPRISE_FEATURES.md**.
+
+1. **🧠 Adaptive difficulty delivery** — the paper re-orders itself live from the bank's Difficulty tags (≥70% accuracy → hard bucket, 30–69% → medium, <30% → easy); forward-only like real CAT; grading unchanged; single-subject papers.
+2. **⚡ Instant-feedback practice mode** — per-question ✓/✗ + correct answer + explanation, frozen options, Kahoot-style points (10 + 5×streak bonus), result-screen practice summary. Grading unchanged.
+3. **📊 Psychometric analytics engine** (`assets/js/psychometrics.js`) — exam-level KR-20, SEM, mean/median/SD/pass-rate; per-question difficulty index, discrimination index (upper/lower 27%), point-biserial, response spreads, distractor-quality analysis and automatic flags. 100% client-side; analyses pre-Phase-10 results too.
+4. **⏱ Per-candidate accommodations** — +25/50/100% exam time from the roster (registered mode), applied silently per ETS/ADA norm — never flagged on result slips or reports.
+5. **UTME /400 aggregate scoring** — JAMB-style headline on any paper (each subject contributes up to 100); classic percentage untouched; default on multi-subject packages.
+6. **👁 Live invigilation monitor** — candidate heartbeats every 45s into an RPC-only `live_sessions` table; teacher dashboard with live progress bars, current question, violations and stale detection; auto-refresh 15s.
+7. **🧾 Result appeals** — candidates request script reviews from their result screen (DB-enforced: released result, one pending per candidate); teacher queue with grant/decline + note; pending-count badge.
+8. **🏆 Hideable leaderboard** — best attempt per candidate, medals, percentiles, Distinction/Merit/Top-10% badges; teacher-only, one-click hide.
+9. **🛡 Integrity signals** — fast-answer anomalies (<2s correct answers), very-fast-pace flags, violation counts and device-switching evidence across attempts; evidence framed as leads, not verdicts.
+10. **Submission evidence upgrade** — every result now stores `is_correct` + `time_ms` per question and a `__meta` block (score model, delivery mode, device id, user agent, screen) inside `answers_data`; no schema change.
+
+Also shipped: teacher.html `sbRpc()` repair (the tutor-audit trail had been
+silently failing), local `escapeHtml` for teacher.html, lean-save fallback for
+the new exam columns on older databases, chatbot + Help Center coverage of all
+new features, and the full test posture (3 new suites, extended schema/PG/smoke
+suites, complete Phase 1–9 regression green).

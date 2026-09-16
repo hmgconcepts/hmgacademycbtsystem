@@ -192,3 +192,38 @@ Add two repository secrets (same Steps as Layer 2):
 - [ ] Optional: `SUPABASE_ACCESS_TOKEN` + `SUPABASE_PROJECT_REF` secrets *(activates Layer 10 auto-restore)*
 
 After that, everything is automatic. The database cannot be paused for inactivity, and if it ever is, it restores itself.
+
+---
+
+## EXPIRED SUBSCRIPTION ≠ PAUSED PROJECT (Phase 9 guarantee)
+
+**The scenario:** a client on the subscription model lets their licence expire.
+The portal locks — but the school has NOT renewed yet, maybe for weeks. If
+nothing else happens, the Supabase free-tier project would cross the 7-day
+inactivity window and pause, making renewal harder. This platform guarantees
+that can never happen:
+
+1. **The licence guard itself heartbeats.** `assets/js/site-license.js` (loaded
+   on every page, public pages included) fires a keepalive touch whenever it
+   evaluates a subscription to `grace`, `expired` or `suspended`. Anyone —
+   the proprietor checking the lock screen included — generates real database
+   activity just by opening the site.
+2. **The lock never blocks renewal.** `license.html` (the console with
+   quick-extend +30/+90/+365) and `admin.html` (sign-in) deliberately show
+   only a banner instead of the full lock — the proprietor can always renew
+   from inside the platform.
+3. **The lock never interrupts a paper.** While a candidate has an exam in
+   progress (`examActive`), the lock defers and re-checks after submission.
+4. **Layer 2 runs regardless of the licence.** The twice-weekly GitHub
+   Actions heartbeat (self-committing, watchdog-verified) keeps writing even
+   if nobody at all visits a locked platform — zero-visitor protection.
+5. **Remote renewal and override.** From the builder's side, the
+   📡 **Client Monitor** (client-monitor.html) shows every client's live
+   licence state and generates the license-registry override snippet to
+   extend or reactivate a client instantly. The registry, when configured,
+   always beats the client's local licence row.
+
+**Bottom line:** an expired client platform stays warm, reachable and
+renewable — renewal restores full access instantly, with no rebuild and no
+data loss. Run the checklist above once on every client deployment and the
+guarantee holds even with zero visitors.

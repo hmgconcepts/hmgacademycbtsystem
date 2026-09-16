@@ -164,7 +164,12 @@
     <div class="grid-2">
       <div class="pack-card" onclick="loadStatic('utme')">
         <h4>🎓 UTME / Common Entrance — multi-subject strict CSV</h4>
-        <p>The proven one-pager for full multi-subject sittings. Click to load into the studio output above.</p>
+        <p>The proven one-pager for full multi-subject sittings. The AI is instructed to return a <b>downloadable .csv file</b>; the Section column splits it into subject tabs.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()">
+          <a class="btn btn-sm btn-outline" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample multi-subject CSV</a>
+          <a class="btn btn-sm btn-outline" href="cbt-multi.html">🧪 Build the tabbed exam</a>
+        </div>
+        <p style="color:var(--text-muted);font-size:.78rem;margin:8px 0 0;">Click the card to load the prompt. Got the CSV back? Open the Multi-Subject Builder → <b>⚡ Fast lane</b> → paste/upload once — subjects split automatically.</p>
       </div>
       <div class="pack-card" onclick="loadStatic('mcq_only')">
         <h4>✅ MCQ-only strict CSV — any subject</h4>
@@ -313,8 +318,9 @@ Then output the final CSV block only.</pre>
     <!-- STRICT UTME -->
     <div class="pack-card" style="margin-bottom:14px;">
       <h4>🎓 Strict UTME / JAMB Multi-Subject Sitting <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(4 subjects · one code · tabbed paper)</span></h4>
-      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">Builds the 4-in-1 paper this platform runs in tabbed multi-subject mode — the Section column splits it into subject tabs.</p>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">Builds the 4-in-1 paper this platform runs in tabbed multi-subject mode — the Section column splits it into subject tabs. Ask the AI to attach a <b>downloadable .csv file</b>; then import it in one step on the <a href="cbt-multi.html">Multi-Subject Builder</a> ⚡ Fast lane.</p>
       <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-utme')">📋 Copy UTME strict prompt</button>
+      <a class="btn btn-sm btn-outline" style="margin-left:6px;" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample CSV</a>
       <pre id="lib-utme" class="prompt-pre">You are a UTME preparation expert with 20 years of JAMB standard item-writing.
 
 TASK: Write a complete 4-subject UTME-style paper. Subjects and counts:
@@ -598,6 +604,7 @@ document.addEventListener('DOMContentLoaded', () => {
   PS.buildFromForm();
 });
 </script>
+<script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>
 </body>
 </html>

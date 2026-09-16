@@ -213,12 +213,12 @@ const App = {
   TEACHER_PAGES: ['teacher.html', 'cbt-multi.html', 'cbt-prompts.html', 'question-types.html'],
   ADMIN_PAGES: ['admin.html', 'admin-data.html', 'disaster-recovery.html', 'storage.html',
                 'platform-health.html', 'status-manager.html', 'settings.html', 'license.html',
-                'activity_log.html', 'link_checker.html', 'deployment_validator.html'],
+                'activity_log.html', 'link_checker.html', 'deployment_validator.html', 'client-monitor.html'],
   /* GUARD categories decide who may open a page cold. */
   GUARD_TEACHER_PAGES: ['cbt-multi.html', 'cbt-prompts.html', 'question-types.html'],
   GUARD_ADMIN_PAGES: ['admin-data.html', 'disaster-recovery.html', 'storage.html',
                       'platform-health.html', 'status-manager.html', 'settings.html', 'license.html',
-                      'activity_log.html', 'link_checker.html', 'deployment_validator.html'],
+                      'activity_log.html', 'link_checker.html', 'deployment_validator.html', 'client-monitor.html'],
 
   pageName() {
     return (window.location.pathname.split('/').pop() || 'index.html').split(/[?#]/)[0];
@@ -287,6 +287,7 @@ const App = {
       { href: 'status-manager.html', label: '👥 Roles' },
       { href: 'settings.html', label: '⚙️ Settings' },
       { href: 'license.html', label: '📜 License' },
+      { href: 'client-monitor.html', label: '📡 Clients' },
       { href: 'activity_log.html', label: '📊 Audit' }
     ];
 

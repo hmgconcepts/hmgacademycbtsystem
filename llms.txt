@@ -20,6 +20,8 @@ Key features:
 - No paid AI API required
 - Internal tools behind teacher/admin login (role-aware page guard); public homepage exposes only the 3 portals
 - 1,000-student concurrency: jittered submissions, exponential-backoff retries, offline auto-flush queue
+- Phase 10 enterprise pack: adaptive difficulty delivery, instant-feedback practice mode with points and streaks, psychometric report (KR-20, discrimination, distractor analysis), per-candidate extra-time accommodations, UTME /400 aggregate scoring, live invigilation monitor, result appeals workflow, hideable leaderboard, integrity signals (answer-speed and device evidence)
+- JAMB-style 8-key exam navigation (A/B/C/D, N/P, R, S) and question flagging
 
 Useful pages:
 - /index.html — landing page and HMG ecosystem links
@@ -34,3 +36,4 @@ Useful pages:
 - /cbt-prompts.html — AI question prompt studio (24 packs + full copy-paste prompt library, free AI chats, no API)
 - /PROMPT_TEMPLATE.md — offline master prompt for AI-assisted CSV question generation
 - /database/ — complete-schema.sql (single run-once idempotent setup), maintenance extracts, demo users, sample CSVs
+- /PHASE10_ENTERPRISE_FEATURES.md — per-feature explanations of the Phase 10 enterprise pack + step-by-step deployment

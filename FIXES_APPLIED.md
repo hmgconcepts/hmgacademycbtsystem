@@ -164,3 +164,76 @@ README.md                                  (repair release note appended)
 4. Old multi-subject results (submitted before this fix) cannot be retroactively
    re-graded because only the active subject's answers were saved; new submissions are
    complete. The teacher review displays them via the legacy-key fallback.
+
+---
+
+# PHASE 10 APPENDIX — Enterprise Feature Research & Enhancement (2026-09-16)
+
+Phase 10 was driven by structured Internet research across enterprise CBT
+platforms (Questionmark, D2L, Mettl, ExamSoft, TestGorilla, ClassMarker), the
+Nigerian JAMB/UTME practice-app ecosystem (ExamGuide, TestDriller, Awajis,
+MySchoolGist), and engagement/accessibility research (Quizizz, Kahoot, ETS,
+ADA guidance). Ten absent capabilities were implemented — every one
+free-of-charge and rule-based (no AI API), every one additive (nothing was
+removed), and every one degrades gracefully on an older database.
+
+## New capabilities
+1. **🧠 Adaptive difficulty delivery** — the paper re-orders itself from the
+   bank's Difficulty tags (≥70% accuracy → hard bucket, 30–69% → medium,
+   <30% → easy); forward-only like real CAT; grading unchanged.
+2. **⚡ Instant-feedback practice mode** — per-question ✓/✗ + correct answer +
+   explanation with Kahoot-style points (10 + 5×streak bonus); grading unchanged.
+3. **📊 Psychometric analytics engine** (`assets/js/psychometrics.js`) — KR-20,
+   SEM, difficulty/discrimination/point-biserial indexes, response spreads,
+   distractor-quality flags, fast-answer flags; 100% client-side.
+4. **⏱ Per-candidate accommodations** — +25/50/100% time from the roster,
+   applied silently (never flagged on reports, per ETS/ADA norm).
+5. **UTME /400 aggregate scoring** — JAMB-style headline (each subject
+   contributes up to 100); classic percentage untouched.
+6. **👁 Live invigilation monitor** — 45s candidate heartbeats into
+   `live_sessions` (RPC-only), teacher dashboard polling every 15s with
+   stale detection.
+7. **🧾 Result appeals** — candidate-initiated script-review requests with
+   DB-enforced eligibility (released result, one pending per candidate) and a
+   teacher resolution queue.
+8. **🏆 Hideable leaderboard** — best attempt per candidate, medals,
+   percentiles, badges; teacher-only and one-click hideable.
+9. **🛡 Integrity signals** — fast-answer anomalies and device-switching
+   evidence from `time_ms`/`is_correct`/`__meta` now stored per submission.
+10. **Delivery metadata** — entry-screen mode badges, practice summary banner,
+    `answers_data.__meta` evidence block.
+
+## Robustness repairs shipped alongside
+- **teacher.html `sbRpc()` was never defined** — the tutor-audit trail
+  (`log_audit_event` after score audits) has been silently failing with a
+  ReferenceError since it was written. Now a proper global helper; audit
+  entries write again.
+- **teacher.html had no `escapeHtml`** (app.js is not loaded on that page) —
+  added; all Phase 10 injected names/notes pass through it.
+- `saveExamPayloadWithFallback` lean path now also strips the Phase 10
+  columns (`adaptive`, `feedback_mode`, `score_model`) so publishes still
+  succeed on pre-Phase-10 databases (with a toast telling the teacher to
+  run the schema).
+- `cbt-multi.html` publish got the same lean-retry resilience.
+- Student engine per-attempt state (adaptive tallies, game points, revealed
+  keys, live-ping timer) is reset in `_beginExam` so retakes start clean.
+
+## Database (all additive, idempotent, drift-safe — see PHASE10 doc §3)
+New columns: `exams.adaptive/feedback_mode/score_model`,
+`students.extra_time_pct/accommodation_note`. New RPC-only tables:
+`live_sessions`, `appeals`. New RPCs: `upsert_live_session`,
+`list_live_sessions`, `submit_appeal`, `list_appeals`, `resolve_appeal`.
+Changed RPCs: `verify_student_for_exam` (returns accommodations),
+`get_public_exam_by_code` (returns delivery options).
+
+## Deployment
+Follow **PHASE10_ENTERPRISE_FEATURES.md §4** — the short version: deploy the
+files, re-run `database/complete-schema.sql` in the Supabase SQL Editor
+(safe on existing databases), and smoke-test the six flows listed there.
+All Phase 10 options are OFF by default; existing exams are unaffected.
+
+## Verification
+psychometrics 52/52 · adaptive 35/35 · teacher_p10 44/44 · submit
+integration PASS (incl. live-ping + `__meta` asserts) · schema static 60/60 ·
+real-Postgres verify ALL PASS · HTTP smoke 159/159 · full Phase 1–9
+regression suite ALL GREEN.

@@ -48,6 +48,20 @@
      SiteSub.signature(lic)     → Promise<hex>
      SiteSub.applyUi(res, lic)  → renders banner / lock as appropriate
      SiteSub.refresh()          → force re-evaluation now
+
+   v5 — RENEWAL-ALWAYS-POSSIBLE + EXPIRED-BUT-ALIVE:
+     • The guard now runs on EVERY page (public pages too — the engine
+       finds the project credentials from App, window.SB_URL or the
+       global SB_URL/SB_KEY lexical bindings).
+     • The full lock screen is deliberately NOT shown on license.html
+       and admin.html — the proprietor must always be able to sign in
+       and renew from inside. Those pages show the banner instead.
+     • The lock defers while a candidate has an exam in progress
+       (examActive) — it appears after submission, never mid-paper.
+     • When the state is grace/expired/suspended the engine fires a
+       keepalive heartbeat too: an expired platform still generates
+       real database activity, so Supabase NEVER pauses it for
+       inactivity and renewal stays one click away.
    ==================================================================== */
 (function () {
   'use strict';
@@ -153,14 +167,57 @@
     });
   }
 
+  /* Project credentials, wherever the current page keeps them:
+     internal pages use App.SB_URL/SB_KEY; public pages (student, index,
+     certificate…) define global SB_URL/SB_KEY in their own scripts. */
+  function sbCreds() {
+    if (window.App && App.SB_URL && App.SB_KEY) return { u: App.SB_URL, k: App.SB_KEY };
+    if (window.SB_URL && window.SB_KEY) return { u: window.SB_URL, k: window.SB_KEY };
+    try { if (typeof SB_URL !== 'undefined' && typeof SB_KEY !== 'undefined') return { u: SB_URL, k: SB_KEY }; } catch (e) {}
+    return null;
+  }
+
   /* ── Source B: Supabase site_license row (public read) ── */
   function fromSupabase() {
-    if (!window.App || !App.SB_URL || !App.SB_KEY) return Promise.resolve(null);
-    return fetch(App.SB_URL + '/rest/v1/site_license?id=eq.1&select=model,plan,cycle,started_on,expires_on,grace_days,status,renew_url,lock_message,signature', {
-      headers: { 'apikey': App.SB_KEY, 'Authorization': 'Bearer ' + App.SB_KEY }
+    var c = sbCreds();
+    if (!c) return Promise.resolve(null);
+    return fetch(c.u + '/rest/v1/site_license?id=eq.1&select=model,plan,cycle,started_on,expires_on,grace_days,status,renew_url,lock_message,signature', {
+      headers: { 'apikey': c.k, 'Authorization': 'Bearer ' + c.k }
     }).then(function (r) { return r.ok ? r.json() : null; })
       .then(function (rows) { return (rows && rows.length) ? rows[0] : null; })
       .catch(function () { return null; });
+  }
+
+  /* A candidate is mid-exam on this tab → the lock must wait. */
+  function examInProgress() {
+    try {
+      if (typeof examActive !== 'undefined' && examActive) return true;
+      if (window.examActive) return true;
+      if (document.body && document.body.getAttribute && document.body.getAttribute('data-exam-active') === '1') return true;
+    } catch (e) {}
+    return false;
+  }
+
+  /* Renewal pages never get the full lock — the proprietor must be able
+     to sign in (admin.html) and renew (license.html) while expired. */
+  function isRenewalPage() {
+    var p = (window.location.pathname.split('/').pop() || 'index.html').split(/[?#]/)[0];
+    return p === 'license.html' || p === 'admin.html';
+  }
+
+  /* EXPIRED-BUT-ALIVE: keep the database warm even when the portal is
+     locked, so Supabase never pauses the project and renewal is instant. */
+  function keepAliveTouch() {
+    try {
+      if (window.FreeTierKeeper && typeof FreeTierKeeper.ping === 'function') { FreeTierKeeper.ping(); return; }
+      var c = sbCreds();
+      if (!c) return;
+      fetch(c.u + '/rest/v1/rpc/sc_keep_alive', {
+        method: 'POST',
+        headers: { 'apikey': c.k, 'Authorization': 'Bearer ' + c.k, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_src: 'license-guard' })
+      }).catch(function () {});
+    } catch (e) {}
   }
 
   /* ── Full evaluation pipeline ── */
@@ -241,13 +298,24 @@
       + '.card p{color:#a1a1aa;margin:8px 0 18px;}'
       + '.card .n{font-size:44px;margin-bottom:8px;}'
       + '.btn{display:inline-block;background:#10b981;color:#06281d;font-weight:700;padding:12px 26px;border-radius:10px;text-decoration:none;}'
-      + '.small{font-size:12px;color:#71717a;margin-top:14px;}';
+      + '.small{font-size:12px;color:#71717a;margin-top:14px;}'
+      + '.card a{color:#10b981;font-weight:700;}';
   }
 
   function applyUi(res, lic) {
     lastUi = { res: res, lic: lic };
     var state = res.state;
     if (state === 'lifetime' || state === 'active') return;
+
+    /* EXPIRED-BUT-ALIVE: expired/grace/suspended platforms still touch the
+       database so Supabase never pauses them — renewal stays instant. */
+    if (state === 'grace' || state === 'expired' || state === 'suspended') keepAliveTouch();
+
+    /* Never lock a candidate out of a paper mid-exam: retry after submission. */
+    if ((state === 'expired' || state === 'suspended') && examInProgress()) {
+      setTimeout(function () { status().then(function (o) { applyUi(o.result, o.lic); }); }, 60000);
+      return;
+    }
 
     var root = ensureShadow();
     if (!root) return;
@@ -257,6 +325,18 @@
     // Wipe previous content (except keep style fresh)
     while (root.firstChild) root.removeChild(root.firstChild);
     root.appendChild(styleEl);
+
+    /* Renewal pages (license console, admin sign-in) never get the full
+       lock — the proprietor must always be able to renew from inside. */
+    if ((state === 'expired' || state === 'suspended') && isRenewalPage()) {
+      var rb = document.createElement('div');
+      rb.className = 'banner grace';
+      rb.innerHTML = '🔒 ' + (state === 'suspended' ? 'Platform suspended' : 'Subscription expired') +
+        ' — but renewal is RIGHT HERE: open the <a href="license.html">License console</a> and use quick-extend.' +
+        ' <a href="' + esc(lic.renew_url || '#') + '">Renew</a>';
+      root.appendChild(rb);
+      return;
+    }
 
     if (state === 'warning' || state === 'grace') {
       var b = document.createElement('div');
@@ -279,9 +359,10 @@
       + '<div class="n">🔒</div>'
       + '<h2>' + (state === 'suspended' ? 'Platform Suspended' : 'Subscription Expired') + '</h2>'
       + '<p>' + esc(msg) + '</p>'
+      + '<p class="small">Renewal is quick: the proprietor can sign in at <a href="admin.html" style="color:#10b981;font-weight:700;">admin.html</a> and open the <a href="license.html" style="color:#10b981;font-weight:700;">License console</a> (both stay reachable while locked), or contact HMG to extend it remotely.</p>'
       + (lic.renew_url ? '<a class="btn" href="' + esc(lic.renew_url) + '" target="_blank" rel="noopener">Renew Subscription</a>' : '')
       + '<p class="small">' + esc(lic.plan || '') + (lic.expires_on ? ' · expired ' + esc(String(lic.expires_on).slice(0, 10)) : '') + '</p>'
-      + '<p class="small">Powered by HMG Academy Ecosystem</p>'
+      + '<p class="small">✅ Nothing is lost and this platform will NOT be paused — it is kept warm so renewal restores access instantly. Powered by HMG Academy Ecosystem</p>'
       + '</div>';
     root.appendChild(l);
   }

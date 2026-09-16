@@ -75,6 +75,12 @@
       <div class="tile"><h3>Optional Proctoring</h3><p>Camera intake photos, periodic snapshots, optional face checks, and audio spike detection use browser APIs and free open-source face-api.js. No paid AI API is used.</p></div>
       <div class="tile"><h3>Instant Result Review</h3><p>Students see score, grade, pass/fail status, time used, integrity summary, explanations, and question-by-question feedback immediately after submission.</p></div>
       <div class="tile"><h3>Emergency Backup</h3><p>If saving fails because of network/database issues, students can download a backup JSON file and send it to the teacher for later import.</p></div>
+      <div class="tile"><h3>JAMB 8-Key Navigation</h3><p>A/B/C/D select an option, N/→ next, P/← previous, R flag, S submit — the exact UTME keyboard layout, so candidates build real exam muscle memory.</p></div>
+      <div class="tile"><h3>Adaptive Papers (Phase 10)</h3><p>When the teacher enables it, questions get harder while you are doing well and easier while you struggle — forward-only, like real computerised-adaptive tests.</p></div>
+      <div class="tile"><h3>Practice Mode (Phase 10)</h3><p>Homework papers can mark instantly: ✓/✗ with the correct answer and explanation after each question, plus points and streak bonuses.</p></div>
+      <div class="tile"><h3>UTME /400 Score (Phase 10)</h3><p>Combined papers can show a JAMB-style aggregate out of 400 alongside the classic percentage and per-subject breakdown.</p></div>
+      <div class="tile"><h3>Approved Extra Time (Phase 10)</h3><p>Rostered students with a teacher-approved accommodation get their clock extended automatically — never flagged on the result slip.</p></div>
+      <div class="tile"><h3>Script Review Requests (Phase 10)</h3><p>From the result screen, a candidate can ask the teacher to re-check a marked script; the teacher resolves the request in the Appeals queue.</p></div>
     </div>
   </section>
 
@@ -115,7 +121,8 @@
     <div class="step"><div class="num">6</div><div><h3>Create Admin Profile</h3><p>Use the configured admin email or set <code>profiles.is_admin=true</code> / <code>role='admin'</code> for your admin account. Then test <code>admin.html</code>.</p></div></div>
     <div class="step"><div class="num">7</div><div><h3>Run Validators</h3><p>Open <code>deployment_validator.html</code> to check static assets. In Teacher Settings, click Live Diagnostic. In Admin Panel, check Security diagnostics and download the SQL smoke test if needed.</p></div></div>
     <div class="step"><div class="num">8</div><div><h3>Functional Test</h3><p>Create a sample exam, open it, copy the link/code, take it as a student, submit, confirm result appears in Teacher Dashboard, export CSV, and view per-question answers.</p></div></div>
-    <div class="step"><div class="num">9</div><div><h3>Go Live</h3><p>Approve teachers, create real rosters, publish exams, share codes/links, and schedule routine backups. Store backup JSONs securely.</p></div></div>
+    <div class="step"><div class="num">9</div><div><h3>Phase 10 Smoke Test</h3><p>Re-run <code>database/complete-schema.sql</code> (it is idempotent and upgrade-safe), then verify: Teacher Hub → Results → 📊 Psychometric Report generates; a Practice-mode exam shows instant feedback; the 👁 Live Monitor shows an in-progress candidate; the 🧾 Appeals queue resolves a request. Full runbook: <code>PHASE10_ENTERPRISE_FEATURES.md</code> §4.</p></div></div>
+    <div class="step"><div class="num">10</div><div><h3>Go Live</h3><p>Approve teachers, create real rosters, publish exams, share codes/links, and schedule routine backups. Store backup JSONs securely.</p></div></div>
   </section>
 
   <section class="card danger">
@@ -141,6 +148,7 @@
     </ul>
   </div>
 </div>
+<script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>
 </body>
 </html>
