@@ -88,7 +88,7 @@ let editingId = null;
 function esc(t){return String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
 
 function requireAdmin() {
-  const s = App.getSession();
+  const s = App.getAdminSession();
   if (!s || !s.access_token) {
     document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:system-ui;">🔒 Admin sign-in required. <a href="admin.html">Go to admin login</a>.</div>';
     return false;

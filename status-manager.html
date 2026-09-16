@@ -149,7 +149,7 @@ const ROLE_BADGE = { super_admin: 'r-super', admin: 'r-admin', teacher: 'r-teach
 async function loadProfiles() {
   const el = document.getElementById('profiles-list');
   el.innerHTML = '<em style="color:var(--text-muted);">Loading accounts…</em>';
-  const s = App.getSession();
+  const s = App.getBestSession();
   meEmail = s?.user?.email || '';
   try {
     PROFILES = await App.sbRpc('admin_get_all_profiles');

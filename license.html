@@ -168,7 +168,7 @@
 let isOwner = false;
 
 async function roleCheck() {
-  const s = App.getSession();
+  const s = App.getBestSession();
   const badge = document.getElementById('role-badge');
   if (!s || !s.user) { badge.textContent = 'Not signed in'; badge.className = 'badge badge-warning'; return false; }
   try {

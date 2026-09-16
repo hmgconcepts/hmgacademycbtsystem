@@ -748,7 +748,31 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
       <button class="nav-item" onclick="navigate('students')" id="nav-students">
         <span class="nav-icon">👨‍🎓</span> Students
       </button>
-      <div id="nav-admin-section" class="hidden">
+      <!-- PHASE 11 NAV FIX: every platform page is now reachable from the
+           navigation pane — no page is missing. Public + utility pages are
+           listed here for every signed-in user; governance consoles are
+           listed under Administration (each page still enforces its own
+           sign-in/role guard when opened). -->
+      <div class="nav-section-label">Platform Pages</div>
+      <button class="nav-item" onclick="window.location.href='index.html'" id="nav-home">
+        <span class="nav-icon">🏠</span> Portals Home
+      </button>
+      <button class="nav-item" onclick="window.location.href='student.html'" id="nav-student">
+        <span class="nav-icon">🎓</span> Student Portal
+      </button>
+      <button class="nav-item" onclick="window.location.href='certificate.html'" id="nav-cert">
+        <span class="nav-icon">🏅</span> Certificate Verify
+      </button>
+      <button class="nav-item" onclick="window.location.href='feature_guide.html'" id="nav-guide">
+        <span class="nav-icon">📘</span> Feature Guide
+      </button>
+      <button class="nav-item" onclick="window.location.href='deployment_validator.html'" id="nav-validator">
+        <span class="nav-icon">✅</span> Deployment Validator
+      </button>
+      <button class="nav-item" onclick="window.location.href='link_checker.html'" id="nav-linkcheck">
+        <span class="nav-icon">🔗</span> Link Checker
+      </button>
+      <div id="nav-admin-section">
         <div class="nav-section-label">Administration</div>
         <button class="nav-item" onclick="window.location.href='admin.html'" id="nav-admin" style="color:var(--warning);">
           <span class="nav-icon">⭐</span> Admin Panel
@@ -776,6 +800,9 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
         </button>
         <button class="nav-item" onclick="window.location.href='activity_log.html'" id="nav-audit">
           <span class="nav-icon">📊</span> Audit Log
+        </button>
+        <button class="nav-item" onclick="window.location.href='client-monitor.html'" id="nav-cmonitor">
+          <span class="nav-icon">📡</span> Client Monitor
         </button>
       </div>
     </nav>
@@ -3748,7 +3775,14 @@ function logout(silent=false){
   if(!silent&&!confirm('Log out of HMG Academy CBT?'))return;
   clearTimeout(inactivityTimer);
   if(autoCloseInterval){clearInterval(autoCloseInterval);autoCloseInterval=null;}
+  /* PHASE 11 WIRING FIX: clear EVERY teacher-persona key (teacher.html's
+     own 'cbt_pro_session' plus the App.js aliases) so tool pages that read
+     the session (multi-subject builder, settings, license…) never see a
+     stale teacher after logout. The admin-panel session is a separate
+     persona and is cleared by admin.html's own logout. */
   localStorage.removeItem(SESSION_KEY);
+  localStorage.removeItem('cbt_session');
+  localStorage.removeItem('cbt_teacher_session');
   localStorage.removeItem(IMPERSONATION_KEY);
   adminImpersonation=null;
   session=null;allResults=[];allExams=[];
@@ -5240,6 +5274,7 @@ function renderExamList(){
               <button class="btn-sm btn-purple" onclick="copyStudentInstructions('${e.code}')" title="Copy full student instructions">📋 Instructions</button>
               <button class="btn-sm btn-blue" onclick="printExamAccessSheet('${e.code}')" title="Print access/invigilation sheet">🖨 Sheet</button>
               <button class="btn-sm btn-blue" onclick="exportExamPackage('${e.id}')" title="Download reusable JSON package">📦 Package</button>
+              <button class="btn-sm btn-outline" onclick="printPaperExam('${e.id}')" title="Print offline question paper + answer key + bubble sheet">📄 Paper Exam</button>
               <button class="btn-sm btn-whatsapp" onclick="shareWhatsApp('${e.code}')" title="Share via WhatsApp">📲 WhatsApp</button>
               <button class="btn-sm btn-danger" onclick="deleteExam('${e.id}')">🗑 Delete</button>
             </div>
@@ -5370,6 +5405,152 @@ function exportExamPackage(id){
   const safe=(m.subject||'exam').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')||'exam';
   _downloadTextFile(`hmg_cbt_${safe}_package.json`,JSON.stringify(pack,null,2),'application/json');
   showToast('✅ Exam package exported. You can import it later from Create Exam.');
+}
+
+/* ═══ PHASE 11 ENTERPRISE FEATURE — PAPER EXAM EXPORT ══════════════════
+   Offline / printable exam mode: generate a print-ready question paper,
+   a confidential answer key, and an OMR-style bubble sheet from any exam
+   bank (single- or multi-subject). 100% rule-based, zero cost — built for
+   halls without reliable power or internet, mock exams on paper, and
+   archives required by some examining bodies. The digital CBT remains the
+   source of truth; this is an additional delivery channel, nothing removed. */
+function printPaperExam(id){
+  const exam=allExams.find(e=>e.id===id);
+  if(!exam)return showToast('Exam not found.');
+  const m=decodeMeta(exam.subject);
+  /* Group questions into sections (subject headers for multi-subject). */
+  let sections=[];
+  try{
+    if(exam.is_multi_subject&&exam.subjects_data){
+      const subs=typeof exam.subjects_data==='string'?JSON.parse(exam.subjects_data):exam.subjects_data;
+      sections=subs.map(s=>({name:s.name||s.subject_name||'Subject',questions:parseQuestionData(s.csv_data||[])}));
+    }else{
+      sections=[{name:m.subject||'Assessment',questions:parseQuestionData(exam.csv_data||[])}];
+    }
+  }catch(e){sections=[{name:m.subject||'Assessment',questions:[]}];}
+  const allQ=sections.flatMap(s=>s.questions);
+  if(!allQ.length)return showToast('This exam has no questions to print.');
+
+  const inst=(window.App&&App.institutionName)||'HMG Academy';
+  const stamp=new Date().toLocaleString();
+  const perQ=(100/allQ.length);
+
+  /* Option rendering: MCQ-family questions get lettered options; the letter
+     set follows the options actually present so 2-option (True/False) and
+     5-option (UTME-style) papers render correctly. Non-objective questions
+     get ruled answer lines instead. */
+  const LETTERS=['A','B','C','D','E','F'];
+  function optionsOf(q){return LETTERS.map((L,i)=>q[String.fromCharCode(97+i)]).filter(v=>v!==undefined&&v!==null&&String(v).trim()!=='');}
+  function isObjective(q){const t=String(q.type||'mcq').toLowerCase();return optionsOf(q).length>0&&['mcq','tf','true_false','multi_select','mrq','fill_blank','short','cloze','essay','code','matching','ordering','case','numeric'].indexOf(t)===-1||['mcq','tf','true_false','multi_select','mrq'].indexOf(t)>=0;}
+
+  let qNum=0;
+  const paperHtml=sections.map(sec=>`
+    <div class="section-head">${escapeHtml(sec.name)}${sections.length>1?` <span class="muted">(Questions ${qNum+1}–${qNum+sec.questions.length})</span>`:''}</div>
+    ${sec.questions.map(q=>{
+      const n=++qNum;
+      const opts=optionsOf(q);
+      const objective=opts.length>=2;
+      return `<div class="q">
+        <div class="q-text"><b>${n}.</b> ${escapeHtml(String(q.q||'').replace(/<[^>]*>/g,''))} <span class="muted">[${perQ.toFixed(perQ%1?1:0)} mark${perQ===1?'':'s'}]</span></div>
+        ${objective
+          ? `<table class="opts">${opts.map((o,i)=>`<tr><td class="opt-letter">${LETTERS[i]}.</td><td>${escapeHtml(String(o).replace(/<[^>]*>/g,''))}</td></tr>`).join('')}</table>`
+          : `<div class="ruled"></div><div class="ruled"></div><div class="ruled"></div>`}
+      </div>`;
+    }).join('')}
+  `).join('');
+
+  /* Answer key — compact, confidential, one row per question. */
+  qNum=0;
+  const keyRows=sections.flatMap(sec=>sec.questions.map(q=>{
+    const n=++qNum;
+    const opts=optionsOf(q);
+    const ansIdx=opts.findIndex((o,i)=>LETTERS[i]===String(q.ans||'').trim().toUpperCase());
+    let ansText=q.ans;
+    if(ansIdx>=0)ansText=`${LETTERS[ansIdx]} — ${String(opts[ansIdx]).replace(/<[^>]*>/g,'').slice(0,60)}`;
+    return `<tr><td>${n}</td><td><b>${escapeHtml(String(ansText||'—').slice(0,80))}</b></td><td class="muted">${escapeHtml(String(q.exp||'').replace(/<[^>]*>/g,'').slice(0,90))}</td></tr>`;
+  })).join('');
+
+  /* OMR bubble sheet — objective questions get A–E bubbles, others a box. */
+  qNum=0;
+  const omrRows=sections.flatMap(sec=>sec.questions.map(q=>{
+    const n=++qNum;
+    const objective=optionsOf(q).length>=2;
+    return `<tr><td class="omr-n">${n}</td>${objective?LETTERS.slice(0,5).map(L=>`<td class="omr-b">${L}</td>`).join(''):'<td class="omr-b" colspan="5">WRITTEN ANSWER ✍</td>'}</tr>`;
+  })).join('');
+
+  const w=window.open('','_blank','width=980,height=760');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Paper Exam — ${escapeHtml(m.subject)} — ${escapeHtml(inst)}</title>
+  <style>
+    body{font-family:Georgia,'Times New Roman',serif;color:#000;background:#fff;margin:0;padding:30px 34px;font-size:13px;line-height:1.55;}
+    .sheet{max-width:760px;margin:0 auto;}
+    .head{display:flex;gap:16px;align-items:center;border-bottom:3px double #000;padding-bottom:14px;margin-bottom:14px;}
+    .logo{width:78px;height:78px;object-fit:cover;border-radius:14px;}
+    .inst{font-size:19px;font-weight:900;letter-spacing:.5px;}
+    .sub{font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#333;}
+    .meta{border:1px solid #000;border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:12.5px;line-height:1.8;}
+    .meta b{display:inline-block;min-width:110px;}
+    .inst-box{border:1px dashed #555;border-radius:8px;padding:10px 14px;margin-bottom:18px;font-size:12px;white-space:pre-wrap;}
+    .cand{display:flex;gap:12px;margin-bottom:18px;font-size:12.5px;}
+    .cand div{flex:1;border:1px solid #000;border-radius:6px;padding:8px 10px;}
+    .section-head{background:#000;color:#fff;font-weight:800;padding:6px 12px;border-radius:6px;margin:20px 0 10px;font-size:13.5px;letter-spacing:.3px;}
+    .q{margin:0 0 13px;page-break-inside:avoid;}
+    .q-text{margin-bottom:5px;}
+    .opts{border-collapse:collapse;margin-left:14px;}
+    .opts td{padding:2px 8px 2px 0;vertical-align:top;font-size:12.8px;}
+    .opt-letter{font-weight:800;width:22px;}
+    .ruled{border-bottom:1px solid #000;height:20px;margin:6px 0 2px 14px;width:88%;}
+    .muted{color:#555;font-size:11px;font-weight:400;}
+    .pagebreak{page-break-before:always;}
+    .key-title,.omr-title{background:#000;color:#fff;font-weight:900;padding:10px 14px;border-radius:6px;font-size:15px;margin-bottom:12px;}
+    .conf{border:2px solid #000;padding:4px 10px;display:inline-block;font-weight:900;letter-spacing:2px;font-size:11px;transform:rotate(-2deg);}
+    table.key{border-collapse:collapse;width:100%;font-size:11.5px;}
+    table.key td,table.key th{border:1px solid #999;padding:4px 7px;text-align:left;vertical-align:top;}
+    table.key th{background:#eee;}
+    table.omr{border-collapse:collapse;margin:0 auto;}
+    table.omr td{border:1px solid #000;width:34px;height:26px;text-align:center;font-size:12px;font-weight:700;}
+    td.omr-n{width:44px;background:#f2f2f2;font-weight:900;}
+    .bubble-hint{text-align:center;font-size:11px;color:#333;margin:8px 0 14px;}
+    .foot{margin-top:26px;border-top:1px solid #000;padding-top:8px;font-size:10.5px;color:#333;display:flex;justify-content:space-between;}
+    @media print{.noprint{display:none;}body{padding:12mm 10mm;}}
+  </style></head><body>
+  <div class="sheet">
+    <div class="head">
+      <img class="logo" src="hmg-academy-logo.png" onerror="this.style.display='none'">
+      <div>
+        <div class="inst">${escapeHtml(inst)}</div>
+        <div class="sub">Computer-Based Testing · Offline Paper Sitting</div>
+        <div style="font-size:12.5px;margin-top:4px;"><b>${escapeHtml(m.subject)}</b>${m.cls!=='—'?' · '+escapeHtml(m.cls):''}${m.term!=='—'?' · '+escapeHtml(m.term):''}${m.type!=='—'?' · '+escapeHtml(m.type):''}</div>
+      </div>
+    </div>
+    <div class="meta">
+      <div><b>Paper code:</b> ${escapeHtml(exam.code)} <span class="muted">(digital twin — the same bank serves the CBT)</span></div>
+      <div><b>Duration:</b> ${exam.duration} minutes &nbsp;·&nbsp; <b>Questions:</b> ${allQ.length} &nbsp;·&nbsp; <b>Mark per question:</b> ${perQ.toFixed(perQ%1?1:0)} &nbsp;·&nbsp; <b>Total:</b> 100</div>
+      <div><b>Pass mark:</b> ${m.passmark||50}%</div>
+    </div>
+    <div class="cand">
+      <div><b>Name:</b></div><div><b>Class / Candidate No.:</b></div><div><b>Seat No.:</b></div>
+    </div>
+    ${exam.instructions?`<div class="inst-box"><b>INSTRUCTIONS:</b>\n${escapeHtml(exam.instructions)}</div>`:`<div class="inst-box"><b>INSTRUCTIONS:</b>\n1. Write your name and class in the spaces provided.\n2. Answer ALL questions.\n3. For multiple-choice questions, shade the letter of the correct option on the bubble sheet provided.\n4. Do not open this paper until told to do so.</div>`}
+    ${paperHtml}
+    <div class="foot"><span>Generated ${escapeHtml(stamp)} · HMG Academy CBT Pro — Paper Exam Export</span><span>End of paper · ${allQ.length} questions</span></div>
+
+    <div class="pagebreak"></div>
+    <div class="key-title">🔐 CONFIDENTIAL ANSWER KEY — ${escapeHtml(m.subject)} (${escapeHtml(exam.code)})</div>
+    <div style="margin-bottom:10px;"><span class="conf">KEEP SECURE</span> <span class="muted">Invigilator / marker copy only. Do not photocopy before the sitting.</span></div>
+    <table class="key"><tr><th style="width:36px;">Q</th><th style="width:42%;">Answer</th><th>Explanation / marking note</th></tr>${keyRows}</table>
+
+    <div class="pagebreak"></div>
+    <div class="omr-title">OMR BUBBLE SHEET — shade ONE letter per question</div>
+    <div class="bubble-hint">Use a dark pencil (HB). Shade the letter fully. To change an answer, erase completely.<br>For written-answer questions (✍), answer in the question paper, not here.</div>
+    <table class="omr">${omrRows}</table>
+    <div class="foot"><span>${escapeHtml(inst)} · ${escapeHtml(m.subject)} · ${escapeHtml(exam.code)}</span><span>Candidate signature: ____________________</span></div>
+  </div>
+  <div class="noprint" style="text-align:center;margin-top:22px;"><button onclick="window.print()" style="padding:10px 22px;background:#000;color:#fff;border:0;border-radius:8px;font-weight:800;cursor:pointer;">🖨 Print paper / key / bubble sheet</button></div>
+  </body></html>`);
+  w.document.close();
+  /* Auto-open the print dialog shortly after render (same pattern as the
+     access sheet); the button above is the manual fallback. */
+  setTimeout(()=>{try{w.print();}catch(_){}},450);
 }
 
 function printExamAccessSheet(code){

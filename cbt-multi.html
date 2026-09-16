@@ -24,6 +24,18 @@
 </header>
 
 <main class="main-wrap">
+  <!-- PHASE 11 WIRING FIX: proactive sign-in banner. The publish flow needs a
+       TEACHER session (teacher.html stores it under 'cbt_pro_session'); if the
+       visitor is not signed in as a teacher, say so up front — before they
+       upload CSVs and hit the publish wall. -->
+  <div id="teacher-session-banner" class="hidden" style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:20px;">🔐</span>
+    <div style="flex:1;min-width:240px;font-size:14px;line-height:1.6;">
+      <b>Publishing requires a teacher account.</b><br>
+      <span style="font-size:13px;color:var(--text-muted,#666);">You are not currently signed in as a teacher. You can build the package now, but you must sign in before publishing — packages must be owned by a teacher account.</span>
+    </div>
+    <a href="teacher.html" class="btn btn-primary" style="text-decoration:none;padding:9px 16px;font-size:13px;">Open Teacher Hub to sign in →</a>
+  </div>
   <div class="card-title-row">
     <div>
       <h1>🧪 Multi-Subject CBT Package Builder</h1>
@@ -291,11 +303,18 @@ async function publishMultiSubjectExam() {
     }
   });
 
-  const session_ = App.getSession();
+  const session_ = App.getTeacherSession();
   // FIX: publishing without a teacher session used a placeholder UUID that failed
   // RLS with a cryptic database error. Fail fast with clear guidance instead.
+  // PHASE 11 WIRING FIX: use getTeacherSession() — App.getSession() could not
+  // see teacher.html's 'cbt_pro_session' key, so even signed-in teachers hit
+  // this wall (the live "must be owned by a teacher account" bug). An admin
+  // panel session is deliberately NOT accepted as an exam owner.
   if(!session_?.user?.id){
-    showToast('⚠️ Please open the Teacher Hub and sign in first — multi-subject packages must be owned by a teacher account.', 'warning');
+    showToast('⚠️ Not signed in as a teacher — open the Teacher Hub, sign in, then return here and publish again.', 'warning');
+    if(confirm('Publishing needs a teacher account.\n\nOpen the Teacher Hub now to sign in?\n(Your subjects and questions stay on this page — come back with the browser Back button.)')){
+      window.location.href='teacher.html';
+    }
     return;
   }
   const teacherId = session_.user.id;
@@ -349,7 +368,17 @@ async function publishMultiSubjectExam() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', renderSubjectSlots);
+document.addEventListener('DOMContentLoaded', () => {
+  renderSubjectSlots();
+  /* PHASE 11: show the sign-in banner immediately when there is no teacher
+     session (App.getTeacherSession now reads teacher.html's 'cbt_pro_session'). */
+  try{
+    const t = App.getTeacherSession();
+    const b = document.getElementById('teacher-session-banner');
+    if(b && !(t && t.user && t.user.id)) b.classList.remove('hidden');
+    else if(b && t && t.user) b.innerHTML = '<span style="font-size:20px;">✅</span><div style="font-size:13px;"><b>Signed in as ' + String(t.user.email||'teacher').replace(/[<>&]/g,'') + '</b> — packages you publish here will be owned by this teacher account.</div>';
+  }catch(_){}
+});
 </script>
 <script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>

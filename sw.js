@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v10-phase10-v8'; // PHASE 10B: bumped — exam-reachability hotfix (teacher reset+schema banner, student fallback, validator probe, chatbot/site-help KB)
+const CACHE_NAME = 'hmg-cbt-shell-v11-phase11-v1'; // PHASE 11: cross-page session wiring fix (multi-subject publish bug), complete navigation panes, Paper Exam Export
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [

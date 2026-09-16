@@ -225,13 +225,13 @@ let isAdmin = false;
 function toggleSwitch(el) { el.classList.toggle('on'); }
 
 function requireAdmin() {
-  const s = App.getSession();
+  const s = App.getBestSession();
   if (!s || !s.access_token) { document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:system-ui;">🔒 Admin sign-in required. <a href="index.html">Go to login</a>.</div>'; return false; }
   return true;
 }
 
 async function checkRole() {
-  const s = App.getSession();
+  const s = App.getBestSession();
   if (!s || !s.user) { document.getElementById('role-badge').textContent = 'Not signed in'; return false; }
   try {
     const rows = await App.sbFetch(`/rest/v1/profiles?email=eq.${encodeURIComponent(s.user.email)}&select=role,status`);

@@ -408,3 +408,36 @@ runbook: **PHASE10B_EXAM_REACHABILITY_HOTFIX.md**.
    covers the database-behind-the-site cause; the site guide documents the
    red banner and the "update the database whenever you update the files"
    rule.
+
+## Phase 11 (2026-09-16) — Cross-page wiring, complete navigation, Paper Exam Export
+
+A full prompt-compliance and interconnectedness audit (original baseline vs every
+phase build) plus three platform upgrades. Full report:
+**PHASE11_WIRING_AND_COMPLIANCE_AUDIT.md**.
+
+1. **Cross-page session wiring fixed (live bug)** — teacher.html has always
+   stored its session under `cbt_pro_session`, but the shared App layer only
+   read three other keys — so the Multi-Subject Builder refused to publish for
+   signed-in teachers ("must be owned by a teacher account"), and the settings,
+   license, status-manager and client-monitor pages could not see teachers
+   either. app.js now reads every persona key and exposes role-aware getters:
+   `getTeacherSession()` (exam ownership — used by the builder), `getAdminSession()`
+   (admin consoles) and `getBestSession()` (governance pages that derive rights
+   from the profile role). Teacher logout now clears every teacher-persona key.
+2. **Complete navigation panes** — every platform page is now listed in BOTH
+   the Teacher Hub and Admin Panel sidebars (new "Platform Pages" sections;
+   the Administration section is visible to all signed-in users — each page
+   still enforces its own sign-in/role guard). No page is unreachable.
+3. **Admin-shortcut adoption fixed** — signing in at the Teacher Hub with the
+   platform admin email redirected to the Admin Panel, which then demanded a
+   second sign-in; the panel now adopts that session automatically.
+4. **📄 Paper Exam Export (new enterprise feature)** — one click on Assessments
+   produces a print-ready question paper (school header, candidate box,
+   instructions, lettered options or ruled answer lines, subject sections),
+   a confidential answer key with explanations, and an OMR-style bubble
+   sheet. Offline sittings, mocks and archives without power/internet —
+   100% free and rule-based; the digital CBT remains the source of truth.
+5. **Automated interconnectedness audits** — two new suites (622 + 30 checks)
+   verify every event handler resolves, every internal link target exists,
+   every invoked RPC exists in the schema, both nav panes list every page,
+   the session-key matrix is consistent, and navigate() targets have views.

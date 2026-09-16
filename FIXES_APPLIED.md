@@ -276,3 +276,33 @@ Verification: hotfix_reachability_test 47/47 (behavioural: real reset block
 restores the open default on a mock DOM; real canary flags missing-RPC /
 missing-column / healthy DBs; real student probe resolves undefined vs null
 vs status row) · full regression re-run ALL GREEN · HTTP smoke re-run.
+
+---
+
+# PHASE 11 — Wiring & Compliance Audit (2026-09-16)
+
+Live incident: a signed-in teacher could not publish from the Multi-Subject
+Builder ("must be owned by a teacher account") — plus a full prompt-compliance
+and feature-preservation audit against the ORIGINAL baseline.
+**Full report: PHASE11_WIRING_AND_COMPLIANCE_AUDIT.md.**
+
+- **Root cause (present since the ORIGINAL build):** teacher.html stores its
+  session under `cbt_pro_session`; the shared App layer read three other keys
+  only. Fixed with a role-aware session layer (getTeacherSession /
+  getAdminSession / getBestSession) + proactive sign-in banner in the builder
+  + full-persona logout clearing. The same fix repairs settings, license,
+  status-manager and client-monitor visibility for teachers.
+- **Admin-shortcut double sign-in fixed** (admin.html adopts the Teacher Hub
+  admin session).
+- **Navigation completed:** every page is listed in BOTH the Teacher Hub and
+  Admin Panel sidebars; each page still enforces its own guards.
+- **New enterprise feature — 📄 Paper Exam Export:** print-ready question
+  paper + confidential answer key + OMR bubble sheet from any exam (single or
+  multi-subject), free and rule-based.
+- **Feature preservation verified, not assumed:** scripted diff of every
+  original function — zero dropped features (all 10 flags were renames or
+  enhancements); all 19 original pages present.
+- **New permanent audit suites:** workflow_audit_test.js (622 checks —
+  handlers, link targets, RPC↔schema coverage, nav completeness, session-key
+  matrix, navigate targets) and phase11_wiring_test.js (30 behavioural
+  checks). Both green.

@@ -244,6 +244,17 @@ tbody tr:hover td{background:var(--surface-hover);}
       <button class="nav-item" onclick="window.location.href='teacher.html'" id="nav-teacherhub"><span class="nav-icon">👨‍🏫</span>Teacher Hub</button>
       <button class="nav-item" onclick="window.location.href='cbt-multi.html'" id="nav-multi"><span class="nav-icon">🧪</span>Multi-Subject Builder</button>
       <button class="nav-item" onclick="window.location.href='cbt-prompts.html'" id="nav-prompts"><span class="nav-icon">🤖</span>AI Prompts Studio</button>
+      <!-- PHASE 11 NAV FIX: complete the admin navigation pane — every
+           platform page is reachable, no page missing. -->
+      <div class="nav-section-label">Platform Pages</div>
+      <button class="nav-item" onclick="window.location.href='index.html'" id="nav-home"><span class="nav-icon">🏠</span>Portals Home</button>
+      <button class="nav-item" onclick="window.location.href='student.html'" id="nav-student"><span class="nav-icon">🎓</span>Student Portal</button>
+      <button class="nav-item" onclick="window.location.href='certificate.html'" id="nav-cert"><span class="nav-icon">🏅</span>Certificate Verify</button>
+      <button class="nav-item" onclick="window.location.href='feature_guide.html'" id="nav-guide"><span class="nav-icon">📘</span>Feature Guide</button>
+      <button class="nav-item" onclick="window.location.href='question-types.html'" id="nav-qtypes"><span class="nav-icon">📖</span>Question Types Guide</button>
+      <button class="nav-item" onclick="window.location.href='deployment_validator.html'" id="nav-validator"><span class="nav-icon">✅</span>Deployment Validator</button>
+      <button class="nav-item" onclick="window.location.href='link_checker.html'" id="nav-linkcheck"><span class="nav-icon">🔗</span>Link Checker</button>
+      <button class="nav-item" onclick="window.location.href='client-monitor.html'" id="nav-cmonitor"><span class="nav-icon">📡</span>Client Monitor</button>
     </nav>
     <div class="sidebar-bottom">
       <button class="nav-item" onclick="adminLogout()" style="color:var(--danger);background:var(--danger-dim);border:1px solid rgba(239,68,68,0.25);">
@@ -1552,7 +1563,20 @@ function adminLogout(){
 // ── Try restore admin session on page load ──
 (async()=>{
   try{
-    const saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+    let saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+    /* PHASE 11 WIRING FIX: the Teacher Hub's admin shortcut signs the
+       platform admin in via teacher.html (which stores its session under
+       'cbt_pro_session') and redirects here — but this restore only read
+       'cbt_admin_session', so the admin landed on the login screen again.
+       Adopt that session when it belongs to the platform admin. */
+    if(!saved || !saved.access_token){
+      const viaTeacher = App.getTeacherSession ? App.getTeacherSession() : null;
+      if(viaTeacher && viaTeacher.access_token && viaTeacher.user &&
+         String(viaTeacher.user.email||'').toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+        saved = viaTeacher;
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(saved));
+      }
+    }
     if(!saved || !saved.access_token) return;
 
     const age = Date.now() - (saved.saved_at || 0);

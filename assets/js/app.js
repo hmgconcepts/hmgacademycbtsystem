@@ -120,12 +120,39 @@ const App = {
     this.showToast(`Switched to ${cur} theme`);
   },
 
-  /* ── Session & Auth ── */
+  /* ── Session & Auth ──
+     PHASE 11 WIRING FIX: teacher.html has always stored its session under
+     'cbt_pro_session', but getSession() only read 'cbt_session' /
+     'cbt_teacher_session' / 'cbt_admin_session' — so every page relying on
+     App (multi-subject builder, settings, license, status manager, client
+     monitor) could not see a signed-in teacher. getSession() now reads the
+     teacher key too, and role-aware getters let each page demand exactly
+     the persona it needs:
+       getTeacherSession() — teacher portal sessions only (exam ownership)
+       getAdminSession()   — admin panel sessions only
+       getBestSession()    — admin preferred, else teacher (governance pages
+                             that derive rights from the profile role)     */
   getSession() {
     try {
-      const raw = localStorage.getItem('cbt_session') || localStorage.getItem('cbt_teacher_session') || localStorage.getItem('cbt_admin_session');
+      const raw = localStorage.getItem('cbt_session') || localStorage.getItem('cbt_teacher_session')
+        || localStorage.getItem('cbt_pro_session') || localStorage.getItem('cbt_admin_session');
       return raw ? JSON.parse(raw) : null;
     } catch (_) { return null; }
+  },
+  getTeacherSession() {
+    try {
+      const raw = localStorage.getItem('cbt_session') || localStorage.getItem('cbt_teacher_session') || localStorage.getItem('cbt_pro_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  },
+  getAdminSession() {
+    try {
+      const raw = localStorage.getItem('cbt_admin_session');
+      return raw ? JSON.parse(raw) : null;
+    } catch (_) { return null; }
+  },
+  getBestSession() {
+    return this.getAdminSession() || this.getTeacherSession() || this.getSession();
   },
   setSession(sessionData) {
     if (sessionData) {
@@ -134,6 +161,7 @@ const App = {
     } else {
       localStorage.removeItem('cbt_session');
       localStorage.removeItem('cbt_teacher_session');
+      localStorage.removeItem('cbt_pro_session');
       localStorage.removeItem('cbt_admin_session');
       this.user = null;
       this.profile = null;
