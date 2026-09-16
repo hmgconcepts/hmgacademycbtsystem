@@ -109,6 +109,26 @@ async function runChecks(){
  const teacher=await textOf('teacher.html'); const student=await textOf('student.html'); const admin=await textOf('admin.html'); const sql=await textOf('database/complete-schema.sql');
  const hasSB=teacher.includes('SB_URL')&&teacher.includes('SB_KEY')&&student.includes('SB_URL')&&student.includes('SB_KEY');
  results.push(row(hasSB?'ok':'bad','Supabase config',hasSB?'SB_URL and SB_KEY are present in teacher/student portals.':'Supabase variables are missing.'));
+ /* PHASE 10B HOTFIX: live database-schema currency probe. Detects the exact
+    condition behind the live "Exam not found or not open" incident — the
+    deployed front-end being NEWER than the database (missing status-probe
+    RPC and Phase 10 columns). */
+ try{
+   const mU=teacher.match(/SB_URL\s*=\s*['"]([^'"]+)['"]/), mK=teacher.match(/SB_KEY\s*=\s*['"]([^'"]+)['"]/);
+   if(mU&&mK){
+     const H={'apikey':mK[1],'Authorization':`Bearer ${mK[1]}`};
+     const rpcRes=await fetch(`${mU[1]}/rest/v1/rpc/check_exam_code_status`,{method:'POST',headers:{...H,'Content-Type':'application/json'},body:JSON.stringify({p_code:'__VALIDATOR_PROBE__'})});
+     const colRes=await fetch(`${mU[1]}/rest/v1/exams?select=adaptive&limit=1`,{headers:H});
+     const rpcMissing=!rpcRes.ok, colMissing=!colRes.ok;
+     results.push(row((!rpcMissing&&!colMissing)?'ok':'bad','Database schema up to date (live probe)',(!rpcMissing&&!colMissing)
+       ?'Live probe passed: your Supabase database has the Phase 10 schema (status-probe RPC + enterprise columns present).'
+       :`Live probe FAILED — your database is behind your deployed files.${rpcMissing?' The check_exam_code_status RPC is missing, so students get a dead-end "Exam not found or not open" error for locked or new exams instead of a clear reason.':''}${colMissing?' Phase 10 exam columns (adaptive, feedback_mode, score_model) are missing, so those settings are silently dropped when saving exams.':''} FIX (2 minutes, safe to re-run): Supabase dashboard → SQL Editor → paste and run the ENTIRE database/complete-schema.sql → refresh this page and re-check.`));
+   }else{
+     results.push(row('warn','Database schema up to date (live probe)','Could not read Supabase config from teacher.html — live database probe skipped.'));
+   }
+ }catch(e){
+   results.push(row('warn','Database schema up to date (live probe)','Live probe could not run: '+e.message));
+ }
  results.push(row(!teacher.includes('service_role')&&!student.includes('service_role')&&!admin.includes('service_role')?'ok':'bad','No service_role key','No frontend file appears to contain a Supabase service_role key.'));
  results.push(row(sql.includes('is_platform_admin')&&sql.includes('get_public_exam_by_code')&&sql.includes('get_exam_attempt_count')?'ok':'bad','Correct v3.1 SQL/RPC setup',sql?'SQL contains admin guard, public exam RPC, and attempt-count RPC.':'database/complete-schema.sql missing.'));
  results.push(row(teacher.includes('admin_get_all_profiles')&&admin.includes('admin_get_all_results')&&sql.includes('verify_certificate')?'ok':'warn','Admin SQL/RPC support','Admin panel and teacher SQL guide include admin RPC references.'));

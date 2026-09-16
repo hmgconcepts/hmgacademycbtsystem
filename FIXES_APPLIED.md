@@ -237,3 +237,42 @@ psychometrics 52/52 · adaptive 35/35 · teacher_p10 44/44 · submit
 integration PASS (incl. live-ping + `__meta` asserts) · schema static 60/60 ·
 real-Postgres verify ALL PASS · HTTP smoke 159/159 · full Phase 1–9
 regression suite ALL GREEN.
+
+---
+
+# PHASE 10B — Exam Reachability Hotfix (2026-09-16)
+
+Live incident: newly created CBT links showed students the dead-end
+"Exam not found or not open" error while pre-existing links worked.
+Root cause chain (probed live): the deployed Phase 10 front-end was running
+against a pre-Phase-8 database (missing `check_exam_code_status` RPC +
+Phase 10 columns), the new exams were sitting locked, a teacher.html
+form-reset bug re-locked every subsequent exam published in the same
+session, and the student page couldn't explain any of it.
+**Full analysis, evidence and the 3-minute live runbook:
+PHASE10B_EXAM_REACHABILITY_HOTFIX.md.**
+
+Fixes (all enhance-only):
+- **teacher.html** — post-publish form reset now restores the recommended
+  "Open Exam Immediately? = Yes" default (was silently re-locking the next
+  exam in the session); new `checkSchemaCurrency()` login canary + persistent
+  red "Platform database is out of date" banner with the exact SQL fix and a
+  Re-check button; lean-fallback saves now escalate to the banner and use an
+  explicit toast.
+- **student.html** — `checkExamCodeStatus()` distinguishes "probe RPC
+  missing" from "exam not found"; students get an actionable checklist
+  (locked → teacher opens it; wrong code; schema update note for teachers)
+  instead of the dead-end message. All existing status messages preserved.
+- **deployment_validator.html** — new live "Database schema up to date"
+  probe (status RPC + Phase 10 column) that catches this exact condition
+  before students do.
+- **assets/js/chatbot.js** — "exam not found / locked" answer now covers the
+  database-behind-the-site cause (new links fail, old ones work) + fix.
+- **assets/js/site-help.js** — documents the red banner, the validator probe,
+  and the standing rule: update the database whenever you update the files.
+- **sw.js** — cache bumped to `hmg-cbt-shell-v10-phase10-v8`.
+
+Verification: hotfix_reachability_test 47/47 (behavioural: real reset block
+restores the open default on a mock DOM; real canary flags missing-RPC /
+missing-column / healthy DBs; real student probe resolves undefined vs null
+vs status row) · full regression re-run ALL GREEN · HTTP smoke re-run.

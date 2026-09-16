@@ -2438,6 +2438,17 @@ let session=null, questionsPool=[], allResults=[], allExams=[], allStudents=[];
 let examSortKey='date';
 let lastResultCount=0;
 let inactivityTimer=null;
+
+/* ═══ PHASE 10B HOTFIX — SCHEMA CURRENCY GUARD ═══════════════════════
+   Root cause of the live "Exam not found or not open" incident: the site
+   front-end was newer than the database (missing check_exam_code_status
+   RPC + Phase 10 columns). Teachers only got a 3.5-second toast when the
+   lean-fallback fired, so exams were silently published without their
+   chosen settings and students hit a dead-end error.
+   This guard probes the database on login AND whenever a save downgrades,
+   then keeps a persistent, dismissible-per-session banner on screen until
+   the database is updated. */
+let SCHEMA_STALE=false;
 const INACTIVITY_LIMIT=8*60*60*1000;
 const SESSION_KEY='cbt_pro_session';
 const IMPERSONATION_KEY='cbt_admin_impersonate_teacher';
@@ -2455,7 +2466,12 @@ async function saveExamPayloadWithFallback(payload, method='POST', examId=''){
       delete lean.anti_cheat_config; delete lean.proctoring; delete lean.math_keyboard; delete lean.certificate_enabled; delete lean.certificate_valid_days;
       delete lean.adaptive; delete lean.feedback_mode; delete lean.score_model; // PHASE 10 columns missing on old DBs
       const res=await sbFetch(url,method,lean);
-      showToast('⚠️ Saved without newest enterprise columns. Run database/complete-schema.sql to enable anti-cheat/certificate settings.');
+      /* PHASE 10B: a downgrade means the DB schema is stale — escalate from
+         a fleeting toast to the persistent banner so it can't be missed. */
+      SCHEMA_STALE=true;
+      try{sessionStorage.removeItem('hmg_schema_banner_dismissed');}catch(_){}
+      showSchemaBanner();
+      showToast('⚠️ Saved WITHOUT anti-cheat / certificate / Phase 10 options — your database is out of date. See the red banner at the top.');
       return res;
     }
     throw e;
@@ -3611,6 +3627,59 @@ function initDashboard(email){
   loadData();
   startAutoCloseChecker();
   startResultsPolling();  // real-time 15-second polling for new submissions
+  checkSchemaCurrency();  // PHASE 10B: persistent banner if the DB schema is stale
+}
+
+async function checkSchemaCurrency(silent=true){
+  /* Two independent canaries:
+     1. check_exam_code_status RPC — powers student status messages.
+     2. exams.adaptive column — the newest Phase 10 column set. */
+  let stale=false;
+  try{
+    await sbRpc('check_exam_code_status',{p_code:'__SCHEMA_PROBE__'});
+  }catch(e){
+    if(/PGRST202|Could not find the function|function .* does not exist/i.test(String(e&&e.message)))stale=true;
+  }
+  if(!stale){
+    try{
+      await sbFetch('/rest/v1/exams?select=adaptive&limit=1','GET');
+    }catch(e){
+      if(/42703|column .* does not exist|adaptive/i.test(String(e&&e.message)))stale=true;
+    }
+  }
+  SCHEMA_STALE=stale;
+  if(stale){console.warn('[CBT] Schema out of date: missing check_exam_code_status RPC and/or Phase 10 columns. Run database/complete-schema.sql.');showSchemaBanner();}
+  else if(!silent){showToast('✅ Database schema is up to date.');const b=document.getElementById('schema-stale-banner');if(b)b.remove();try{sessionStorage.removeItem('hmg_schema_banner_dismissed');}catch(_){}}
+  return stale;
+}
+function showSchemaBanner(){
+  try{if(sessionStorage.getItem('hmg_schema_banner_dismissed'))return;}catch(_){}
+  if(document.getElementById('schema-stale-banner'))return;
+  const b=document.createElement('div');
+  b.id='schema-stale-banner';
+  b.style.cssText='position:sticky;top:0;z-index:9999;background:#7f1d1d;color:#fff;padding:14px 18px;font-size:13px;line-height:1.6;font-family:inherit;box-shadow:0 4px 14px rgba(0,0,0,.35);';
+  b.innerHTML=`
+    <div style="display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;">
+      <div style="font-size:22px;line-height:1;">⚠️</div>
+      <div style="flex:1;min-width:260px;">
+        <div style="font-weight:800;font-size:14px;margin-bottom:4px;">Platform database is out of date — some features are being silently skipped</div>
+        <div>Until it is updated: <b>students see a dead-end "Exam not found or not open" error for new exams instead of a clear reason</b>, and <b>anti-cheat, certificate, math-keyboard, adaptive/practice mode and UTME /400 settings are not saved</b> on new exams.</div>
+        <div style="margin-top:8px;font-weight:700;">How to fix (2 minutes, safe to re-run):</div>
+        <ol style="margin:6px 0 0 18px;padding:0;">
+          <li>Open your <b>Supabase dashboard → SQL Editor</b>.</li>
+          <li>Paste the <b>entire</b> <code style="background:rgba(255,255,255,.15);padding:1px 5px;border-radius:4px;">database/complete-schema.sql</code> file from your deployment package.</li>
+          <li>Click <b>Run</b>, then refresh this page.</li>
+        </ol>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="schema-banner-recheck" style="background:#fff;color:#7f1d1d;border:none;border-radius:8px;padding:8px 14px;font-weight:800;cursor:pointer;">Re-check now</button>
+        <button id="schema-banner-dismiss" style="background:transparent;color:#fff;border:1px solid rgba(255,255,255,.5);border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;">Hide for now</button>
+      </div>
+    </div>`;
+  const mount=document.body.firstElementChild?document.body:document.documentElement;
+  (document.body||mount).insertBefore(b,(document.body||mount).firstChild);
+  document.getElementById('schema-banner-recheck').onclick=async(ev)=>{ev.target.disabled=true;ev.target.innerText='Checking…';const s=await checkSchemaCurrency(false);if(s){ev.target.disabled=false;ev.target.innerText='Re-check now';showToast('⚠️ Still out of date — run database/complete-schema.sql in Supabase, then re-check.');}};
+  document.getElementById('schema-banner-dismiss').onclick=()=>{try{sessionStorage.setItem('hmg_schema_banner_dismissed','1');}catch(_){}b.remove();};
 }
 
 // Load exams first, then results (results query depends on exam IDs)
@@ -5026,7 +5095,10 @@ async function createExam(){
     document.getElementById('ex-passmark').value='50';document.getElementById('ex-limit').value='1';
     const _cm=document.getElementById('ex-mode');if(_cm)_cm.value='open';
     const _ca=document.getElementById('ex-close-at');if(_ca)_ca.value='';
-    const _on=document.getElementById('ex-open-now');if(_on)_on.value='false';
+    /* PHASE 10B HOTFIX: reset to the RECOMMENDED default ('true'). The old
+       'false' reset silently locked every exam published later in the same
+       session — the #1 cause of "Exam not found or not open" complaints. */
+    const _on=document.getElementById('ex-open-now');if(_on)_on.value='true';
     setAntiCheatForm('', normalizeAntiCheatConfig({anti_cheat_config:{proctoring:false,audio:false,max_violations:5}}));
     const _mk=document.getElementById('ex-math-keyboard');if(_mk)_mk.value='true';
     document.getElementById('csv-file').value='';document.getElementById('csv-preview').innerText='';

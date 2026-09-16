@@ -338,6 +338,18 @@ do operationally:
 - [ ] Exam creation tested.
 - [ ] Student submission tested.
 - [ ] Teacher results tested.
+- [ ] `deployment_validator.html` opened — **"Database schema up to date (live probe)" shows ✅** (this catches "site newer than database", the cause of students seeing "Exam not found or not open" for NEW exams while old ones work — see PHASE10B_EXAM_REACHABILITY_HOTFIX.md).
+
+## 12.1 — Updating an EXISTING deployment (standing rule)
+
+**Whenever you deploy new site files, run `database/complete-schema.sql` once
+against the live database in the same maintenance window** (Supabase → SQL
+Editor → paste the entire file → Run). It is idempotent and drift-hardened —
+safe on databases with existing exams and results. Then open
+`deployment_validator.html` and confirm the live database probe is ✅ before
+sharing new exam links. If the Teacher Hub ever shows the red **"Platform
+database is out of date"** banner, that is this exact rule not yet applied —
+run the SQL and click *Re-check now*.
 - [ ] Admin exports tested.
 - [ ] Backup/export tested.
 - [ ] Deployment validator passes.

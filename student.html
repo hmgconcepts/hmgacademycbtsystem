@@ -1151,7 +1151,10 @@ async function checkExamCodeStatus(code){
         return Array.isArray(r)&&r.length?r[0]:null;
     }catch(e){
         console.warn('[CBT] Status probe RPC unavailable:',e.message);
-        return null;
+        /* PHASE 10B: return undefined (NOT null) so init() can tell
+           "database schema out of date — reason unknown" apart from
+           "probe ran and the exam genuinely does not exist". */
+        return undefined;
     }
 }
 
@@ -1436,6 +1439,16 @@ async function init(){
                 }else{
                     m='This exam exists but is currently <b>LOCKED</b> by your teacher. Ask your teacher to open it (Assessments → ⋮ Actions → Open) and then refresh this page.';
                 }
+            }else if(st===undefined){
+                /* PHASE 10B HOTFIX: the status probe RPC is missing on this
+                   platform's database (stale schema), so we cannot tell
+                   "locked / closed" apart from "wrong code". Give students the
+                   actionable checklist instead of a dead-end message. */
+                m='<div style="text-align:left;margin:2px 0 4px;">We could not load this exam. This usually happens for one of two reasons:'+
+                  '<ol style="margin:8px 0 8px 18px;padding:0;line-height:1.9;">'+
+                  '<li>The exam is still <b>LOCKED</b> — ask your teacher to open it, then <b>refresh this page</b>. Teachers open exams under <b>Teacher Hub → Assessments → 🟢 Open</b>.</li>'+
+                  '<li>The code or link is wrong — ask your teacher to resend the correct link or code.</li>'+
+                  '</ol>If neither fixes it, show your teacher this message: <i>"the platform database needs its one-time update — run <b>database/complete-schema.sql</b> in the Supabase SQL Editor"</i>.</div>';
             }else{
                 m='Exam not found or not open. Check your exam code or ask your teacher to resend/re-open the link/code.';
             }

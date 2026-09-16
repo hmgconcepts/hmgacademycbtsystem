@@ -380,3 +380,31 @@ silently failing), local `escapeHtml` for teacher.html, lean-save fallback for
 the new exam columns on older databases, chatbot + Help Center coverage of all
 new features, and the full test posture (3 new suites, extended schema/PG/smoke
 suites, complete Phase 1–9 regression green).
+
+## Phase 10B (2026-09-16) — Exam reachability hotfix
+
+Live incident: newly created exam links failed with "Exam not found or not
+open" while old links worked — the site was newer than the database and two
+silent-UX defects hid the reason. Full analysis, evidence and the live
+runbook: **PHASE10B_EXAM_REACHABILITY_HOTFIX.md**.
+
+1. **Open-by-default publish reset** — after publishing, the create form now
+   restores "Open Exam Immediately? = Yes (recommended)" so the next exam in
+   the same session is never silently locked.
+2. **Teacher schema-currency guard** — a login canary probes the
+   `check_exam_code_status` RPC and the Phase 10 exam columns; if either is
+   missing (or a save downgrades), a persistent red banner explains exactly
+   what is being skipped and how to run `database/complete-schema.sql`
+   (with a Re-check button and per-session dismissal).
+3. **Actionable student fallback** — when the status probe is unavailable,
+   students get a clear checklist (locked → teacher opens it under
+   Assessments → 🟢 Open; wrong code; database update note for teachers)
+   instead of a dead-end message.
+4. **Validator live database probe** — deployment_validator.html now checks
+   the real database behind the deployed files and flags "site newer than
+   database" with the 2-minute fix, turning this incident class into a
+   pre-flight check.
+5. **Assistant + Help Center** — the offline bot's exam-not-found answer
+   covers the database-behind-the-site cause; the site guide documents the
+   red banner and the "update the database whenever you update the files"
+   rule.
