@@ -314,8 +314,8 @@ const App = {
       { href: 'platform-health.html', label: '🩺 Health' },
       { href: 'status-manager.html', label: '👥 Roles' },
       { href: 'settings.html', label: '⚙️ Settings' },
-      { href: 'license.html', label: '📜 License' },
-      { href: 'client-monitor.html', label: '📡 Clients' },
+      /*BUILDER-ONLY*/{ href: 'license.html', label: '📜 License' },
+      { href: 'client-monitor.html', label: '📡 Clients' },/*BUILDER-ONLY-END*/
       { href: 'activity_log.html', label: '📊 Audit' }
     ];
 

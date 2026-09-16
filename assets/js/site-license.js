@@ -198,8 +198,9 @@
     return false;
   }
 
-  /* Renewal pages never get the full lock — the proprietor must be able
-     to sign in (admin.html) and renew (license.html) while expired. */
+  /* Renewal pages never get the full lock — an admin must be able to sign
+     in (admin.html) while expired. license.html exists only on the builder's
+     master deployment; keeping it listed is harmless where it is absent. */
   function isRenewalPage() {
     var p = (window.location.pathname.split('/').pop() || 'index.html').split(/[?#]/)[0];
     return p === 'license.html' || p === 'admin.html';
@@ -331,8 +332,11 @@
     if ((state === 'expired' || state === 'suspended') && isRenewalPage()) {
       var rb = document.createElement('div');
       rb.className = 'banner grace';
+      /* PHASE 12: renewal is PROVIDER-MANAGED. Client deployments have no
+         license console — and even where one exists (the builder's master),
+         extensions are applied by the provider. Never advertise self-service. */
       rb.innerHTML = '🔒 ' + (state === 'suspended' ? 'Platform suspended' : 'Subscription expired') +
-        ' — but renewal is RIGHT HERE: open the <a href="license.html">License console</a> and use quick-extend.' +
+        ' — renewal is managed by the platform provider (HMG Concepts · WhatsApp +234 810 086 6322 · hismarvellousgrace@gmail.com).' +
         ' <a href="' + esc(lic.renew_url || '#') + '">Renew</a>';
       root.appendChild(rb);
       return;
@@ -359,7 +363,7 @@
       + '<div class="n">🔒</div>'
       + '<h2>' + (state === 'suspended' ? 'Platform Suspended' : 'Subscription Expired') + '</h2>'
       + '<p>' + esc(msg) + '</p>'
-      + '<p class="small">Renewal is quick: the proprietor can sign in at <a href="admin.html" style="color:#10b981;font-weight:700;">admin.html</a> and open the <a href="license.html" style="color:#10b981;font-weight:700;">License console</a> (both stay reachable while locked), or contact HMG to extend it remotely.</p>'
+      + '<p class="small">Renewal is quick and provider-managed: contact <b>HMG Concepts</b> (WhatsApp +234 810 086 6322 · hismarvellousgrace@gmail.com) or use the Renew button — the provider extends the platform remotely and access is restored instantly. Admin sign-in stays reachable at <a href="admin.html" style="color:#10b981;font-weight:700;">admin.html</a> while locked.</p>'
       + (lic.renew_url ? '<a class="btn" href="' + esc(lic.renew_url) + '" target="_blank" rel="noopener">Renew Subscription</a>' : '')
       + '<p class="small">' + esc(lic.plan || '') + (lic.expires_on ? ' · expired ' + esc(String(lic.expires_on).slice(0, 10)) : '') + '</p>'
       + '<p class="small">✅ Nothing is lost and this platform will NOT be paused — it is kept warm so renewal restores access instantly. Powered by HMG Academy Ecosystem</p>'

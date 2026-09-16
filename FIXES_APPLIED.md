@@ -306,3 +306,28 @@ and feature-preservation audit against the ORIGINAL baseline.
   handlers, link targets, RPC↔schema coverage, nav completeness, session-key
   matrix, navigate targets) and phase11_wiring_test.js (30 behavioural
   checks). Both green.
+
+---
+
+## Appendix — Phase 12 Fixes (2026-09-16)
+
+### Bug 1 — Multi-subject publish failed with NOT NULL violation (live, reproduced many times)
+- **Symptom:** teacher → multi-subject builder → upload CSV → *Publish Combined Assessment* → `Publish failed: null value in column "csv_data" of relation "exams" violates not-null constraint`.
+- **Root cause:** the publish payload never included `csv_data`; on databases where `exams.csv_data` is NOT NULL without a default (schema drift on live DBs), Postgres rejects the insert. Present in the original baseline.
+- **Fix:** payload now always sends `csv_data` (flattened engine-order list) + explicit `exam_mode`; per-subject entries carry both `questions` (student engine) and `csv_data` (teacher analytics/documented schema shape). Works on every schema state — no DB update required. `complete-schema.sql` adds `ALTER COLUMN csv_data/subjects_data SET DEFAULT '[]'::jsonb` drift-heal for live databases.
+
+### Bug 2 — Duplicate dropped multi-subject identity (found in audit)
+- **Symptom:** duplicating a multi-subject exam produced a flat single-subject copy (subjects silently dropped).
+- **Fix:** duplicate now carries `is_multi_subject` + `subjects_data` (never null → NOT-NULL safe).
+
+### Directive 3 — Subscription integrity (client mode)
+- Client builds: license.html + client-monitor.html removed from the generator MANIFEST and templates; `applyClientMode()` (generator.js) strips every `BUILDER-ONLY` block and swaps `LICENSE-SELF-SERVICE-GUARD` RPCs to provider-managed denials; all banners/KB rewritten provider-first; zero builder-console references in client output (verified in E2E).
+- Master keeps full control room; Client Monitor gained the 🫀 keep-alive sweep (pings every client's `sc_keep_alive` via stored URL+anon key; per-client ok/unreachable/skipped reporting) so expired-but-unrenewed platforms never pause (Supabase 7-day inactivity rule) and can be renewed whenever the client is ready.
+
+### Directive 4 — Teacher navigation separation
+- The 10 administration pages removed from the teacher sidebar (section + hidden-admin reveal logic deleted); admin pages live only in the Admin Panel's own navigation. All 616 workflow-audit checks green under the new model.
+
+### Files touched (master)
+`cbt-multi.html` · `teacher.html` · `database/complete-schema.sql` · `assets/js/site-license.js` · `client-monitor.html` · `admin.html` · `settings.html` · `deployment_validator.html` · `sw.js` (→ hmg-cbt-shell-v12-phase12-v1) · `assets/js/app.js` · `assets/js/chatbot.js` · `assets/js/site-help.js` · `PHASE12_SUBSCRIPTION_INTEGRITY.md`
+### Generator
+`assets/js/generator.js` (applyClientMode + MANIFEST) · `templates/` (11 files re-synced tokenised; license.html + client-monitor.html deleted)

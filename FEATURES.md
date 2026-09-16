@@ -441,3 +441,20 @@ phase build) plus three platform upgrades. Full report:
    verify every event handler resolves, every internal link target exists,
    every invoked RPC exists in the schema, both nav panes list every page,
    the session-key matrix is consistent, and navigate() targets have views.
+
+## Phase 12 — Subscription Integrity & Client Mode (2026-09-16)
+
+**Subscription integrity (client hardening):**
+- Client builds (generator output) ship **no License console and no Client Monitor** — clients can never bypass subscription mode. The license *engine* still runs everywhere; only the consoles are builder-side.
+- `extend_site_license` / `save_site_license` RPCs on client deployments are swapped to a provider-managed denial ("License changes on this deployment are managed by the platform provider (HMG Concepts)") — safe even in the client's own SQL editor.
+- All renewal banners/lock screens and the bot's license KB answers are **provider-managed**: contact HMG Concepts (WhatsApp +234 810 086 6322 · hismarvellousgrace@gmail.com) or the Renew button — no self-service quick-extend wording on client builds.
+
+**Builder control room (master only):**
+- 🫀 **Client Monitor keep-alive sweep** — one click pings every registered client's `sc_keep_alive` RPC (using each client's stored Supabase URL + anon key) with per-client warmed/unreachable/skipped reporting. Weekly routine: no client database ever goes cold, expired or not.
+
+**Multi-subject publish fix:**
+- Publish Combined Assessment now always sends `csv_data` (+ explicit `exam_mode`; per-subject rows carry both `questions` and `csv_data` reader keys) — kills the live `null value in column "csv_data" … NOT NULL constraint` failure on every schema state.
+- Duplicate keeps `is_multi_subject` + `subjects_data` (copies no longer degrade to flat papers); `complete-schema.sql` adds `csv_data`/`subjects_data` SET DEFAULT drift-heal.
+
+**Navigation separation:**
+- Teacher navigation pane no longer lists the 10 administration consoles (Admin Panel, Data & Drive Sync, Disaster Recovery, Storage Manager, Platform Health, Roles & Approvals, Platform Settings, Site License, Audit Log, Client Monitor) — they live in the Admin Panel's own navigation, reached via Portals Home → Admin Sign In.

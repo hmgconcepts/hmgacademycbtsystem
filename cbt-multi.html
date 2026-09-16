@@ -334,12 +334,23 @@ async function publishMultiSubjectExam() {
     duration,
     attempt_limit: attempts,
     select_count: 0,
+    /* PHASE 12 WIRING FIX — the live "null value in column csv_data violates
+       not-null constraint" bug: this payload used to omit csv_data entirely
+       (present since the ORIGINAL build). Databases where the exams.csv_data
+       column is NOT NULL WITHOUT a default (drifted/older schemas) rejected
+       the insert. csv_data is now ALWAYS sent: the flattened question list in
+       engine order (subject by subject) — which also keeps Duplicate and any
+       single-subject-style reader working. subjects_data entries carry BOTH
+       keys (`questions` — student engine — and `csv_data` — teacher-side
+       analytics and the schema's documented shape). */
+    csv_data: subjectsList.flatMap(s => s.questions),
+    exam_mode: 'open',
     negative_mark: negative,
     is_open: true,
     is_multi_subject: true,
     feedback_mode: document.getElementById('ms-feedback')?.value || 'end',          // PHASE 10
     score_model: document.getElementById('ms-score-model')?.value || 'standard',    // PHASE 10
-    subjects_data: subjectsList.map(s => ({ name: s.name, subject_name: s.name, count: s.count, questions: s.questions })),
+    subjects_data: subjectsList.map(s => ({ name: s.name, subject_name: s.name, count: s.count, csv_data: s.questions, questions: s.questions })),
     instructions
   };
 

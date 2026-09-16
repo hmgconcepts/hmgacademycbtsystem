@@ -552,6 +552,14 @@ ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS instructions TEXT DEFAULT '';
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS is_multi_subject BOOLEAN NOT NULL DEFAULT false;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS subjects_data JSONB NOT NULL DEFAULT '[]'::jsonb;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS csv_data JSONB NOT NULL DEFAULT '[]'::jsonb;
+-- PHASE 12 drift healing: older/drifted databases created these columns
+-- NOT NULL WITHOUT a default, which made multi-subject publishes fail with
+-- 'null value in column "csv_data" violates not-null constraint'. Re-assert
+-- the defaults (idempotent — safe on every database state). The publish
+-- payload now also sends csv_data explicitly, so BOTH old and new databases
+-- work even before this reconciliation runs.
+ALTER TABLE public.exams ALTER COLUMN subjects_data SET DEFAULT '[]'::jsonb;
+ALTER TABLE public.exams ALTER COLUMN csv_data SET DEFAULT '[]'::jsonb;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS start_at TIMESTAMPTZ;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS close_at TIMESTAMPTZ;
 ALTER TABLE public.exams ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
@@ -1055,9 +1063,11 @@ SECURITY DEFINER
 SET search_path = public, pg_temp
 AS $$
 BEGIN
+  /*LICENSE-SELF-SERVICE-GUARD*/
   IF NOT public.is_platform_owner() THEN
     RAISE EXCEPTION 'Not authorized: super_admin (owner) access required to change the site license';
   END IF;
+  /*LICENSE-SELF-SERVICE-GUARD-END*/
 
   INSERT INTO public.site_license (id, model, plan, cycle, started_on, expires_on, grace_days,
                                    status, renew_url, lock_message, license_token, signature, updated_at)
@@ -1105,9 +1115,11 @@ SET search_path = public, pg_temp
 AS $$
 DECLARE v_cur DATE;
 BEGIN
+  /*LICENSE-SELF-SERVICE-GUARD*/
   IF NOT public.is_platform_owner() THEN
     RAISE EXCEPTION 'Not authorized: super_admin (owner) access required';
   END IF;
+  /*LICENSE-SELF-SERVICE-GUARD-END*/
   IF p_days < 1 OR p_days > 3650 THEN
     RAISE EXCEPTION 'Days must be between 1 and 3650';
   END IF;

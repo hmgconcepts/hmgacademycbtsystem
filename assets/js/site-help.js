@@ -190,7 +190,7 @@ const SiteHelp = {
       ],
       tips: ['Settings save to the platform_settings table — one save, every device.', 'Lockdown Mode is the emergency brake for exam-week incidents.']
     },
-    'license.html': {
+    /*BUILDER-ONLY*/    'license.html': {
       title: '📜 Site License — dual engine',
       who: 'Proprietors / license holders.',
       summary: 'Two complementary engines: an offline HMAC-SHA256 perpetual certificate, and a full subscription lifecycle with states, registry and tamper evidence.',
@@ -201,7 +201,7 @@ const SiteHelp = {
         { name: 'Honest Note', desc: 'Code on client-controlled hosting can never be 100% tamper-proof. These layers make bypass non-trivial and keep the authoritative status in the proprietor\'s hands (optional registry).' }
       ],
       tips: ['Grace days keep the school running over a payment weekend.', 'The lock screen never interrupts an in-progress exam.', 'Locked out? This console and the Admin sign-in stay reachable on purpose — renew from inside, any time.', 'An expired platform is never allowed to go silent: the heartbeat keeps the Supabase database warm so renewal is instant.']
-    },
+    },/*BUILDER-ONLY-END*/
     'activity_log.html': {
       title: '📊 Audit & Activity Log',
       who: 'Administrators, auditors, investigators.',
@@ -247,7 +247,7 @@ const SiteHelp = {
         { name: 'Recovery Instructions', desc: 'Answers are in this device\'s storage; reconnect (or reopen) and the draft restore brings you back to the exact question.' }
       ]
     },
-    'client-monitor.html': {
+    /*BUILDER-ONLY*/    'client-monitor.html': {
       title: '📡 Client Monitor — builder-side subscription registry',
       who: 'The platform owner / builder (HMG) — admin accounts only.',
       summary: 'Register every client deployment you deliver and watch their live subscription status in one table — the builder-side control room for subscription business models.',
@@ -258,7 +258,7 @@ const SiteHelp = {
         { name: 'Why clients never go dark', desc: 'Expired platforms keep their heartbeat running (site-visit pings + scheduled workflows), so Supabase never pauses them for inactivity — renewal is always a single action away, with zero rebuild or data loss.' }
       ],
       tips: ['Run Check Now before every renewal conversation — quote the client their exact state and days.', 'Unreachable ≠ expired: it usually means the client\'s Supabase project is paused — restore it first, then re-check.', 'Every registry change is audit-logged server-side.']
-    },
+    },/*BUILDER-ONLY-END*/
     'deployment_validator.html': {
       title: '✅ Deployment Validator',
       who: 'Whoever deploys or updates the platform.',

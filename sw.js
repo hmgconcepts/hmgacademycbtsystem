@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v11-phase11-v1'; // PHASE 11: cross-page session wiring fix (multi-subject publish bug), complete navigation panes, Paper Exam Export
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12-v1'; // PHASE 12: subscription-integrity client mode, teacher-nav fix, multi-subject csv_data fix
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
@@ -23,7 +23,7 @@ const SHELL_ASSETS = [
   './platform-health.html',
   './status-manager.html',
   './settings.html',
-  './license.html',
+  /*BUILDER-ONLY*/'./license.html',/*BUILDER-ONLY-END*/
   './activity_log.html',
   './certificate.html',
   './deployment_validator.html',

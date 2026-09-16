@@ -476,3 +476,31 @@ data on every public page.
 > Internal staff tools (admin, data, storage, health, roles, settings, audit)
 > are intentionally excluded from the sitemap — they sit behind logins and
 > should not appear in search results.
+
+---
+
+## Phase 12 — Master vs Client deployment & the keep-alive routine
+
+### You now maintain two kinds of deployment
+
+| | **Master (yours)** | **Client build (generator output)** |
+|---|---|---|
+| License console (`license.html`) | ✅ present — owner-only | ❌ not shipped |
+| Client Monitor (`client-monitor.html`) | ✅ present — your control room | ❌ not shipped |
+| License enforcement (lock screens, banners, heartbeat) | ✅ | ✅ full enforcement |
+| `extend_site_license` / `save_site_license` RPCs | owner-gated, work normally | provider-managed denial (HMG Concepts manages renewals) |
+| Keep-alive heartbeat + auto-restore workflows | ✅ | ✅ shipped in every client package |
+
+### Weekly builder routine (5 minutes, keeps every client database warm)
+1. Open **Client Monitor** on your master deployment.
+2. Click **🫀 Keep-alive sweep (ping all)** — it pings every registered client's `sc_keep_alive` RPC.
+3. Read the report: **warmed ✓** / **unreachable** (client DB possibly paused → run the Supabase restore guide in `SUPABASE_FREE_TIER_PROTECTION.md`) / **skipped** (no Supabase credentials stored for that client — store them in the registry entry so future sweeps can reach it).
+4. Renewals: update your hosted `license-registry.json` (or apply the monitor's override snippet) — the client platform re-checks and unlocks instantly.
+
+### Master deployment upgrade (existing live platform)
+1. Deploy this Phase 12 master package.
+2. **Re-run `database/complete-schema.sql` once** — it adds the `csv_data`/`subjects_data` SET DEFAULT drift-heal (live bug fix) and Phase 12 RPC updates.
+3. Register each delivered client in the Client Monitor (name, deploy URL, client Supabase URL + anon key) and host your `license-registry.json`.
+
+### Client delivery (per new school)
+Generator → ZIP → client deploys → client runs `database/complete-schema.sql` in their own Supabase → done. Their platform enforces the license the registry/row defines; renewal is provider-managed (they contact you; you renew remotely). Set one free external pinger on their `/api/keepalive` at delivery for belt-and-braces.

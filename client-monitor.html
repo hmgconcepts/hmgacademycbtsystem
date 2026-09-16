@@ -31,6 +31,7 @@
     </div>
     <div style="display:flex;gap:8px;flex-wrap:wrap;">
       <button class="btn btn-primary" onclick="checkAllClients()">🔎 Check all now</button>
+      <button class="btn btn-outline" onclick="sweepKeepAlive()" id="cm-sweep-btn" title="Ping every client's heartbeat RPC — keeps their databases warm (Supabase pauses free projects after 7 days of inactivity) and reports freshness">🫀 Keep-alive sweep (ping all)</button>
       <button class="btn btn-outline" onclick="loadClients(true)">🔄 Refresh registry</button>
     </div>
   </div>
@@ -206,6 +207,37 @@ async function checkAllClients() {
   showToast('Checking ' + CLIENTS.length + ' client(s)…', 'info');
   await Promise.all(CLIENTS.map(c => checkClient(c.id)));
   showToast('✅ Live check complete.', 'success');
+}
+
+/* ═══ PHASE 12 — BUILDER-SIDE KEEP-ALIVE SWEEP ═══════════════════════════
+   Supabase pauses free-tier projects after 7 days of inactivity. Client
+   platforms keep themselves warm via their scheduled heartbeat workflows,
+   but an expired-and-unrenewed client may sit for weeks with no visitors.
+   This sweep pings EVERY registered client's heartbeat RPC directly from
+   the builder's side (the registry stores each client's public Supabase
+   URL + anon key), so every database stays unpaused and renewable — even
+   subscription-expired ones. Run it weekly (or after any long break).
+   The sc_keep_alive RPC is public by design (the heartbeat layer); it only
+   refreshes the keep-alive timestamp, touching nothing else. */
+async function sweepKeepAlive() {
+  const btn = document.getElementById('cm-sweep-btn');
+  const restore = () => { if (btn) { btn.disabled = false; btn.innerText = '🫀 Keep-alive sweep (ping all)'; } };
+  if (btn) { btn.disabled = true; btn.innerText = '🫀 Pinging…'; }
+  if (!CLIENTS.length) { showToast('No clients registered yet — nothing to ping.', 'warning'); restore(); return; }
+  let ok = 0, fail = 0, skipped = 0;
+  await Promise.all(CLIENTS.map(async c => {
+    if (!c.supabase_url || !c.supabase_anon_key) { skipped++; return; }
+    try {
+      const r = await fetch(String(c.supabase_url).replace(/\/+$/, '') + '/rest/v1/rpc/sc_keep_alive', {
+        method: 'POST',
+        headers: { 'apikey': c.supabase_anon_key, 'Authorization': 'Bearer ' + c.supabase_anon_key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ p_src: 'builder-sweep' })
+      });
+      if (r.ok) ok++; else fail++;
+    } catch (_) { fail++; }
+  }));
+  restore();
+  showToast(`🫀 Sweep complete — ${ok} warmed ✓${fail ? ' · ' + fail + ' unreachable (paused? run the restore guide)' : ''}${skipped ? ' · ' + skipped + ' skipped (no Supabase details stored)' : ''}`, fail ? 'warning' : 'success');
 }
 
 function statusChip(live) {

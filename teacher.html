@@ -772,39 +772,13 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
       <button class="nav-item" onclick="window.location.href='link_checker.html'" id="nav-linkcheck">
         <span class="nav-icon">🔗</span> Link Checker
       </button>
-      <div id="nav-admin-section">
-        <div class="nav-section-label">Administration</div>
-        <button class="nav-item" onclick="window.location.href='admin.html'" id="nav-admin" style="color:var(--warning);">
-          <span class="nav-icon">⭐</span> Admin Panel
-        </button>
-        <button class="nav-item" onclick="window.location.href='admin-data.html'" id="nav-admin-data">
-          <span class="nav-icon">💾</span> Data &amp; Drive Sync
-        </button>
-        <button class="nav-item" onclick="window.location.href='disaster-recovery.html'" id="nav-recovery">
-          <span class="nav-icon">🚨</span> Disaster Recovery
-        </button>
-        <button class="nav-item" onclick="window.location.href='storage.html'" id="nav-storage">
-          <span class="nav-icon">📦</span> Storage Manager
-        </button>
-        <button class="nav-item" onclick="window.location.href='platform-health.html'" id="nav-health">
-          <span class="nav-icon">🩺</span> Platform Health
-        </button>
-        <button class="nav-item" onclick="window.location.href='status-manager.html'" id="nav-roles">
-          <span class="nav-icon">👥</span> Roles &amp; Approvals
-        </button>
-        <button class="nav-item" onclick="window.location.href='settings.html'" id="nav-psettings">
-          <span class="nav-icon">🛠️</span> Platform Settings
-        </button>
-        <button class="nav-item" onclick="window.location.href='license.html'" id="nav-license">
-          <span class="nav-icon">📜</span> Site License
-        </button>
-        <button class="nav-item" onclick="window.location.href='activity_log.html'" id="nav-audit">
-          <span class="nav-icon">📊</span> Audit Log
-        </button>
-        <button class="nav-item" onclick="window.location.href='client-monitor.html'" id="nav-cmonitor">
-          <span class="nav-icon">📡</span> Client Monitor
-        </button>
-      </div>
+      <!-- PHASE 12 NAV FIX: the Administration consoles (Admin Panel, Data &
+           Drive Sync, Disaster Recovery, Storage Manager, Platform Health,
+           Roles & Approvals, Platform Settings, Site License, Audit Log,
+           Client Monitor) are ADMIN pages — they live in the Admin Panel's
+           own navigation pane (Admin Panel is reachable from Portals Home →
+           Admin Sign In) and are deliberately NOT listed in the teacher
+           navigation pane. -->
     </nav>
     <div class="sidebar-bottom">
       <button class="nav-item btn-danger" onclick="logout()" style="color:var(--danger);background:var(--danger-dim);border:1px solid rgba(239,68,68,0.25);">
@@ -3600,10 +3574,9 @@ async function handleAuth(type){
     saved_at:      Date.now()
   }));
 
-  if(profileIsAdmin){
-    const sec = document.getElementById('nav-admin-section');
-    if(sec) sec.classList.remove('hidden');
-  }
+  /* PHASE 12: the Administration nav section was removed from the teacher
+     pane (admin pages belong to the Admin Panel's own navigation) — nothing
+     to reveal here anymore. Admins reach the panel via Portals Home. */
 
   resetBtn();
   initDashboard(session.user.email);
@@ -6551,6 +6524,11 @@ async function confirmDuplicate(){
     duration:exam.duration,attempt_limit:exam.attempt_limit,select_count:exam.select_count,
     code:newCode,csv_data:parseQuestionData(exam.csv_data),teacher_id:session.user.id,
     exam_mode:exam.exam_mode,is_open:false,close_at:null,anti_cheat_config:normalizeAntiCheatConfig(exam),proctoring:normalizeAntiCheatConfig(exam).proctoring,math_keyboard:exam.math_keyboard!==false,
+    /* PHASE 12 WIRING FIX: duplicating a multi-subject package used to drop
+       subjects_data + is_multi_subject — the copy degraded into a flat
+       single-subject paper. Multi-subject identity now carries over. */
+    is_multi_subject:exam.is_multi_subject===true,
+    subjects_data:exam.subjects_data||[],
     adaptive:exam.adaptive===true,feedback_mode:exam.feedback_mode||'end',score_model:exam.score_model||'standard' /* PHASE 10 */
   };
   try{
