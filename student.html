@@ -1128,12 +1128,106 @@ function _pairsOf(q){
 function normalizeQuestionPayload(q){
     try{
         const t=getQType(q);
+        /* PHASE 12D — THE DOCUMENTED-CONTRACT HEAL. Papers authored per the
+           AI Prompt Studio put categorization / multi-part-numeric (and some
+           matching) data in the PAIRS column, and the two guides use
+           different key spellings ({l,r} vs {left,right} / {item,category} /
+           {ans} vs {answer}). Route, parse and normalise every shape here so
+           renderers and graders see ONE canonical form — and papers already
+           published render correctly without re-publishing. */
+        const _empty=v=>v===undefined||v===null||v===''||(Array.isArray(v)&&!v.length);
+        if(_empty(q.items)&&!_empty(q.pairs)&&['categorization','multi_numeric','matrix','ordering','cloze','hot_text'].includes(t)){
+            q.items=q.pairs;   /* prompt-studio contract: the Pairs column carries the payload */
+        }
         if(q.pairs!==undefined&&q.pairs!==null)q.pairs=_pairsOf(q);
         if(q.distractors!==undefined&&q.distractors!==null)q.distractors=_arrOfRaw(q.distractors);
-        /* array-expecting types get arrays; assertion_reason / case_study /
-           image_mcq / code self-parse strings OR objects and keep theirs. */
         if(['matching','ordering','categorization','multi_numeric','matrix','hot_text'].includes(t)&&q.items!==undefined&&q.items!==null){
             q.items=_safeItems(q);
+        }
+        /* key-spelling normalisation (guide keys win; prompt-spec keys map in) */
+        if(t==='matching'){
+            const decoys=[];
+            q.pairs=(q.pairs||[]).map(p=>{
+                if(!p||typeof p!=='object')return null;
+                const left=p.left!==undefined?p.left:(p.l!==undefined?p.l:(p.a!==undefined?p.a:''));
+                let right=p.right!==undefined?p.right:(p.r!==undefined?p.r:(p.b!==undefined?p.b:''));
+                if(!String(left).trim()||/DISTRACTOR/i.test(String(left))){ if(String(right).trim())decoys.push(String(right).trim()); return null; }
+                return {left:String(left),right:String(right)};
+            }).filter(Boolean);
+            if(decoys.length)q.distractors=[...new Set([...(q.distractors||[]),...decoys])];
+        }
+        if(t==='categorization'){
+            q.items=(q.items||[]).map(r=>{
+                if(!r||typeof r!=='object')return null;
+                const item=r.item!==undefined?r.item:(r.l!==undefined?r.l:(r.left!==undefined?r.left:(r.statement!==undefined?r.statement:'')));
+                const cat=r.category!==undefined?r.category:(r.r!==undefined?r.r:(r.right!==undefined?r.right:(r.answer!==undefined?r.answer:'')));
+                if(!String(item).trim())return null;
+                return {item:String(item),category:String(cat)};
+            }).filter(Boolean);
+        }
+        if(t==='matrix'){
+            q.items=(q.items||[]).map(r=>{
+                if(typeof r==='string')return r;
+                if(!r||typeof r!=='object')return null;
+                const st=r.statement!==undefined?r.statement:(r.row!==undefined?r.row:(r.item!==undefined?r.item:(r.l!==undefined?r.l:(r.label!==undefined?r.label:''))));
+                const an=r.answer!==undefined?r.answer:(r.correct!==undefined?r.correct:(r.r!==undefined?r.r:(r.category!==undefined?r.category:'')));
+                if(!String(st).trim())return null;
+                return {statement:String(st),answer:String(an)};
+            }).filter(Boolean);
+        }
+        if(t==='multi_numeric'){
+            q.items=(q.items||[]).map(p=>{
+                if(!p||typeof p!=='object')return null;
+                const answer=p.answer!==undefined?p.answer:(p.ans!==undefined?p.ans:(p.value!==undefined?p.value:''));
+                const tol=p.tolerance!==undefined?p.tolerance:(p.tol!==undefined?p.tol:0);
+                return {label:p.label!==undefined?p.label:(p.part!==undefined?p.part:''),answer:answer,tolerance:tol,unit:p.unit!==undefined?p.unit:''};
+            }).filter(p=>p.label!==''||p.answer!=='');
+        }
+        /* ── assertion–reason: stems from the items JSON in EITHER documented
+           shape ({"assertion":…,"reason":…} or [{"a":…},{"r":…}]) and from the
+           "A: … R: …" pattern inside the question text ── */
+        if(t==='assertion_reason'){
+            let A='',R='';
+            const obj=_itemsObjOf(q);
+            if(obj.assertion||obj.reason){A=String(obj.assertion||'');R=String(obj.reason||'');}
+            else{
+                const arr=Array.isArray(q.items)?q.items:_safeItems(q);
+                for(const it of arr){
+                    if(!it||typeof it!=='object')continue;
+                    const a=it.assertion!==undefined?it.assertion:it.a, r=it.reason!==undefined?it.reason:it.r;
+                    if(a!==undefined&&String(a).trim())A=String(a);
+                    if(r!==undefined&&String(r).trim())R=String(r);
+                }
+            }
+            if(!A&&!R&&q.q){
+                const m=String(q.q).match(/^\s*(?:assertion|a)\s*[:.\-]\s*(.+?)\s*(?:;|\.|!|\?)?\s*(?:reason|r)\s*[:.\-]\s*(.+?)\s*\.?\s*$/i);
+                if(m&&m[1]&&m[2]){A=m[1];R=m[2];}
+            }
+            if(A)q.assertion=A;
+            if(R)q.reason=R;
+        }
+        /* ── the 5-option shift (documented AR example): the CorrectAnswer
+           column holds the FIFTH option statement and the key letter sits in
+           the Explanation column. Heal it for every letter-keyed type — and
+           if the key is option TEXT, match it back to a letter. ── */
+        if(['mcq','tf','assertion_reason','case_study','image_mcq','evidence_mcq'].includes(t)){
+            const key=String(q.ans==null?'':q.ans).trim();
+            const expKey=String(q.exp==null?'':q.exp).trim().toUpperCase();
+            if(key&&!/^[A-E]$/.test(key.toUpperCase())){
+                if(/^[A-E]$/.test(expKey)){
+                    if(!q.e)q.e=key;            /* the fifth option statement */
+                    q.ans=expKey; q.exp='';
+                }else{
+                    const cols=['a','b','c','d','e'];
+                    const hit=cols.findIndex(c=>q[c]&&String(q[c]).trim().toLowerCase()===key.toLowerCase());
+                    if(hit>-1){ if(!q.e&&hit===4)q.e=key; q.ans=cols[hit].toUpperCase(); q.exp=''; }
+                }
+            }
+            /* tf normalisation: True/False text → A/B (the option-card contract) */
+            if(t==='tf'&&q.ans){
+                const k=String(q.ans).trim().toLowerCase();
+                if(k==='true')q.ans='A'; else if(k==='false')q.ans='B';
+            }
         }
     }catch(e){}
     return q;
@@ -2308,7 +2402,28 @@ function renderQNav(){
 // ═══════════════════════════════════════════
 // QUESTION TYPE HELPERS
 // ═══════════════════════════════════════════
-function getQType(q){ return (q.type||'mcq').toLowerCase(); }
+const _TYPE_CANON={ /* PHASE 12D: every spelling/hyphenation/alias of every type name → canonical */
+    mcq:'mcq', multiplechoice:'mcq', singlechoice:'mcq',
+    mrq:'mrq', multiselect:'mrq', multipleresponse:'mrq', multipleselect:'mrq', checkbox:'mrq',
+    tf:'tf', truefalse:'tf', boolean:'tf',
+    short:'short', shortanswer:'short', subjective:'short',
+    numeric:'numeric', range:'range', estimate:'range', interval:'range',
+    matching:'matching', match:'matching', matchthefollowing:'matching',
+    ordering:'ordering', sequence:'ordering', sequencing:'ordering', ranking:'ordering', dragdrop:'ordering', timeline:'ordering',
+    cloze:'cloze', fillblank:'cloze', fillintheblank:'cloze', fillin:'cloze', gapfill:'cloze', gapfilling:'cloze',
+    categorization:'categorization', classification:'categorization', sorting:'categorization', grouping:'categorization', sortintogroups:'categorization',
+    multinumeric:'multi_numeric', multipartnumeric:'multi_numeric', numericparts:'multi_numeric',
+    matrix:'matrix', grid:'matrix', likert:'matrix',
+    hottext:'hot_text', errorspotting:'hot_text',
+    assertionreason:'assertion_reason', ar:'assertion_reason', assertion:'assertion_reason',
+    casestudy:'case_study', comprehension:'case_study', reading:'case_study', passage:'case_study', passagebased:'case_study',
+    imagemcq:'image_mcq', image:'image_mcq', imagebased:'image_mcq', picture:'image_mcq',
+    evidencemcq:'evidence_mcq', evidence:'evidence_mcq', evidencebased:'evidence_mcq', twopartevidence:'evidence_mcq',
+    essay:'essay', longanswer:'essay', oralprompt:'essay', peerreview:'essay', fileupload:'essay',
+    code:'code', codeoutput:'code', programming:'code',
+    hotspot:'hotspot', imagehotspot:'hotspot', clickimage:'hotspot'
+};
+function getQType(q){ const t=String((q&&q.type)||'mcq').toLowerCase(); if(_TYPE_CANON[t])return _TYPE_CANON[t]; const canon=t.replace(/[^a-z0-9]/g,''); return _TYPE_CANON[canon]||t; }
 function qTypeLabel(t){
     return{mcq:'⊙ MCQ',mrq:'☑ Multiple Response',tf:'⟺ True / False',short:'✏ Short Answer',numeric:'# Numeric',matching:'⇌ Matching',ordering:'⇅ Ordering',cloze:'▣ Cloze / Multi-Blank',essay:'📝 Essay / Keyword Response',categorization:'🗂 Categorization',multi_numeric:'∑ Multi-Part Numeric',assertion_reason:'🧩 Assertion–Reason',case_study:'📚 Case Study',image_mcq:'🖼 Image MCQ',matrix:'▦ Matrix/Grid',hot_text:'🔎 Hot Text',code:'💻 Code/Algorithm'}[t]||'⊙ MCQ';
 }
@@ -2425,7 +2540,7 @@ function showQ(prevIndex){
 }
 
 function _renderMCQ(q, origKey, box){
-    ['A','B','C','D'].forEach(l=>{
+    ['A','B','C','D','E'].forEach(l=>{   /* PHASE 12D: 5-statement papers (healed into q.e) render fully */
         const v=q[l.toLowerCase()];if(!v)return;
         const d=document.createElement('div');
         d.className='opt'+(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]===l?' selected':'');
@@ -2654,6 +2769,16 @@ function _renderMatching(q, origKey, box){
     } else {
         rightPool=pairs.map((p,i)=>({text:p.right,correctIdx:i}))
             .concat((q.distractors||[]).map(d=>({text:d,correctIdx:-1})));
+        /* PHASE 12D: the Question-Types Guide also lists the right-side
+           options in the A–D columns — merge them in, deduped, keeping each
+           correct answer's first occurrence so the key mapping stays valid. */
+        const _seen=new Set(rightPool.map(p=>String(p.text).trim().toLowerCase()));
+        ['a','b','c','d','e'].forEach(c=>{
+            const v=q[c]&&String(q[c]).trim();
+            if(!v)return;
+            const k=v.toLowerCase();
+            if(!_seen.has(k)){rightPool.push({text:v,correctIdx:-1});_seen.add(k);}
+        });
         // Shuffle
         for(let i=rightPool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[rightPool[i],rightPool[j]]=[rightPool[j],rightPool[i]];}
         window[poolKey]=rightPool;
@@ -2896,7 +3021,9 @@ function _renderMultiNumeric(q, origKey, box){
 }
 
 
-function _safeItems(q){ if(Array.isArray(q.items))return q.items; if(typeof q.items==='string'){try{return JSON.parse(q.items);}catch(e){return [];}} return []; }
+function _safeItems(q){ if(Array.isArray(q.items))return q.items; if(typeof q.items==='string'){try{const p=JSON.parse(q.items);return Array.isArray(p)?p:[];}catch(e){return [];}} return []; }
+/* object-shaped items JSON ({"passage":…}, {"assertion":…}) — parsed, never crashed on */
+function _itemsObjOf(q){ if(q.items&&typeof q.items==='object'&&!Array.isArray(q.items))return q.items; if(typeof q.items==='string'&&q.items.trim().startsWith('{')){try{const p=JSON.parse(q.items);return (p&&typeof p==='object'&&!Array.isArray(p))?p:{};}catch(e){}} return {}; }
 function _getOptionList(q, fallbackLetters='ABCD'){ const items=_safeItems(q); if(items.length&&typeof items[0]==='object'&&items[0].label)return items.map(o=>({letter:String(o.label).toUpperCase(),text:o.text||o.value||''})); if(items.length&&typeof items[0]==='string')return items.map((txt,i)=>({letter:String.fromCharCode(65+i),text:txt})); return fallbackLetters.split('').filter(l=>q[l.toLowerCase()]).map(l=>({letter:l,text:q[l.toLowerCase()]})); }
 function _renderChoiceList(q, origKey, box, letters='ABCD'){ _renderLetterOptions(_getOptionList(q,letters), origKey, box); }
 /* PHASE 12C: shared letter-card renderer — callers can pass an EXPLICIT option
@@ -2904,15 +3031,17 @@ function _renderChoiceList(q, origKey, box, letters='ABCD'){ _renderLetterOption
    which hold the stems on CSV papers). */
 function _renderLetterOptions(opts, origKey, box){ const grid=document.createElement('div');grid.className='options-grid'; (opts||[]).forEach(o=>{const div=document.createElement('div');div.className='option-card'+(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]===o.letter?' selected':'');div.innerHTML=`<span class="opt-letter">${escapeHtmlStudent(o.letter)}</span><span>${escapeHtmlStudent(o.text)}</span>`;div.onclick=()=>{answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=o.letter;showQ();renderQNav();};grid.appendChild(div);}); box.appendChild(grid); }
 function _renderAssertionReason(q, origKey, box){
-    /* PHASE 12C (School Connect arBlock parity): the Assertion and the Reason
-       render as tagged badge rows in their own panel — and the options are
-       the five standard statements, NEVER the a/b columns (on CSV papers
-       those columns hold the stems, so the old fallback showed the assertion
-       and reason AGAIN as "options" A and B with no real choices). */
+    /* PHASE 12D: renders EVERY documented authoring shape.
+       Stems (priority): the items JSON — {"assertion":…,"reason":…} (Question
+       Types Guide) or [{"a":…},{"r":…}] (AI Prompt Studio) — both extracted
+       to q.assertion/q.reason by normalizeQuestionPayload; then the legacy
+       a/b-column stems (only when a–d are NOT carrying four option
+       statements, i.e. the guide's 5-statement layout). Options: explicit
+       labelled items → the a–d(+e) columns → the five canonical statements. */
     const items=_safeItems(q);
-    const ar=(items&&typeof items[0]==='object'&&!items[0].label)?items[0]:{};
-    const assertion=ar.assertion||q.assertion||q.a||'';
-    const reason=ar.reason||q.reason||q.b||'';
+    const colsAreOptions=['a','b','c','d'].filter(c=>q[c]&&String(q[c]).trim()).length>=3;
+    const assertion=q.assertion||(colsAreOptions?'':(q.a||''));
+    const reason=q.reason||(colsAreOptions?'':(q.b||''));
     if(assertion||reason){
         const panel=document.createElement('div');panel.className='ar-panel';
         panel.innerHTML=(assertion?'<div class="ar-row"><span class="ar-tag">Assertion</span><span>'+escapeHtmlStudent(assertion)+'</span></div>':'')+
@@ -2920,12 +3049,17 @@ function _renderAssertionReason(q, origKey, box){
         box.appendChild(panel);
     }
     const explicit=items.filter(x=>x&&x.label).map(x=>({letter:String(x.label).toUpperCase(),text:x.text||x.value||''}));
+    let fromCols=[];
+    if(colsAreOptions){
+        fromCols=['A','B','C','D','E'].filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim())
+            .map(l=>({letter:l,text:String(q[l.toLowerCase()])}));
+    }
     const std=[{letter:'A',text:'Both Assertion and Reason are true, and Reason correctly explains Assertion.'},
                {letter:'B',text:'Both Assertion and Reason are true, but Reason does not correctly explain Assertion.'},
                {letter:'C',text:'Assertion is true, but Reason is false.'},
                {letter:'D',text:'Assertion is false, but Reason is true.'},
                {letter:'E',text:'Both Assertion and Reason are false.'}];
-    _renderLetterOptions(explicit.length?explicit:std, origKey, box);
+    _renderLetterOptions(explicit.length?explicit:(fromCols.length?fromCols:std), origKey, box);
 }
 function _renderCaseStudy(q, origKey, box){
     /* PHASE 12C (School Connect parity): the passage renders in its own
@@ -2950,17 +3084,22 @@ function _renderCaseStudy(q, origKey, box){
         div.innerHTML='<div class="passage-title">📖 Passage / Case — read this first</div>'+escapeHtmlStudent(passage);
         box.appendChild(div);
     }
+    /* PHASE 12D: options from explicit labelled items → items as a plain
+       list → the a–d(+e) columns (the 5-option shape is healed into q.e by
+       normalizeQuestionPayload) → the Accept column's pipe list. Students can
+       always see and click a real option. */
     const items=_safeItems(q);
     let opts=[];
     if(items.length&&items[0]&&typeof items[0]==='object'&&items[0].label)opts=items.map(x=>({letter:String(x.label).toUpperCase(),text:x.text||x.value||''}));
     else if(items.length&&typeof items[0]==='string')opts=items.map((t,i)=>({letter:String.fromCharCode(65+i),text:t}));
-    else opts='ABCD'.split('').filter(l=>q[l.toLowerCase()]).map(l=>({letter:l,text:q[l.toLowerCase()]}));
+    else opts=['A','B','C','D','E'].filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim()).map(l=>({letter:l,text:String(q[l.toLowerCase()])}));
+    if(!opts.length&&typeof q.accept==='string'&&q.accept.includes('|')&&!/[.!?]/.test(q.accept))opts=q.accept.split('|').map((t,i)=>({letter:String.fromCharCode(65+i),text:t.trim()})).filter(o=>o.text);
     if(!opts.length)opts=[{letter:'A',text:'True'},{letter:'B',text:'False'}];
     _renderLetterOptions(opts, origKey, box);
 }
 function pageQuestionTextNeedsUpdate(questionText,q){ return !!(questionText&&q.q&&questionText!==q.q); }
 function _renderImageMCQ(q, origKey, box){ let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){} const src=meta.image||q.image||q.accept||''; if(src){const wrap=document.createElement('div');wrap.style.cssText='margin:10px 0 16px;text-align:center;';wrap.innerHTML='<img src="'+escapeHtmlStudent(src)+'" alt="Question image" style="max-width:100%;max-height:320px;border-radius:12px;border:1px solid var(--border);object-fit:contain;">';box.appendChild(wrap);} _renderChoiceList(q,origKey,box,'ABCD'); }
-function _renderMatrix(q, origKey, box){ const rows=_safeItems(q); if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matrix rows defined.</p>';return;} const opts=(q.accept||'True|False').split('|').map(x=>x.trim()).filter(Boolean); let cur={};try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):{};}catch(e){} const table=document.createElement('table');table.className='cat-table';table.innerHTML='<thead><tr><th>Statement / Row</th><th>Answer</th></tr></thead>'; rows.forEach((r,i)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(i+1)));const tr=document.createElement('tr');tr.innerHTML='<td class="cat-item">'+escapeHtmlStudent(statement)+'</td><td class="cat-cell"><select class="cat-select" id="matrix-'+origKey+'-'+i+'"><option value="">— Select —</option>'+opts.map(o=>'<option value="'+escapeHtmlStudent(o)+'" '+(cur[i]===o?'selected':'')+'>'+escapeHtmlStudent(o)+'</option>').join('')+'</select></td>';table.appendChild(tr);}); box.appendChild(table); requestAnimationFrame(()=>rows.forEach((_,i)=>{const sel=document.getElementById(`matrix-${origKey}-${i}`);if(!sel)return;sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`matrix-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});sel.addEventListener('keydown',e=>e.stopPropagation());})); }
+function _renderMatrix(q, origKey, box){ const rows=_safeItems(q);   /* keys normalised to {statement,answer} at load (incl. the guide's {row,…} shape) */ if(!rows.length){box.innerHTML+='<p style="color:var(--danger);">⚠️ No matrix rows defined.</p>';return;} const opts=(q.accept||'True|False').split('|').map(x=>x.trim()).filter(Boolean); let cur={};try{cur=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]?JSON.parse(answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]):{};}catch(e){} const table=document.createElement('table');table.className='cat-table';table.innerHTML='<thead><tr><th>Statement / Row</th><th>Answer</th></tr></thead>'; rows.forEach((r,i)=>{const statement=typeof r==='string'?r:(r.statement||r.item||r.label||('Row '+(i+1)));const tr=document.createElement('tr');tr.innerHTML='<td class="cat-item">'+escapeHtmlStudent(statement)+'</td><td class="cat-cell"><select class="cat-select" id="matrix-'+origKey+'-'+i+'"><option value="">— Select —</option>'+opts.map(o=>'<option value="'+escapeHtmlStudent(o)+'" '+(cur[i]===o?'selected':'')+'>'+escapeHtmlStudent(o)+'</option>').join('')+'</select></td>';table.appendChild(tr);}); box.appendChild(table); requestAnimationFrame(()=>rows.forEach((_,i)=>{const sel=document.getElementById(`matrix-${origKey}-${i}`);if(!sel)return;sel.addEventListener('change',()=>{const ans={};rows.forEach((_,j)=>{const v=document.getElementById(`matrix-${origKey}-${j}`)?.value||'';if(v)ans[j]=v;});answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=Object.keys(ans).length?JSON.stringify(ans):null;renderQNav();});sel.addEventListener('keydown',e=>e.stopPropagation());})); }
 function _renderHotText(q, origKey, box){
     /* PHASE 12C (School Connect scq-chip parity): pill chips with an
        UNMISTAKABLE selected state — gradient fill, white bold text, glow —

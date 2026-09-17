@@ -259,7 +259,7 @@ RULES
 3. cloze: the Question contains one ___ per blank; Items (column 14) = one-line JSON array with one answer per blank in order, e.g. ["solid","liquid","gas"].
 4. categorization: Pairs (column 13) = one-line JSON array like [{"l":"HCl","r":"Acid"},{"l":"NaOH","r":"Base"}] — every left item must have a right category.
 5. assertion_reason / multi-part numeric (optional): Items (column 14) = one-line JSON per this platform's spec:
-   assertion_reason: [{"a":"the assertion text"},{"r":"the reason text"}]; multi_numeric: [{"label":"part a","ans":5,"unit":"cm"},{"label":"part b","ans":12,"unit":"cm"}].
+   assertion_reason: {"assertion":"the assertion text","reason":"the reason text"} (or [{"a":…},{"r":…}]); multi_numeric: [{"label":"part a","ans":5,"unit":"cm"},{"label":"part b","ans":12,"unit":"cm"}] (answer/tolerance keys also accepted).
 6. matching and ordering follow the JSON rules: Pairs = [{"l":"…","r":"…"},…] with optional {"l":"DISTRACTOR","r":"…"} decoys;
    Items = ["…","…",…] in correct order.
 7. numeric: Tolerance + Unit always set. short_answer: Accept lists synonyms, pipe-separated.

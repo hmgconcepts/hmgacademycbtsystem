@@ -380,3 +380,21 @@ and feature-preservation audit against the ORIGINAL baseline.
 
 ### Files touched
 `student.html` · `assets/js/site-help.js` · `assets/js/chatbot.js` · `sw.js` → `hmg-cbt-shell-v12-phase12c-v1` · generator templates re-synced (student, sw, site-help, chatbot). **No database change.**
+
+
+---
+
+## Phase 12D — Assertion–Reason & Case-Study data-contract fixes — 2026-09-17
+
+**Symptoms (live):** AR questions showed no assertion/reason text and no options; case-study passages rendered but options were not clickable/pickable.
+
+**Root causes & fixes:**
+
+1. `_safeItems()` leaked parsed items JSON that was an *object* → `items.filter is not a function` crash in the AR renderer. Now array-only; a new `_itemsObjOf()` reads object-shaped items safely.
+2. Guide's AR row is column-shifted (5 options in cols 2–6, key letter in the Explanation column) → key stored as option text, 5th option lost. `normalizeQuestionPayload` v2 now detects the shift for every letter-keyed type, promotes the statement to option E and the Explanation letter to the key (with an option-text→letter fallback).
+3. Prompt-Studio spec vs guide key mismatch (`{a,r}` vs `{assertion,reason}`; Pairs-column payloads; `{l,r}`, `{item,category}`, `{row,answer}`, `{ans,tol}` spellings) → "no items defined"/unanswerable. All routed and normalised at load; graders read the canonical keys.
+4. Type aliases (`assertion-reason`, `case study`, `true-false`, `multi-select`, …) never canonicalised → unknown-type fallthrough. `_TYPE_CANON` added to `csv-bridge.js` (parse time) and `student.html` (load time).
+5. `_renderAssertionReason`/`_renderCaseStudy` option fallback chains rebuilt so options always exist and record clicks; `_renderMCQ` renders the healed E option; matching merges the documented a–d right-side pool.
+6. `cbt-multi.html` publishes CSVBridge output raw (unlike the single-subject flow) → healing is done student-side at load, so already-published papers are covered without re-publishing.
+
+**Files:** `student.html`, `assets/js/csv-bridge.js`, `cbt-prompts.html`, `sw.js` (cache `v12-phase12d-v1`), generator templates synced (placeholder-preserving). Tests: **new** `analysis/phase12d_data_contract_test.js` (+ `phase12d_probe.csv`, all 8 documented shapes through the real pipeline); `submit_integration_test.js` / `adaptive_test.js` / `multi_subject_test.js` extractors extended for `_TYPE_CANON`; `http_smoke_test.py` 12D checks. **No DB change.**

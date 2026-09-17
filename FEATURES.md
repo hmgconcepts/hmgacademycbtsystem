@@ -481,3 +481,20 @@ phase build) plus three platform upgrades. Full report:
 - 🔊 **Read Aloud** (Alt+R / Alt+S) — per-question, reads question + options for every type (AR stems separately, case-study passage first, matching/ordering/categorization/hot-text items, part labels for multi-part numeric), never the answer key; cancels on question change, submit and tab blur. The button is now actually visible during exams (nothing ever un-hid it before).
 - ❓ **How to Answer** — a legend overlay explaining all 17 question styles in plain language; reading it costs no exam time.
 - 💡 how-to tips above every structured question; essay live word count vs the minimum.
+
+
+---
+
+## Phase 12D — Data-Contract Heal (AR & Case Study) — 2026-09-17
+
+**Assertion–Reason and Case-Study questions now render and grade from every documented authoring shape** — including papers already published (healed at load, no re-publishing needed):
+
+- **Type aliases:** every spelling/hyphenation/alias of a type name (`assertion-reason`, `case study`, `true-false`, `multi-select`, `comprehension`, `passage`, `ar`, …) resolves to its canonical type — in the CSV bridge at parse time and in the student runtime at load time.
+- **Assertion–Reason:** Assertion and Reason always appear in the tagged badge panel — extracted from `{"assertion":…,"reason":…}` (Question-Types Guide), `[{"a":…},{"r":…}]` (AI Prompt Studio), or the `"A: … R: …"` pattern in the question text. The five standard judgement options always render (labelled items → a–d(+e) columns → canonical A–E statements).
+- **Case Study:** the passage panel is untouched; options are always visible and clickable — labelled items → plain item list → a–d(+e) columns → the Accept column's pipe list.
+- **5-option shift heal:** papers whose 5th option statement sits in the CorrectAnswer column with the key letter in the Explanation column (the documented AR example layout) are healed: the statement becomes option **E**, the key becomes the answer letter — for MCQ, True/False, AR, Case Study, Image-MCQ and Evidence-MCQ alike.
+- **Structured payloads:** categorization / multi-part-numeric payloads authored in the Pairs column are routed automatically, and every key spelling (`{l,r}`, `{item,category}`, `{row,answer}`, `{ans,unit,tol}`) normalises to the canonical form the graders read.
+- **Matching:** right-side options listed in the a–d columns (per the guide) merge into the dropdown pool, deduped so the key mapping stays valid.
+- **Authoring spec aligned:** `cbt-prompts.html` now names the canonical keys; legacy spellings keep working.
+
+Regression: 27/27 suites (exit-code verified) · smoke 264/264 · new `phase12d_data_contract_test.js` 32/32 across 25 consecutive runs.

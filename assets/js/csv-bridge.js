@@ -64,7 +64,23 @@
     sequence: 'ordering', sequencing: 'ordering', ranking: 'ordering',
     multinumeric: 'multi_numeric', multi_part_numeric: 'multi_numeric',
     image: 'image_mcq', picture: 'image_mcq', image_based: 'image_mcq',
-    assertion: 'assertion_reason', assertion_reason: 'assertion_reason'
+    assertion: 'assertion_reason', assertion_reason: 'assertion_reason',
+
+    /* PHASE 12D — canon forms: the header canonicaliser strips underscores,
+       hyphens and spaces before lookup, so every multi-word spelling
+       ("assertion-reason", "case study", "true-false", "multi select"…)
+       must also resolve here. */
+    assertionreason: 'assertion_reason', casestudy: 'case_study',
+    truefalse: 'tf', multiselect: 'mrq', multipleselect: 'mrq',
+    multipleresponse: 'mrq', multipartnumeric: 'multi_numeric',
+    imagemcq: 'image_mcq', imagebased: 'image_mcq',
+    evidencemcq: 'evidence_mcq', evidencebased: 'evidence_mcq',
+    twopartevidence: 'evidence_mcq', fillintheblank: 'cloze',
+    fillin: 'cloze', gapfilling: 'cloze', longanswer: 'essay',
+    oralprompt: 'essay', peerreview: 'essay', fileupload: 'essay',
+    codeoutput: 'code', sortintogroups: 'categorization',
+    matchthefollowing: 'matching', numericparts: 'multi_numeric',
+    passagebased: 'case_study', ar: 'assertion_reason'
   };
 
   /* HMG internal name → School Connect export name */
