@@ -415,3 +415,18 @@ and feature-preservation audit against the ORIGINAL baseline.
 5. **A–D-only key sanitiser wiped healed E keys** for mcq/tf at load; now A–E.
 
 **Files:** `student.html`, `sw.js` (`v12-phase12e-v1`), generator templates synced (placeholders intact). Tests: **new** `analysis/phase12e_option_cards_test.js` (26 checks, replays the live paper); smoke 272/272. **No DB change.**
+
+
+---
+
+## Phase 12F — read-aloud engine — 2026-09-17
+
+**Audit scope:** every speech-touching file (student.html, chatbot.js, site-help.js, generator templates) vs the reference engines (GOSA School Connect V10.8 + Adewale Classroom V39 cbt-speech.js).
+
+**Live bugs fixed:**
+1. **Alt+R / Alt+S were dead code** — nested inside `if(['A','B','C','D'].includes(key))`, R/S never matched. Moved to the top of `handleKeydown`; work while typing; Ctrl/Meta guarded so AltGr is never hijacked.
+2. **Speech dropped `q.passage`** — the case-study passage ternary took the items branch when items was `{}` and never fell through to `q.passage`. Mirrors the renderer now.
+
+**Robustness/parity gaps closed:** chunked queue (Safari-safe splitter, onerror advances), Chrome paused-state `resume()` fix, voice selection (per-language saved, BCP-47/name/African-English matching, offline preferred), 21-language detection + phonetic fallback (incl. a fix to the reference's own bug: substitutions before the tone-strip so ṣ→sh fires), ⚙ settings panel with persisted prefs, aria-live mirror + aria-pressed lifecycle, pagehide/beforeunload stops, own speaking flag (no engine-state desync), math-to-speech, matching option pool read, renderer-parity scripts for the 12E shapes, unsupported-browser 🔇 state, chatbot/site-help docs updated.
+
+**Files:** `student.html`, `assets/js/chatbot.js`, `assets/js/site-help.js`, `sw.js` (`v12-phase12f-v1`), generator templates synced (placeholders intact). Tests: **new** `analysis/phase12f_read_aloud_test.js` (43 checks); 12C suite upgraded for the chunked engine; smoke 285/285. **No DB change.**

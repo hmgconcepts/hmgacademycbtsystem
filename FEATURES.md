@@ -513,3 +513,21 @@ Regression: 27/27 suites (exit-code verified) · smoke 264/264 · new `phase12d_
 - **Deployment marker:** `student.html` carries a `BUILD:` comment so a stale deployment is visible in view-source.
 
 Regression: 26/26 suites (exit-code) · smoke 272/272 · 12C 50/50 · 12D 32/32 · new phase12e suite 26/26 (replays the user's live paper reconstructed from screenshots).
+
+
+---
+
+## Phase 12F — Read Aloud Engine — 2026-09-17
+
+**Read Aloud is now a full engine at parity with School Connect / GOSA Portal / Adewale Classroom (ported from their cbt-speech.js and hardened):**
+
+- **Chunked queue:** long passages read sentence-by-sentence (~180-char chunks, Safari-safe splitter); `onend` and `onerror` both advance, so one bad chunk never hangs the read; stop is instant.
+- **Chrome paused-state fix:** every speak passes through `resume()` — read-aloud no longer dies after the first stop.
+- **Voice selection:** async voice list, saved per-language choice, BCP-47 + named-voice matching, African-English fallback, offline voices preferred.
+- **21-language detection:** Yorùbá / Igbo / Hausa fingerprints + world scripts and Latin-language scoring; per-chunk `utterance.lang` tagging; **phonetic fallback** (tones stripped, ṣ→sh, 15% slower) when no native voice exists, with a one-time tip toast.
+- **⚙ settings panel** beside the button: language, voice, speed, per-language test voice — persisted on the device (private-mode safe).
+- **Bug fix — the Alt+R / Alt+S shortcuts were dead code** (nested inside the A–D answer branch and could never fire); revived at the top of the handler, AltGr-safe (Ctrl/Meta guarded), working even while typing.
+- **Bug fix — speech dropped `q.passage`** when items was an empty object; speech now mirrors the renderer's fallback chain exactly (incl. the Adewale `options[0]/[1]` AR stems and `q.options` case studies).
+- **Math spoken in words** ("the fraction 3x plus 6, over 9"), **matching questions read the option pool**, aria-live sentence mirror, aria-pressed lifecycle, stop on question change / submit / tab hide / pagehide / beforeunload, muted 🔇 state on unsupported browsers.
+
+Regression: 27/27 suites · smoke 285/285 · new phase12f suite 43/43 · 12C suite re-verified 50/50 on the new engine.

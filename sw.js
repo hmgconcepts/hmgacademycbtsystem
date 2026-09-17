@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12e-v1'; // PHASE 12E: option-card CSS (clickable case-study/AR cards), q.options/q.passage shapes, literal-\n cleanup, E-key fix
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12f-v1'; // PHASE 12F: read-aloud engine — chunked queue, Chrome paused-state fix, voice selection + 21-language detection + phonetic fallback, settings panel, Alt+R/S revived
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [

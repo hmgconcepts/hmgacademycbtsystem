@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<!-- BUILD: hmg-cbt-student-v12-phase12e — AR stems/cards, case-study option cards, q.options/q.passage shapes. If you cannot read this line in view-source, the deployment is stale. -->
+<!-- BUILD: hmg-cbt-student-v12-phase12f — read-aloud engine: chunked queue, voice selection, 21 languages, settings ⚙; Alt+R/S revived. If you cannot read this line in view-source, the deployment is stale. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -477,6 +477,15 @@
         .legend-foot{background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.3);color:var(--primary);border-radius:10px;padding:10px 12px;font-size:12.5px;margin-top:14px;}
         #tts-btn:hover{background:rgba(59,130,246,0.2);border-color:var(--info);}
         #tts-btn.speaking{background:var(--info);color:#fff;animation:pulse-border 1.5s infinite;}
+        /* PHASE 12F: ⚙ voice settings beside the Read Aloud button */
+        #tts-cog{background:rgba(139,92,246,0.1);color:var(--accent);border:1px solid rgba(139,92,246,0.35);padding:8px 12px;font-size:12px;border-radius:8px;cursor:pointer;transition:0.2s;}
+        #tts-cog:hover{background:rgba(139,92,246,0.2);}
+        #tts-settings{display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding:10px 12px;border:1px dashed var(--border-light);border-radius:10px;font-size:12.5px;margin:8px 0;width:100%;}
+        #tts-settings.hidden{display:none;}
+        #tts-settings label{display:flex;align-items:center;gap:6px;}
+        #tts-settings select{background:#111;color:var(--text);border:1px solid var(--border);border-radius:7px;padding:5px 8px;font-size:12.5px;max-width:230px;font-family:inherit;}
+        #tts-settings input[type=range]{accent-color:var(--primary);width:110px;}
+        #tts-test{background:rgba(16,185,129,0.1);color:var(--success);border:1px solid rgba(16,185,129,0.35);padding:6px 12px;font-size:12px;border-radius:8px;cursor:pointer;}
     </style>
 <script src="assets/js/site-help.js"></script>
 <script src="assets/js/cbt-exam-kit.js"></script>
@@ -2325,6 +2334,13 @@ function handleKeydown(e){
     const ctrl=e.ctrlKey||e.metaKey;
     const typing=_isTypingTarget(e.target);
 
+    /* PHASE 12F FIX: Alt+R read / Alt+S stop. These were previously nested
+       inside the A–D answer branch and could NEVER fire (R and S are not in
+       A–D) — the shortcut was dead code. Now they run first, work even while
+       typing (Alt-combos are never plain answer keys), and never fire when
+       Ctrl/Meta is held (AltGr reports as Ctrl+Alt and must not be hijacked). */
+    if(e.altKey&&!e.ctrlKey&&!e.metaKey){const ak=e.key.toLowerCase();if(ak==='r'){toggleReadAloud();e.preventDefault();return;}if(ak==='s'){_stopReading();e.preventDefault();return;}}
+
     // Always block browser/system shortcuts that can leak or disrupt the exam.
     if(isAntiCheatEnabled('devtools')&&ctrl&&e.key.toLowerCase()==='p'){e.preventDefault();e.stopPropagation();recordViolation(V.PRINT_KEY);return;}
     if(isAntiCheatEnabled('devtools')&&ctrl&&e.key.toLowerCase()==='u'){e.preventDefault();e.stopPropagation();recordViolation(V.VIEW_SOURCE);return;}
@@ -2349,8 +2365,6 @@ function handleKeydown(e){
         const origKey=q._orig;
         const qtype=getQType(q);
         if(['A','B','C','D'].includes(key)){
-            if(e.altKey&&(key==='r'||key==='R')){toggleReadAloud();e.preventDefault();return;}   /* PHASE 12C: Alt+R read / Alt+S stop */
-            if(e.altKey&&(key==='s'||key==='S')){_stopReading();e.preventDefault();return;}
             if(qtype==='mcq' && q[key.toLowerCase()]){answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=key;showQ();renderQNav();e.preventDefault();return;}
             if(qtype==='tf' && ['A','B'].includes(key)){answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]=key;showQ();renderQNav();e.preventDefault();return;}
             if(qtype==='mrq' && q[key.toLowerCase()]){
@@ -2479,11 +2493,7 @@ function mrqSetSelected(origKey,set){ const sorted=[...set].sort().join(','); an
 function hasAnswer(origKey){ const v=answers[isMultiSubjectMode ? (activeSubjectIdx + '_' + origKey) : origKey]; return v!=null&&v!==''&&v!==undefined; }
 
 function showQ(prevIndex){
-    if(window.speechSynthesis && window.speechSynthesis.speaking) {
-        window.speechSynthesis.cancel();
-        const b=document.getElementById('tts-btn');
-        if(b){b.classList.remove('speaking');b.innerHTML='🔊 Read Aloud';}
-    }
+    _stopReading();   /* PHASE 12F: audio never leaks across questions; aria-pressed resets too */
 
     if(prevIndex!==undefined&&examActive){
         const elapsed=Math.round((Date.now()-questionStartTime)/1000);
@@ -3251,92 +3261,355 @@ function showAnswerLegend(){
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   PHASE 12C — READ ALOUD (School Connect / GOSA parity)
-   Candidate-initiated, per-question, question + options ONLY (never
-   the answer key), cancelled on question change / submit / tab blur.
-   Free Web Speech API — no key, no network, no per-character cost.
-   Shortcuts: Alt+R read · Alt+S stop.
+   PHASE 12F — READ ALOUD ENGINE (School Connect V10.8 / GOSA /
+   Adewale Classroom parity, ported from their cbt-speech.js and
+   hardened for this runtime)
+   • Candidate-initiated, per-question, question + options ONLY —
+     never the answer key. Nothing autoplays.
+   • CHUNKED QUEUE: long passages are split at sentence boundaries
+     (~180 chars) because engines stall or truncate single long
+     utterances; stop() is instant; one bad chunk never hangs the
+     rest (onend AND onerror both advance).
+   • CHROME PAUSED-STATE FIX: speechSynthesis can be left paused by
+     a prior cancel(); every speak() passes through resume() first.
+   • VOICE SELECTION: async voice list + voiceschanged refresh; saved
+     per-language choice → BCP-47 match → named-voice match →
+     African English (en-NG/GH/KE/ZA) → any English; offline voices
+     preferred so weak connections never stall mid-exam.
+   • 21-LANGUAGE DETECTION: Yorùbá / Igbo / Hausa orthographic
+     fingerprints + function words, world scripts deterministic.
+     No native voice → PHONETIC FALLBACK (tones stripped to closest
+     plain letters, 15% slower) so the paper is read, never skipped.
+   • PERSISTED PREFS (rate, voice per language, forced language) in
+     localStorage — private-mode safe.
+   • SETTINGS PANEL (⚙): language, voice, speed, test-voice.
+   • aria-pressed lifecycle + aria-live sentence mirror for screen
+     readers; Alt+R read / Alt+S stop (AltGr-safe: ctrl/meta guards).
+   • Audio never outlives the question or the exam: cancelled on
+     question change, submit, tab hide, pagehide and beforeunload.
    ═══════════════════════════════════════════════════════════════ */
 function _speechPlain(t){
-    return String(t||'')
+    let s=String(t||'')
         .replace(/\*\*/g,'')
         .replace(/___+/g,' blank ')
         .replace(/\|/g,', ')
-        .replace(/[⇌⇅🗂∑🧩📚▦🔎]/g,'')
-        .replace(/\s+/g,' ')
-        .trim();
+        .replace(/[⇌⇅🗂∑🧩📚▦🔎]/g,'');
+    /* PHASE 12F: math-to-speech (CBTRich.plain parity) — LaTeX and math
+       symbols are SPOKEN, never spelled out as backslash commands. */
+    s=s.replace(/\\frac\{([^{}]+)\}\{([^{}]+)\}/g,' the fraction $1, over $2 ')
+       .replace(/\\sqrt\{([^{}]+)\}/g,' the square root of $1 ')
+       .replace(/\^\{?2\}?/g,' squared ')
+       .replace(/\^\{?3\}?/g,' cubed ')
+       .replace(/\^\{([^{}]+)\}/g,' to the power $1 ')
+       .replace(/_\{([^{}]+)\}/g,' subscript $1 ')
+       .replace(/\\times/g,' times ')
+       .replace(/\\div/g,' divided by ')
+       .replace(/\\approx/g,' approximately ')
+       .replace(/\\leq/g,' less than or equal to ')
+       .replace(/\\geq/g,' greater than or equal to ')
+       .replace(/\\pm/g,' plus or minus ')
+       .replace(/\\degree|\xB0/g,' degrees ')
+       .replace(/\\pi|π/g,' pi ')
+       .replace(/\\%\s*/g,' percent ')
+       .replace(/÷/g,' divided by ')
+       .replace(/×/g,' times ')
+       .replace(/−/g,' minus ')
+       .replace(/≤/g,' less than or equal to ')
+       .replace(/≥/g,' greater than or equal to ')
+       .replace(/≈/g,' approximately ')
+       .replace(/±/g,' plus or minus ')
+       .replace(/√/g,' square root ')
+       .replace(/\\[a-zA-Z]+/g,' ')   /* any remaining LaTeX command */
+       .replace(/\s+/g,' ');
+    return s.trim();
 }
 function _speechTextForQuestion(q){
     if(!q)return '';
     const t=getQType(q);
     let out=`Question. ${_speechPlain(q.q||'')}. `;
-    const readOpts=(list)=>list.forEach(o=>{if(o&&o.text)out+=`Option ${o.letter}: ${_speechPlain(o.text)}. `;});
-    if(t==='mcq'||t==='mrq'||t==='image_mcq'){ readOpts(_getOptionList(q,'ABCD')); }
-    else if(t==='tf'){ out+='True or False.'; }
+    const _optList=(q,letters)=>{ /* renderer-parity option list: labelled items → a–e columns → q.options */
+        const items=_safeItems(q);
+        const explicit=items.filter(x=>x&&x.label).map(x=>({letter:String(x.label).toUpperCase(),text:x.text||x.value||''}));
+        if(explicit.length)return explicit;
+        const cols=(letters||'ABCDE').split('').filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim()).map(l=>({letter:l,text:String(q[l.toLowerCase()])}));
+        if(cols.length)return cols;
+        if(Array.isArray(q.options)&&q.options.length>=2)return q.options.map((o,i)=>({letter:String.fromCharCode(65+i),text:String(o)}));
+        return [];
+    };
+    const readOpts=(list)=>list.forEach(o=>{if(o&&o.text)out+=`Option ${o.letter}. ${_speechPlain(o.text)}. `;});
+    if(t==='mcq'||t==='mrq'||t==='image_mcq'||t==='evidence_mcq'){
+        readOpts(_optList(q));
+        if(t==='evidence_mcq'){ /* two-part: speak both parts' questions */
+            let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}
+            if(meta&&meta.part1&&meta.part1.question)out+=`Part one. ${_speechPlain(meta.part1.question)}. `;
+            if(meta&&meta.part2&&meta.part2.question)out+=`Part two. ${_speechPlain(meta.part2.question)}. `;
+        }
+    }
+    else if(t==='tf'){ out+='Option A. True. Option B. False.'; }
     else if(t==='assertion_reason'){
-        const items=_safeItems(q); const ar=(items.length&&typeof items[0]==='object'&&!items[0].label)?items[0]:{};
-        const a=ar.assertion||q.assertion||q.a||'', r=ar.reason||q.reason||q.b||'';
-        if(a)out+=`Assertion: ${_speechPlain(a)}. `;
-        if(r)out+=`Reason: ${_speechPlain(r)}. `;
+        /* PHASE 12F: stems resolve exactly like the renderer — normalised
+           fields → items JSON (either shape) → options[0]/[1] → a/b columns. */
+        const items=_safeItems(q);
+        const obj=_itemsObjOf(q);
+        let a=q.assertion||obj.assertion||'', r=q.reason||obj.reason||'';
+        if(!a&&!r){
+            const arr=Array.isArray(q.items)?q.items:items;
+            for(const it of arr){ if(!it||typeof it!=='object')continue;
+                if(it.assertion!==undefined&&String(it.assertion).trim())a=String(it.assertion);
+                if(it.reason!==undefined&&String(it.reason).trim())r=String(it.reason);
+                if(it.a!==undefined&&String(it.a).trim())a=String(it.a);
+                if(it.r!==undefined&&String(it.r).trim())r=String(it.r); }
+        }
+        if(!a&&!r&&Array.isArray(q.options)&&q.options.length>=2){a=q.options[0];r=q.options[1];}
+        const colsAreOptions=['a','b','c','d'].filter(c=>q[c]&&String(q[c]).trim()).length>=3;
+        if(!a&&!colsAreOptions)a=q.a||''; if(!r&&!colsAreOptions)r=q.b||'';
+        if(a)out=`Assertion. ${_speechPlain(a)}. `+out;
+        if(r)out+=`Reason. ${_speechPlain(r)}. `;
         const explicit=items.filter(x=>x&&x.label).map(x=>({letter:String(x.label).toUpperCase(),text:x.text||''}));
-        readOpts(explicit.length?explicit:[
+        const fromCols=colsAreOptions?['A','B','C','D','E'].filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim()).map(l=>({letter:l,text:String(q[l.toLowerCase()])})):[];
+        const fromOpts=(Array.isArray(q.options)&&q.options.length>=3)?q.options.map((o,i)=>({letter:String.fromCharCode(65+i),text:String(o)})):[];
+        readOpts(explicit.length?explicit:(fromCols.length?fromCols:(fromOpts.length?fromOpts:[
             {letter:'A',text:'Both Assertion and Reason are true, and Reason correctly explains Assertion.'},
             {letter:'B',text:'Both Assertion and Reason are true, but Reason does not correctly explain Assertion.'},
             {letter:'C',text:'Assertion is true, but Reason is false.'},
             {letter:'D',text:'Assertion is false, but Reason is true.'},
-            {letter:'E',text:'Both Assertion and Reason are false.'}]);
+            {letter:'E',text:'Both Assertion and Reason are false.'}])));
     }
     else if(t==='case_study'){
         /* the renderer moves the passage into its own panel — speech follows
            the same shape: "Passage. … Question. … Option A: …" */
         let meta={};try{meta=typeof q.items==='string'?JSON.parse(q.items):(q.items||{});}catch(e){}
-        let passage=(meta&&typeof meta==='object'&&!Array.isArray(meta))?meta.passage:(q.passage||'');
+        let passage=((meta&&typeof meta==='object'&&!Array.isArray(meta)&&meta.passage)?meta.passage:'')||(q.passage||'');   /* PHASE 12F FIX: fall through to q.passage like the renderer does */
         let questionText=String(q.q||'');
         if(!passage&&questionText.includes('\n\n')){const parts=questionText.split('\n\n');passage=parts[0];questionText=parts.slice(1).join(' ');}
         out=``;
         if(passage)out+=`Passage. ${_speechPlain(passage)}. `;
         out+=`Question. ${_speechPlain(questionText)}. `;
-        const items=_safeItems(q);
-        let opts=items.length&&items[0]&&typeof items[0]==='object'&&items[0].label
-            ?items.map(x=>({letter:String(x.label).toUpperCase(),text:x.text||''}))
-            :'ABCD'.split('').filter(l=>q[l.toLowerCase()]).map(l=>({letter:l,text:q[l.toLowerCase()]}));
-        readOpts(opts);
+        readOpts(_optList(q));
     }
-    else if(t==='matching'){ const pairs=_pairsOf(q); out+='Match the following. '; pairs.slice(0,12).forEach((p,i)=>{out+=`${i+1}. ${_speechPlain(p.left)}. `;}); }
+    else if(t==='matching'){
+        const pairs=_pairsOf(q); out+='Match the following. ';
+        pairs.slice(0,12).forEach((p,i)=>{out+=`${i+1}. ${_speechPlain(p.left)}. `;});
+        /* PHASE 12F: the right-side pool is read too — candidates could hear
+           the lefts but never the choices they must pick from. */
+        const pool=[...new Set([...pairs.map(p=>p.right),...(q.distractors||[]),...['a','b','c','d','e'].map(c=>q[c]).filter(Boolean)].map(x=>String(x).trim()).filter(Boolean))];
+        if(pool.length)out+=`The options are. ${pool.slice(0,12).map(x=>_speechPlain(x)).join(', ')}. `;
+    }
     else if(t==='ordering'){ const items=_safeItems(q); out+='Arrange these in the correct order: '; items.slice(0,12).forEach((it,i)=>{out+=`${i+1}. ${_speechPlain(typeof it==='string'?it:(it.text||it.item||''))}. `;}); }
     else if(t==='categorization'){ const rows=_safeItems(q); out+='Choose the correct category for each item: '; rows.slice(0,12).forEach((r,i)=>{out+=`${i+1}. ${_speechPlain(typeof r==='string'?r:(r.item||''))}. `;}); }
     else if(t==='multi_numeric'){ const parts=_safeItems(q); out+='Answer each part. '; parts.forEach((p,i)=>{out+=`Part ${p.label||(i+1)}${p.unit?', in '+p.unit:''}. `;}); }
     else if(t==='matrix'){ const rows=_safeItems(q); out+='Answer every row: '; rows.slice(0,12).forEach((r,i)=>{out+=`${i+1}. ${_speechPlain(typeof r==='string'?r:(r.statement||r.item||''))}. `;}); }
     else if(t==='hot_text'){ const items=_safeItems(q); const chunks=items.length?items:String(q.accept||'').split('|').filter(Boolean); out+='Tap every part that is correct. The parts are: '; chunks.slice(0,20).forEach((c,i)=>{out+=`${_speechPlain(typeof c==='string'?c.replace(/^\*/,''):(c.text||c.item||''))}. `;}); }
     else if(t==='cloze'){ out+='Fill each blank in the sentence.'; }
-    return out.trim();
+    else if(t==='range'){ out+='Give a value inside the allowed range shown on screen.'; }
+    return out.replace(/\s+/g,' ').trim();
 }
-function _stopReading(){
-    try{ if(window.speechSynthesis)window.speechSynthesis.cancel(); }catch(e){}
-    const btn=document.getElementById('tts-btn');
-    if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 Read Aloud';btn.setAttribute('aria-pressed','false');}
-}
+/* ── the engine ─────────────────────────────────────────────────── */
+const _SP={
+    KEY:'hmg_cbt_speech_prefs',
+    prefs:{rate:0.95,pitch:1,volume:1,voiceURI:'',forceLang:'',voiceByLang:{},enabled:true},
+    queue:[],speaking:false,voices:[],currentLang:'en',liveEl:null,_warned:false,_mounted:false,
+    LANG_LABEL:{en:'English',yo:'Yorùbá',ig:'Igbo',ha:'Hausa',fr:'Français',es:'Español',pt:'Português',de:'Deutsch',it:'Italiano',sw:'Kiswahili',ar:'العربية (Arabic)',zh:'中文 (Chinese)',ja:'日本語 (Japanese)',ko:'한국어 (Korean)',ru:'Русский (Russian)',hi:'हिन्दी (Hindi)',he:'עברית (Hebrew)',th:'ไทย (Thai)',el:'Ελληνικά (Greek)',bn:'বাংলা (Bengali)',ta:'தமிழ் (Tamil)'},
+    LANG_TAG:{en:'en-US',yo:'yo-NG',ig:'ig-NG',ha:'ha-NG',fr:'fr-FR',es:'es-ES',pt:'pt-BR',de:'de-DE',it:'it-IT',sw:'sw-KE',ar:'ar-SA',zh:'zh-CN',ja:'ja-JP',ko:'ko-KR',ru:'ru-RU',hi:'hi-IN',he:'he-IL',th:'th-TH',el:'el-GR',bn:'bn-BD',ta:'ta-IN'},
+    NG_WORDS:{
+        yo:['àti','ti','tí','ni','ní','wọn','won','ṣe','se','jẹ́','jẹ','kí','sí','fún','fun','náà','naa','pẹ̀lú','pelu','bí','gbogbo','ọmọ','omo','ilé','ile','kan','yìí','yii','rẹ̀','inú','inu','lati','láti','wo','ki','je','si'],
+        ig:['na','ya','ndị','ndi','nke','ihe','onye','dị','di','bụ','bu','ka','ma','gị','gi','anyị','anyi','ha','ga','no','nime','otu','ụlọ','ulo','mmadụ','mmadu','oge','ego','aha','kedu','gịnị','gini'],
+        ha:['da','ba','ne','ce','ta','ya','su','shi','ita','wanda','wadda','amma','don','domin','cikin','daga','zuwa','kuma','wannan','wancan','yana','tana','suna','mutum','mutane','gida','ruwa','abinci','me','mene','yaya','nawa'],
+        fr:['le','la','les','un','une','des','est','sont','dans','pour','avec','que','qui','quelle','quel','quels','pas','vous','nous','ils','elles','être','avoir','fait','faire','plus','mais','comme','tout','cette','ces','son','ses','aussi','entre','réponse','question','choisissez','suivant','suivante','parmi'],
+        es:['el','la','los','las','un','una','es','son','en','para','con','que','qué','cuál','no','usted','nosotros','ellos','ser','estar','hace','más','pero','como','todo','esta','este','estos','también','entre','respuesta','pregunta','elige','siguiente'],
+        pt:['o','a','os','as','um','uma','é','são','em','para','com','que','qual','não','você','nós','eles','ser','estar','faz','mais','mas','como','tudo','esta','este','também','entre','resposta','pergunta','escolha','seguinte'],
+        de:['der','die','das','ein','eine','ist','sind','in','für','mit','dass','welche','welcher','nicht','sie','wir','sein','haben','macht','mehr','aber','wie','alle','diese','dieser','auch','zwischen','antwort','frage','wählen','folgende'],
+        it:['il','lo','la','gli','le','un','una','è','sono','in','per','con','che','quale','non','voi','noi','essere','avere','fa','più','ma','come','tutto','questa','questo','anche','tra','risposta','domanda','scegli','seguente'],
+        sw:['na','ya','wa','ni','kwa','katika','hii','hiyo','ambayo','gani','si','sisi','wao','kuwa','ina','zaidi','lakini','kama','yote','pia','kati','jibu','swali','chagua','ifuatayo']
+    },
+    NG_CHARS:{yo:/[\u1EB9\u1ECD\u1E63]|[\u00E0\u00E1\u00E8\u00E9\u00EC\u00ED\u00F2\u00F3\u00F9\u00FA][\u0300-\u036F]?|\u01F9|\u0144/g,ig:/[\u1ECB\u1ECD\u1EE5\u1E45]/g,ha:/[\u0253\u0257\u0199]|\u02BCy|'y/g,fr:/[\u00E0\u00E2\u00E7\u00E9\u00E8\u00EA\u00EB\u00EE\u00EF\u00F4\u00F9\u00FB\u00FC\u00FF\u0153]|\u00AB|\u00BB/g,es:/[\u00E1\u00E9\u00ED\u00F3\u00FA\u00F1\u00FC]|\u00BF|\u00A1/g,pt:/[\u00E3\u00F5\u00E1\u00E2\u00E0\u00E9\u00EA\u00ED\u00F3\u00F4\u00FA\u00E7]/g,de:/[\u00E4\u00F6\u00FC\u00DF]/g,it:/[\u00E0\u00E8\u00E9\u00EC\u00F2\u00F9]/g,sw:null},
+    SCRIPTS:[[new RegExp('[\\u0600-\\u06FF\\u0750-\\u077F]'),'ar'],[new RegExp('[\\u3040-\\u30FF]'),'ja'],[new RegExp('[\\u4E00-\\u9FFF\\u3400-\\u4DBF]'),'zh'],[new RegExp('[\\uAC00-\\uD7AF]'),'ko'],[new RegExp('[\\u0400-\\u04FF]'),'ru'],[new RegExp('[\\u0900-\\u097F]'),'hi'],[new RegExp('[\\u0590-\\u05FF]'),'he'],[new RegExp('[\\u0E00-\\u0E7F]'),'th'],[new RegExp('[\\u0370-\\u03FF]'),'el'],[new RegExp('[\\u0980-\\u09FF]'),'bn'],[new RegExp('[\\u0B80-\\u0BFF]'),'ta']],
+    available(){ return !!(window.speechSynthesis && window.SpeechSynthesisUtterance); },
+    loadPrefs(){ try{const saved=JSON.parse(localStorage.getItem(this.KEY)||'{}');Object.keys(saved).forEach(k=>{if(k in this.prefs)this.prefs[k]=saved[k];});}catch(e){} if(!this.prefs.voiceByLang||typeof this.prefs.voiceByLang!=='object')this.prefs.voiceByLang={}; },
+    save(){ try{localStorage.setItem(this.KEY,JSON.stringify(this.prefs));}catch(e){} },
+    loadVoices(){ if(!this.available())return; try{this.voices=window.speechSynthesis.getVoices()||[];}catch(e){this.voices=[];} },
+    initVoices(){
+        if(!this.available())return;
+        this.loadVoices();
+        try{
+            if(typeof window.speechSynthesis.addEventListener==='function')window.speechSynthesis.addEventListener('voiceschanged',()=>{this.loadVoices();if(this.refreshVoiceSelect)this.refreshVoiceSelect();});
+            else window.speechSynthesis.onvoiceschanged=()=>{this.loadVoices();if(this.refreshVoiceSelect)this.refreshVoiceSelect();};
+        }catch(e){}
+    },
+    detectLang(text){
+        const t=String(text||''); if(!t.trim())return 'en';
+        for(let i=0;i<this.SCRIPTS.length;i++){ if(this.SCRIPTS[i][0].test(t))return this.SCRIPTS[i][1]; }
+        const lower=t.toLowerCase(); const scores={};
+        Object.keys(this.NG_WORDS).forEach(L=>scores[L]=0);
+        Object.keys(this.NG_CHARS).forEach(L=>{ if(!this.NG_CHARS[L])return; const m=lower.match(this.NG_CHARS[L]); if(m)scores[L]+=m.length*3; });
+        let words=[]; try{words=lower.replace(/[^\p{L}\p{M}'’\s-]/gu,' ').split(/\s+/).filter(Boolean);}catch(e){words=lower.split(/\s+/).filter(Boolean);}
+        const total=words.length||1;
+        Object.keys(this.NG_WORDS).forEach(L=>{let hits=0;words.forEach(w=>{if(this.NG_WORDS[L].indexOf(w)>-1)hits++;});scores[L]+=hits*2;});
+        let best='en',bestScore=Math.max(2,total*0.08);
+        Object.keys(scores).forEach(L=>{if(scores[L]>bestScore){best=L;bestScore=scores[L];}});
+        return best;
+    },
+    pickVoice(langHint){
+        if(!this.voices.length)this.loadVoices();
+        if(!this.voices.length)return null;
+        const L=langHint||this.currentLang||'en';
+        const savedURI=this.prefs.voiceByLang[L]||(L==='en'?this.prefs.voiceURI:'');
+        if(savedURI){ for(let i=0;i<this.voices.length;i++)if(this.voices[i].voiceURI===savedURI)return this.voices[i]; }
+        const prefer=(re)=>{ const m=this.voices.filter(v=>re.test(v.lang||'')||re.test(v.name||'')); if(!m.length)return null; const loc=m.filter(v=>v.localService); return loc[0]||m[0]; };
+        if(L!=='en'){
+            const vx=prefer(new RegExp('^'+L+'(-|_|$)','i')); if(vx)return vx;
+            const NAMES={yo:/yoruba/i,ig:/igbo/i,ha:/hausa/i,sw:/swahili/i,zh:/chinese|mandarin/i,ar:/arabic/i,hi:/hindi/i,el:/greek/i,he:/hebrew/i,bn:/bengali/i,ta:/tamil/i};
+            if(NAMES[L]){const vn=prefer(NAMES[L]);if(vn)return vn;}
+            if(L==='yo'||L==='ig'||L==='ha'||L==='sw'){ const vng=prefer(/^en[-_](NG|GH|KE|ZA)/i); if(vng)return vng; }
+        }
+        const en=this.voices.filter(v=>/^en(-|_|$)/i.test(v.lang||''));
+        const pool=en.length?en:this.voices;
+        const loc=pool.filter(v=>v.localService);
+        return loc[0]||pool[0];
+    },
+    isNativeFor(v,lang){ if(!v||lang==='en')return true; return new RegExp('^'+lang+'(-|_|$)','i').test(v.lang||'')||new RegExp({yo:'yoruba',ig:'igbo',ha:'hausa',sw:'swahili'}[lang]||('^'+lang),'i').test(v.name||''); },
+    phoneticFallback(text,lang){
+        /* PHASE 12F: letter substitutions run BEFORE the tone-mark strip —
+           stripping first decomposes ẹ/ṣ/ị… into plain letters and
+           silently kills ṣ→sh. Substituting first fixes it. */
+        let t=String(text||'');
+        if(lang==='yo')t=t.replace(/ṣ/g,'sh').replace(/Ṣ/g,'Sh').replace(/ẹ/g,'e').replace(/Ẹ/g,'E').replace(/ọ/g,'o').replace(/Ọ/g,'O');
+        if(lang==='ig')t=t.replace(/ị/g,'i').replace(/Ị/g,'I').replace(/ọ/g,'o').replace(/Ọ/g,'O').replace(/ụ/g,'u').replace(/Ụ/g,'U').replace(/ṅ/g,'n').replace(/Ṅ/g,'N');
+        if(lang==='ha')t=t.replace(/ɓ/g,'b').replace(/Ɓ/g,'B').replace(/ɗ/g,'d').replace(/Ɗ/g,'D').replace(/ƙ/g,'k').replace(/Ƙ/g,'K').replace(/ʼy/g,'y').replace(/'y/g,'y');
+        try{t=t.normalize('NFD').replace(/[\u0300-\u036f]/g,'').normalize('NFC');}catch(e){}
+        return t;
+    },
+    /* Sentence-aware chunking WITHOUT lookbehind — Safari below 16.4 throws
+       a PARSE-time syntax error on (?<=…), which would kill this whole file. */
+    chunk(text,max){
+        max=max||180;
+        const splitAfter=(str,chars)=>{ const res=[];let cur='';
+            for(let i=0;i<str.length;i++){ const ch=str.charAt(i); cur+=ch;
+                if(chars.indexOf(ch)>-1&&/\s/.test(str.charAt(i+1)||' ')){res.push(cur);cur='';} }
+            if(cur)res.push(cur);
+            return res.map(x=>x.trim()).filter(Boolean); };
+        let parts=splitAfter(String(text),'.;:?!'),out=[],buf='';
+        if(parts.length===1&&text.length>max)parts=splitAfter(String(text),',');
+        parts.forEach(p=>{ if(!p)return; if((buf+' '+p).trim().length>max&&buf){out.push(buf.trim());buf=p;} else buf=(buf?buf+' ':'')+p; });
+        if(buf.trim())out.push(buf.trim());
+        const final=[]; out.forEach(p=>{ while(p.length>max*2){final.push(p.slice(0,max*2));p=p.slice(max*2);} final.push(p); });
+        return final.filter(Boolean);
+    },
+    setBtn(on){
+        const b=document.getElementById('tts-btn'); if(!b)return;
+        b.setAttribute('aria-pressed',on?'true':'false');
+        if(on){b.classList.add('speaking');b.innerHTML='⏹ Stop Reading';}
+        else{b.classList.remove('speaking');b.innerHTML='🔊 Read Aloud';}
+    },
+    next(){
+        if(!this.queue.length){this.speaking=false;this.setBtn(false);return;}
+        const text=this.queue.shift();
+        const v=this.pickVoice(this.currentLang);
+        const native=this.isNativeFor(v,this.currentLang);
+        let spoken=text;
+        if(!native&&(this.currentLang==='yo'||this.currentLang==='ig'||this.currentLang==='ha'))spoken=this.phoneticFallback(text,this.currentLang);
+        let u;
+        try{u=new SpeechSynthesisUtterance(spoken);}catch(e){this.next();return;}
+        if(v){u.voice=v;u.lang=native?(v.lang||this.LANG_TAG[this.currentLang]||'en-US'):(v.lang||'en-US');}
+        else u.lang=this.LANG_TAG[this.currentLang]||'en-US';
+        u.rate=Math.min(2,Math.max(0.5,Number(this.prefs.rate)||0.95));
+        if(!native&&this.currentLang!=='en')u.rate=Math.min(2,Math.max(0.5,u.rate*0.85));
+        u.pitch=Math.min(2,Math.max(0,Number(this.prefs.pitch)||1));
+        u.volume=Math.min(1,Math.max(0,Number(this.prefs.volume)==null?1:Number(this.prefs.volume)));
+        if(this.liveEl)this.liveEl.textContent=text;
+        u.onend=()=>this.next();      /* one chunk ends → the next begins */
+        u.onerror=()=>this.next();    /* never let one bad chunk hang the queue */
+        try{window.speechSynthesis.speak(u);}catch(e){this.next();}
+    },
+    speak(text,langHint){
+        if(!this.available()||!this.prefs.enabled)return false;
+        const t=String(text||'').trim(); if(!t)return false;
+        this.stop();
+        this.currentLang=langHint||this.prefs.forceLang||this.detectLang(t);
+        if(this.currentLang!=='en'){
+            const v=this.pickVoice(this.currentLang);
+            const native=v&&new RegExp('^'+this.currentLang+'(-|_|$)','i').test(v.lang||'');
+            if(!native&&!this._warned){ this._warned=true;
+                try{showToastStudent('🔊 '+(this.LANG_LABEL[this.currentLang]||this.currentLang)+' detected. No '+this.LANG_LABEL[this.currentLang]+' voice is installed on this device — reading with the closest available voice. Tip: install the '+(this.LANG_LABEL[this.currentLang]||'')+' language pack in your phone\'s text-to-speech settings for a native voice.','info',9000);}catch(e){}
+            }
+        }
+        this.queue=this.chunk(t); this.speaking=true; this.setBtn(true);
+        /* Chrome bug: speechSynthesis can be left PAUSED by a prior cancel().
+           resume() is a no-op when not paused — call it on every speak. */
+        try{window.speechSynthesis.resume();}catch(e){}
+        this.next();
+        return true;
+    },
+    stop(){
+        this.queue=[]; this.speaking=false; this.setBtn(false);
+        if(!this.available())return;
+        try{window.speechSynthesis.cancel();}catch(e){}
+        if(this.liveEl)this.liveEl.textContent='';
+    },
+    toggle(){ if(this.speaking){this.stop();return false;} const q=(typeof questions!=='undefined')?questions[current]:null; return this.speak(_speechTextForQuestion(q)); }
+};
+/* ── public API (names kept: HTML onclick, shortcuts and tests use them) ── */
+function _stopReading(){ _SP.stop(); }
 function toggleReadAloud(){
-    if(!('speechSynthesis' in window)){
-        showToastStudent('Text-to-speech is not supported in this browser.');
+    if(!_SP.available()){
+        showToastStudent('Text-to-speech is not supported in this browser. Try Chrome, Edge or Safari.');
         return;
     }
-    const btn=document.getElementById('tts-btn');
-    if(window.speechSynthesis.speaking){ _stopReading(); return; }
     const q=questions[current];
     const textToRead=_speechTextForQuestion(q);
     if(!textToRead){ showToastStudent('Nothing to read for this question.'); return; }
-    try{
-        currentUtterance=new SpeechSynthesisUtterance(textToRead);
-        currentUtterance.rate=0.95; currentUtterance.pitch=1;
-        currentUtterance.onend=()=>{ if(btn){btn.classList.remove('speaking');btn.innerHTML='🔊 Read Aloud';btn.setAttribute('aria-pressed','false');} };
-        currentUtterance.onerror=()=>_stopReading();
-        window.speechSynthesis.speak(currentUtterance);
-        if(btn){btn.classList.add('speaking');btn.innerHTML='⏹ Stop Reading';btn.setAttribute('aria-pressed','true');}
-    }catch(e){ showToastStudent('Could not start read-aloud.'); }
+    if(_SP.speaking){ _SP.stop(); return; }
+    if(!_SP.speak(textToRead)) showToastStudent('Could not start read-aloud.');
 }
-/* never let audio leak out of the question the candidate has left */
-document.addEventListener('visibilitychange',()=>{ if(document.hidden)_stopReading(); });
+/* ── settings UI (⚙ beside the Read Aloud button) ── */
+function _speechMountSettings(){
+    if(_SP._mounted)return; _SP._mounted=true;
+    _SP.loadPrefs(); _SP.initVoices();
+    const btn=document.getElementById('tts-btn'); if(!btn)return;
+    if(!_SP.available()){ btn.innerHTML='🔇 Read Aloud unavailable'; btn.setAttribute('aria-disabled','true'); btn.style.opacity='0.55'; btn.title='Read-aloud is not supported by this browser. Try Chrome, Edge or Safari.'; return; }
+    const host=btn.parentElement; if(!host)return;
+    const cog=document.createElement('button');
+    cog.type='button'; cog.id='tts-cog'; cog.className='no-print'; cog.title='Voice settings'; cog.setAttribute('aria-label','Voice settings');
+    cog.textContent='⚙';
+    const panel=document.createElement('div');
+    panel.id='tts-settings'; panel.className='hidden';
+    panel.innerHTML=`<label>Language <select id="tts-lang"><option value="">Auto-detect (21 languages)</option>${Object.keys(_SP.LANG_LABEL).map(L=>`<option value="${L}">${_SP.LANG_LABEL[L]}</option>`).join('')}</select></label>
+        <label>Voice <select id="tts-voice"></select></label>
+        <label>Speed <input id="tts-rate" type="range" min="0.6" max="1.6" step="0.05"></label><span id="tts-rateval"></span>
+        <button type="button" id="tts-test" class="no-print">Test voice</button>`;
+    if(btn.nextSibling)host.insertBefore(cog,btn.nextSibling); else host.appendChild(cog);
+    if(cog.nextSibling)host.insertBefore(panel,cog.nextSibling); else host.appendChild(panel);
+    const live=document.createElement('span');
+    live.id='tts-live'; live.setAttribute('aria-live','polite'); live.setAttribute('role','status');
+    live.style.cssText='position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;';
+    host.appendChild(live); _SP.liveEl=live;
+    const langSel=panel.querySelector('#tts-lang'), sel=panel.querySelector('#tts-voice'), rate=panel.querySelector('#tts-rate'), rval=panel.querySelector('#tts-rateval');
+    langSel.value=_SP.prefs.forceLang||'';
+    rate.value=_SP.prefs.rate; rval.textContent=Number(_SP.prefs.rate).toFixed(2)+'×';
+    _SP.refreshVoiceSelect=()=>{
+        if(!sel)return;
+        const cur=(_SP.currentLang&&_SP.currentLang!=='en')?(_SP.prefs.voiceByLang[_SP.currentLang]||''):_SP.prefs.voiceURI;
+        sel.innerHTML='<option value="">Device default</option>'+_SP.voices.map(v=>`<option value="${String(v.voiceURI).replace(/"/g,'&quot;')}">${String(v.name).replace(/</g,'&lt;')} (${v.lang||''})${v.localService?' · offline':''}</option>`).join('');
+        sel.value=cur||'';
+    };
+    _SP.refreshVoiceSelect();
+    cog.onclick=()=>{panel.classList.toggle('hidden');_SP.loadVoices();_SP.refreshVoiceSelect();};
+    langSel.onchange=()=>{ _SP.prefs.forceLang=langSel.value||''; _SP.currentLang=_SP.prefs.forceLang||'en'; _SP.save(); _SP.refreshVoiceSelect(); };
+    sel.onchange=()=>{ const L=langSel.value||_SP.currentLang||'en';
+        if(L==='en')_SP.prefs.voiceURI=sel.value;
+        _SP.prefs.voiceByLang[L]=sel.value; _SP.save(); };
+    rate.oninput=()=>{ _SP.prefs.rate=Number(rate.value); rval.textContent=_SP.prefs.rate.toFixed(2)+'×'; _SP.save(); };
+    panel.querySelector('#tts-test').onclick=()=>{
+        const L=langSel.value||'';
+        const samples={ yo:'Báwo ni? Èyí ni bí a ó ṣe ka àwọn ìbéèrè fún ọ. Àṣàyàn A.', ig:'Kedu? Nke a bụ ka a ga-esi gụọra gị ajụjụ ndị ahụ. Nhọrọ A.', ha:'Sannu! Ga yadda za a karanta muku tambayoyin. Zaɓi na A.', fr:'Bonjour ! Voici comment les questions vous seront lues. Option A. La fraction trois x plus six, sur neuf.', es:'¡Hola! Así es como se le leerán las preguntas. Opción A.', pt:'Olá! É assim que as perguntas serão lidas para você. Opção A.', de:'Hallo! So werden Ihnen die Fragen vorgelesen. Option A.', it:'Ciao! Ecco come ti verranno lette le domande. Opzione A.', sw:'Habari! Hivi ndivyo maswali yatakavyosomwa kwako. Chaguo A.', ar:'مرحبا! هكذا ستُقرأ الأسئلة لك. الخيار أ.', zh:'你好！这就是为你朗读问题的方式。选项A。', ja:'こんにちは。このように問題を読み上げます。選択肢A。', ko:'안녕하세요. 이렇게 문제를 읽어 드립니다. 보기 A.', ru:'Здравствуйте! Вот как вам будут читать вопросы. Вариант А.', hi:'नमस्ते! प्रश्न आपको इस प्रकार पढ़कर सुनाए जाएँगे। विकल्प A।', he:'שלום! כך יוקראו לך השאלות. אפשרות א.', th:'สวัสดี! นี่คือวิธีที่จะอ่านคำถามให้คุณฟัง ตัวเลือก A', el:'Γεια σας! Έτσι θα σας διαβάζονται οι ερωτήσεις. Επιλογή Α.', bn:'নমস্কার! এভাবে প্রশ্নগুলো আপনাকে পড়ে শোনানো হবে। বিকল্প A।', ta:'வணக்கம்! கேள்விகள் இப்படித்தான் உங்களுக்கு வாசிக்கப்படும். விருப்பம் A.' };
+        _SP.speak(samples[L]||'This is how the questions will be read to you. Option A. The fraction 3 x plus 6, over 9.',L||undefined);
+    };
+}
+/* never let audio leak out of the question or the exam */
+document.addEventListener('visibilitychange',()=>{ if(document.hidden)_SP.stop(); });
+window.addEventListener('pagehide',()=>_SP.stop());
+window.addEventListener('beforeunload',()=>_SP.stop());
+try{ _speechMountSettings(); }catch(e){}
 function next(){
     const p=current;
     if(isAdaptiveMode){
