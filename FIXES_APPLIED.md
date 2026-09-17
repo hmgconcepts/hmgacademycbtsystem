@@ -398,3 +398,20 @@ and feature-preservation audit against the ORIGINAL baseline.
 6. `cbt-multi.html` publishes CSVBridge output raw (unlike the single-subject flow) → healing is done student-side at load, so already-published papers are covered without re-publishing.
 
 **Files:** `student.html`, `assets/js/csv-bridge.js`, `cbt-prompts.html`, `sw.js` (cache `v12-phase12d-v1`), generator templates synced (placeholder-preserving). Tests: **new** `analysis/phase12d_data_contract_test.js` (+ `phase12d_probe.csv`, all 8 documented shapes through the real pipeline); `submit_integration_test.js` / `adaptive_test.js` / `multi_subject_test.js` extractors extended for `_TYPE_CANON`; `http_smoke_test.py` 12D checks. **No DB change.**
+
+
+---
+
+## Phase 12E — option cards & reference shapes — 2026-09-17
+
+**Symptoms (live, screenshots OCR'd):** AR questions showed the Assertion/Reason panel but no option cards; case-study passages rendered but options appeared as plain text students could not pick.
+
+**Root causes & fixes:**
+
+1. **Deployed build was stale** — the screenshots showed the pre-12D crash signature (items-object → `items.filter` TypeError after the panel rendered). 12D/12E both fix it; a `BUILD:` comment now makes stale deployments detectable, and the service-worker cache was bumped.
+2. **`.options-grid` / `.option-card` had no CSS since 12C** — the letter-option renderers built divs that no rule styled: no card, no pointer, no hover, and `.selected` had no effect, so clicks appeared dead. Full card styling added (badge, hover, selected, mobile).
+3. **Sibling-platform shapes unsupported** — `q.options` arrays and `q.passage` (School Connect / Adewale Classroom / GOSA contracts, verified from their source repos) are now parsed at load with a–e backfill; AR stems also resolve from `options[0]/[1]`.
+4. **Literal `\n` in question cells** showed on screen as characters; normalised to a space (blank-line passage splits preserved).
+5. **A–D-only key sanitiser wiped healed E keys** for mcq/tf at load; now A–E.
+
+**Files:** `student.html`, `sw.js` (`v12-phase12e-v1`), generator templates synced (placeholders intact). Tests: **new** `analysis/phase12e_option_cards_test.js` (26 checks, replays the live paper); smoke 272/272. **No DB change.**

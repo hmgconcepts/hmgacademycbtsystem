@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+<!-- BUILD: hmg-cbt-student-v12-phase12e — AR stems/cards, case-study option cards, q.options/q.passage shapes. If you cannot read this line in view-source, the deployment is stale. -->
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -446,6 +447,21 @@
         .ar-row>span:last-child{flex:1;}
         .ar-tag{background:var(--info);color:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;height:fit-content;}
         .ar-tag.reason{background:var(--accent);}
+        /* PHASE 12E: the letter-option cards (_renderLetterOptions — used by
+           case study, assertion–reason, image/evidence MCQ since 12C) shipped
+           with NO stylesheet: they rendered as bare unstyled divs — no card,
+           no pointer cursor, no hover, and the selected class had no visual
+           effect — so students clicked and saw nothing happen. School Connect
+           / Adewale Classroom / GOSA parity: bordered cards with a letter
+           badge, hover lift and a clear selected state. */
+        .options-grid{display:grid;grid-template-columns:1fr;gap:11px;margin:0 0 14px;}
+        .option-card{display:grid;grid-template-columns:38px 1fr;gap:12px;align-items:center;padding:14px 16px;border:1.5px solid var(--border);border-radius:12px;background:#111;cursor:pointer;transition:all .15s ease;font-size:14.5px;line-height:1.5;user-select:none;-webkit-user-select:none;text-align:left;box-shadow:0 1px 3px rgba(0,0,0,0.2);}
+        .option-card:hover{border-color:var(--primary);transform:translateY(-1px);box-shadow:0 4px 14px rgba(0,0,0,0.3);}
+        .option-card:active{transform:translateY(0);}
+        .option-card .opt-letter{display:flex;align-items:center;justify-content:center;width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.07);font-weight:800;font-size:13px;color:var(--text);flex-shrink:0;}
+        .option-card.selected{border-color:var(--primary);background:rgba(16,185,129,0.12);box-shadow:0 0 0 1px var(--primary);}
+        .option-card.selected .opt-letter{background:linear-gradient(135deg,var(--primary),var(--accent));color:#fff;}
+        @media(max-width:640px){.option-card{grid-template-columns:30px 1fr;padding:12px;gap:10px;}.option-card .opt-letter{width:26px;height:26px;font-size:12px;border-radius:7px;}}
         .passage-panel{background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.28);border-left:4px solid var(--accent);border-radius:12px;padding:14px 16px;margin:0 0 14px;white-space:pre-wrap;font-size:14.5px;line-height:1.75;color:var(--text);max-height:340px;overflow:auto;}
         .passage-title{font-size:11px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
         .hot-chip{border:2px solid var(--border-light);background:var(--surface);color:var(--text);border-radius:999px;padding:9px 16px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all .15s ease;}
@@ -1128,6 +1144,29 @@ function _pairsOf(q){
 function normalizeQuestionPayload(q){
     try{
         const t=getQType(q);
+        /* PHASE 12E — literal \n / \r escapes: AI authors emit them inside
+           CSV question cells and they used to show on screen as the two
+           characters "\n". Normalise to a space for EVERY question type. */
+        if(typeof q.q==='string')q.q=q.q.replace(/\\r\\n|\\n|\\r/g,' ').replace(/[ \t]{2,}/g,' ').trim();   /* collapse spaces/tabs only — real \n\n blank lines carry the case-study passage split */
+        /* PHASE 12E — School Connect / Adewale Classroom / GOSA shape: the
+           options live in a q.options ARRAY (plain strings, or {text|label|
+           value} objects) and the passage in q.passage — not in the a–d
+           columns. Parse/keep both so every product family's papers render. */
+        if(q.options!==undefined&&q.options!==null){
+            let _o=q.options;
+            if(typeof _o==='string'){
+                try{const p=JSON.parse(_o);if(Array.isArray(p))_o=p;}catch(e){_o=_o.split(/[|;]/).map(x=>x.trim()).filter(Boolean);}
+            }
+            if(typeof _o==='string')_o=[_o];
+            if(Array.isArray(_o)){
+                q.options=_o.map(o=>(o&&typeof o==='object')?String(o.text!==undefined?o.text:(o.label!==undefined?o.label:(o.value!==undefined?o.value:''))):String(o)).filter(x=>x.trim()!=='');
+            }else q.options=[];
+        }
+        if(!q.passage&&Array.isArray(q.options)&&!q.options.length)delete q.options;
+        if(['mcq','tf','assertion_reason','case_study','image_mcq','evidence_mcq'].includes(t)&&Array.isArray(q.options)&&q.options.length){
+            /* backfill the a–e columns so every renderer/grader path works */
+            for(let i=0;i<5&&i<q.options.length;i++){const L='abcde'[i];if(!q[L]||!String(q[L]).trim())q[L]=q.options[i];}
+        }
         /* PHASE 12D — THE DOCUMENTED-CONTRACT HEAL. Papers authored per the
            AI Prompt Studio put categorization / multi-part-numeric (and some
            matching) data in the PAIRS column, and the two guides use
@@ -1199,9 +1238,12 @@ function normalizeQuestionPayload(q){
                     if(r!==undefined&&String(r).trim())R=String(r);
                 }
             }
+            if(!A&&!R&&Array.isArray(q.options)&&q.options.length>=2){
+                A=q.options[0];R=q.options[1];   /* Adewale Classroom contract: options[0]/[1] carry the stems */
+            }
             if(!A&&!R&&q.q){
-                const m=String(q.q).match(/^\s*(?:assertion|a)\s*[:.\-]\s*(.+?)\s*(?:;|\.|!|\?)?\s*(?:reason|r)\s*[:.\-]\s*(.+?)\s*\.?\s*$/i);
-                if(m&&m[1]&&m[2]){A=m[1];R=m[2];}
+                const m=String(q.q).match(/^\s*(?:assertion|a)\s*[:.()\-]*\s*\)?\s*(.+?)\s*(?:;|\.|!|\?)?\s*(?:reason|r)\s*[:.()\-]*\s*\)?\s*(.+?)\s*\.?\s*$/i);
+                if(m&&m[1]&&m[2]){A=m[1];R=m[2];q.q='Study the Assertion and the Reason above, then choose the correct option below.';}
             }
             if(A)q.assertion=A;
             if(R)q.reason=R;
@@ -1660,7 +1702,7 @@ function init_admission(){
                 const qt = q.type.toLowerCase();
                 if(qt==='mcq'||qt==='tf'){
                     q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^[\"\'\s]+|[\"\'\s]+$/g,'').toUpperCase();
-                    if(!['A','B','C','D'].includes(q.ans)) q.ans='';
+                    if(!['A','B','C','D','E'].includes(q.ans)) q.ans='';   /* PHASE 12E: healed 5-option keys are valid */
                 }
             });
             if(s.count && Number(s.count) > 0 && Number(s.count) < qs.length){
@@ -1701,7 +1743,7 @@ function init_admission(){
         const qt=q.type.toLowerCase();
         if(qt==='mcq'||qt==='tf'){
             q.ans = (q.ans||'').replace(/^\uFEFF/,'').replace(/^["'\s]+|["'\s]+$/g,'').toUpperCase();
-            if(!['A','B','C','D'].includes(q.ans)) q.ans='';
+            if(!['A','B','C','D','E'].includes(q.ans)) q.ans='';   /* PHASE 12E: healed 5-option keys are valid */
         }
     });
 
@@ -3040,8 +3082,14 @@ function _renderAssertionReason(q, origKey, box){
        labelled items → the a–d(+e) columns → the five canonical statements. */
     const items=_safeItems(q);
     const colsAreOptions=['a','b','c','d'].filter(c=>q[c]&&String(q[c]).trim()).length>=3;
-    const assertion=q.assertion||(colsAreOptions?'':(q.a||''));
-    const reason=q.reason||(colsAreOptions?'':(q.b||''));
+    const qOpts=(Array.isArray(q.options)&&q.options.length>=3)?q.options:null;   /* reference-family shape */
+    const _optArr=Array.isArray(q.options)?q.options:[];
+    /* Stems: normalised fields first; then the a/b columns (unless they are
+       carrying option statements); then options[0]/[1] — the Adewale
+       Classroom / School Connect contract — as a final belt-and-braces
+       fallback so even un-normalised questions show their stems. */
+    const assertion=q.assertion||(colsAreOptions?'':(q.a||(_optArr[0]||'')));
+    const reason=q.reason||(colsAreOptions?'':(q.b||(_optArr[1]||'')));
     if(assertion||reason){
         const panel=document.createElement('div');panel.className='ar-panel';
         panel.innerHTML=(assertion?'<div class="ar-row"><span class="ar-tag">Assertion</span><span>'+escapeHtmlStudent(assertion)+'</span></div>':'')+
@@ -3054,12 +3102,15 @@ function _renderAssertionReason(q, origKey, box){
         fromCols=['A','B','C','D','E'].filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim())
             .map(l=>({letter:l,text:String(q[l.toLowerCase()])}));
     }
+    /* PHASE 12E: reference-family (School Connect / Adewale Classroom) papers
+       carry the statements in a q.options array — render them as the cards. */
+    const fromOpts=qOpts?qOpts.map((t,i)=>({letter:String.fromCharCode(65+i),text:String(t)})):[];
     const std=[{letter:'A',text:'Both Assertion and Reason are true, and Reason correctly explains Assertion.'},
                {letter:'B',text:'Both Assertion and Reason are true, but Reason does not correctly explain Assertion.'},
                {letter:'C',text:'Assertion is true, but Reason is false.'},
                {letter:'D',text:'Assertion is false, but Reason is true.'},
                {letter:'E',text:'Both Assertion and Reason are false.'}];
-    _renderLetterOptions(explicit.length?explicit:(fromCols.length?fromCols:std), origKey, box);
+    _renderLetterOptions(explicit.length?explicit:(fromCols.length?fromCols:(fromOpts.length?fromOpts:std)), origKey, box);
 }
 function _renderCaseStudy(q, origKey, box){
     /* PHASE 12C (School Connect parity): the passage renders in its own
@@ -3091,6 +3142,7 @@ function _renderCaseStudy(q, origKey, box){
     const items=_safeItems(q);
     let opts=[];
     if(items.length&&items[0]&&typeof items[0]==='object'&&items[0].label)opts=items.map(x=>({letter:String(x.label).toUpperCase(),text:x.text||x.value||''}));
+    else if(Array.isArray(q.options)&&q.options.length>=2)opts=q.options.map((t,i)=>({letter:String.fromCharCode(65+i),text:String(t)}));   /* PHASE 12E: School Connect / Adewale Classroom shape */
     else if(items.length&&typeof items[0]==='string')opts=items.map((t,i)=>({letter:String.fromCharCode(65+i),text:t}));
     else opts=['A','B','C','D','E'].filter(l=>q[l.toLowerCase()]&&String(q[l.toLowerCase()]).trim()).map(l=>({letter:l,text:String(q[l.toLowerCase()])}));
     if(!opts.length&&typeof q.accept==='string'&&q.accept.includes('|')&&!/[.!?]/.test(q.accept))opts=q.accept.split('|').map((t,i)=>({letter:String.fromCharCode(65+i),text:t.trim()})).filter(o=>o.text);

@@ -498,3 +498,18 @@ phase build) plus three platform upgrades. Full report:
 - **Authoring spec aligned:** `cbt-prompts.html` now names the canonical keys; legacy spellings keep working.
 
 Regression: 27/27 suites (exit-code verified) · smoke 264/264 · new `phase12d_data_contract_test.js` 32/32 across 25 consecutive runs.
+
+
+---
+
+## Phase 12E — Option Cards & Reference-Shape Parity — 2026-09-17
+
+**Case-study and assertion–reason options are now real, visibly clickable cards, and papers authored on the sibling platforms (School Connect / Adewale Classroom / GOSA) render natively:**
+
+- **Option-card CSS (the click bug):** the letter-option cards used by case study, assertion–reason, image-MCQ and evidence-MCQ shipped without any stylesheet since 12C — bare unstyled divs with no pointer, no hover and no visible selected state. They are now bordered cards with a letter badge, hover lift and a clear selected highlight (School Connect / Adewale Classroom parity).
+- **Reference-family shapes:** questions carrying a `q.options` array (strings or `{text,label,value}` objects; JSON or pipe-string accepted) and/or `q.passage` render fully — the a–e columns are backfilled at load so graders work unchanged. AR stems in `options[0]/[1]` (the Adewale Classroom contract) feed the Assertion/Reason badge panel.
+- **Literal `\n` escapes** in question cells (an AI-authoring artefact that showed on screen as “\n”) are normalised for every type; real blank lines are preserved for the case-study passage split.
+- **5-option keys:** the load-time answer sanitiser now accepts A–E (healed fifth-option keys were being blanked); garbage keys are still cleared.
+- **Deployment marker:** `student.html` carries a `BUILD:` comment so a stale deployment is visible in view-source.
+
+Regression: 26/26 suites (exit-code) · smoke 272/272 · 12C 50/50 · 12D 32/32 · new phase12e suite 26/26 (replays the user's live paper reconstructed from screenshots).

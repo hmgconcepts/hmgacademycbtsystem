@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12d-v1'; // PHASE 12D: AR/case-study data-contract heal (stems, options, keys), type aliases, 5-option shift
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12e-v1'; // PHASE 12E: option-card CSS (clickable case-study/AR cards), q.options/q.passage shapes, literal-\n cleanup, E-key fix
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
