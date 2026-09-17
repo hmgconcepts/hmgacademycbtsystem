@@ -469,3 +469,15 @@ phase build) plus three platform upgrades. Full report:
 - `Next` at a subject boundary flows into the next subject ("Next Subject: Mathematics →"); `prev` at a subject start returns to the previous subject's end. The submit modal opens only after the final question of the final subject and lists every subject's progress (click a row to jump back).
 - Progress line shows "Subject · Q x of y (overall i of N)"; the phantom `prevQuestionRecordTime()` crash on subject switching is gone.
 - Legacy/external papers that ship flat `csv_data` + `subject_breakdown` metadata (the School Connect / GOSA representation) automatically get tabs; the multi-subject builder now publishes that metadata too.
+
+## Phase 12C — GOSA / School Connect Presentation Parity (2026-09-16)
+
+**Question rendering fixed (live bugs):**
+- **Assertion–Reason:** stems display in a tagged badge panel (Assertion / Reason), options are the five canonical A–E statements — never the a/b columns (CSV papers used to show the stems again as "options"). 
+- **Case Study:** the passage renders in its own scrollable panel ("read this first") above the options; CSV-bridge passages prefixed into the question text are split back out so the question line stays clean.
+- **Hot Text:** pill chips with an unmistakable selected state (gradient fill + ✓ + glow + aria-pressed); tap toggles; clear hint.
+
+**Ported from School Connect / GOSA Portal:**
+- 🔊 **Read Aloud** (Alt+R / Alt+S) — per-question, reads question + options for every type (AR stems separately, case-study passage first, matching/ordering/categorization/hot-text items, part labels for multi-part numeric), never the answer key; cancels on question change, submit and tab blur. The button is now actually visible during exams (nothing ever un-hid it before).
+- ❓ **How to Answer** — a legend overlay explaining all 17 question styles in plain language; reading it costs no exam time.
+- 💡 how-to tips above every structured question; essay live word count vs the minimum.

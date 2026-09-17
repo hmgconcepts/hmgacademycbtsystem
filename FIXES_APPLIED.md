@@ -355,3 +355,28 @@ and feature-preservation audit against the ORIGINAL baseline.
 ### Files touched
 `student.html` (normalisation, tabs, navigation, submit dialog, grader fixes) · `cbt-multi.html` (breakdown metadata + lean retry) · `sw.js` → `hmg-cbt-shell-v12-phase12b-v1` · generator templates re-synced (`student.html`, `cbt-multi.html`, `sw.js`).
 **No database change required.**
+
+---
+
+## Appendix — Phase 12C Fixes (2026-09-16) — GOSA / School Connect parity
+
+### Bug 1 — Assertion–Reason badly rendered (live)
+- **Root cause:** CSV papers keep the stems in the a/b columns; the option builder fell back to `q.a`/`q.b`, so the assertion and reason re-appeared as "options" A/B with no real choices.
+- **Fix:** tagged badge panel for the stems + the five canonical A–E statements (or explicit labelled items) as the options — a/b are never options for this type.
+
+### Bug 2 — Case Study badly rendered (live)
+- **Root cause:** the CSV bridge prefixes the passage into the question text → one giant blob in the question line; the passage could also be mis-sourced from the accept column.
+- **Fix:** dedicated scrollable passage panel above the options; prefixed passages split back out of the question line; options from explicit items or the a–d columns.
+
+### Bug 3 — chosen hot-text options indistinguishable (live)
+- **Fix:** dedicated pill chips — selected = gradient + white bold + ✓ + glow + `aria-pressed`; tap toggles.
+
+### Bug 4 — Read Aloud invisible (live)
+- **Root cause:** the 🔊 button shipped `class="hidden"` and nothing ever un-hid it; it also only read MCQ/MRQ/TF.
+- **Fix:** visible from exam start; rewritten per-type reader (AR stems, case-study passage-first, matching/ordering/categorization/hot-text items, multi-part labels), Alt+R/Alt+S, auto-cancel on question change/submit/tab-blur, never reads the answer key.
+
+### Features ported from School Connect / GOSA Portal
+- ❓ How to Answer legend (all 17 styles, no exam time); 💡 how-to tip above every structured question; essay live word count.
+
+### Files touched
+`student.html` · `assets/js/site-help.js` · `assets/js/chatbot.js` · `sw.js` → `hmg-cbt-shell-v12-phase12c-v1` · generator templates re-synced (student, sw, site-help, chatbot). **No database change.**
