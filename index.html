@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMG Academy CBT Pro | Free Online Exam, CBT & Assessment Platform by HMG Concepts</title>
+<meta name="description" content="HMG Academy CBT Pro is a free, installable online CBT and assessment platform by HMG Concepts for teachers, schools, tutors and training centres. Create exams, use 20 question types, anti-cheat controls, analytics, certificates and exports with no paid AI API.">
+<meta name="keywords" content="HMG Academy, HMG Concepts, HMG CBT, CBT platform Nigeria, online exam platform, free CBT software, school assessment system, JAMB CBT practice, WAEC CBT, NECO CBT, teacher dashboard, student exam portal, certificate verification, EdTech Nigeria, Adewale Samson Adeagbo">
+<meta name="author" content="HMG Concepts / Adewale Samson Adeagbo">
+<meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+<meta name="googlebot" content="index, follow">
+<meta name="bingbot" content="index, follow">
+<link rel="canonical" href="https://hmgcbtsystem.vercel.app/">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/hmg-academy-logo.png">
+<link rel="apple-touch-icon" href="assets/hmg-academy-logo.png">
+<meta name="theme-color" content="#10b981">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="HMG CBT">
+<meta name="application-name" content="HMG Academy CBT Pro">
+<meta name="msapplication-TileColor" content="#10b981">
+<meta name="msapplication-config" content="browserconfig.xml">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HMG Academy CBT Pro">
+<meta property="og:title" content="HMG Academy CBT Pro — Free Online CBT Platform by HMG Concepts">
+<meta property="og:description" content="Installable free CBT platform for schools, teachers and training centres: 20 question types, anti-cheat controls, analytics, exports and verifiable certificates.">
+<meta property="og:url" content="https://hmgcbtsystem.vercel.app/">
+<meta property="og:image" content="https://hmgcbtsystem.vercel.app/assets/hmg-academy-logo.png">
+<meta property="og:image:alt" content="HMG Academy CBT Pro logo">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HMG Academy CBT Pro — Free Online CBT Platform">
+<meta name="twitter:description" content="A free, installable CBT platform by HMG Concepts for exams, analytics, certificates and school assessments.">
+<meta name="twitter:image" content="https://hmgcbtsystem.vercel.app/assets/hmg-academy-logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#09090b;--surface:#18181b;--surface-2:#1f1f22;--surface-hover:#27272a;--primary:#10b981;--primary-hover:#059669;--primary-dim:rgba(16,185,129,0.1);--border:#27272a;--text:#f4f4f5;--text-muted:#a1a1aa;--info:#3b82f6;--info-dim:rgba(59,130,246,0.1);--warning:#f59e0b;--warning-dim:rgba(245,158,11,0.1);--purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.1);--danger:#ef4444;--radius:14px}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(ellipse 80% 50% at 50% -10%,rgba(16,185,129,0.12) 0%,transparent 60%),radial-gradient(ellipse 40% 30% at 80% 80%,rgba(59,130,246,0.07) 0%,transparent 50%);pointer-events:none;z-index:0}
+.hero-brand-logo{width:min(260px,70vw);border-radius:28px;margin:0 auto 24px;display:block;border:1px solid rgba(168,85,247,0.35);box-shadow:0 18px 80px rgba(59,130,246,0.22),0 8px 45px rgba(168,85,247,0.18);animation:fadeUp 0.6s ease both}
+.enterprise-banner{margin-top:30px;background:linear-gradient(135deg,rgba(16,185,129,0.08),rgba(59,130,246,0.07),rgba(168,85,247,0.08));border:1px solid rgba(16,185,129,0.22);border-radius:18px;padding:22px;display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;text-align:left;max-width:900px}
+.enterprise-mini{background:rgba(9,9,11,0.68);border:1px solid var(--border);border-radius:14px;padding:16px}
+.enterprise-mini strong{display:block;color:var(--text);font-size:13px;margin-bottom:5px}
+.enterprise-mini span{font-size:12px;color:var(--text-muted);line-height:1.6}
+nav{position:fixed;top:0;left:0;right:0;height:64px;background:rgba(9,9,11,0.85);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 clamp(20px,5vw,60px);gap:12px;z-index:999}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none;flex:1}
+.nav-logo-icon{width:36px;height:36px;background:var(--primary-dim);border:1px solid rgba(16,185,129,0.3);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.nav-logo-text{font-family:'Syne',sans-serif;font-size:15px;font-weight:800;color:var(--text);letter-spacing:-0.3px;line-height:1.1}
+.nav-logo-sub{font-size:10px;font-weight:500;color:var(--text-muted);letter-spacing:0.3px}
+.nav-badge{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;padding:3px 9px;border-radius:20px;background:var(--primary-dim);color:var(--primary);border:1px solid rgba(16,185,129,0.25)}
+.nav-cta{display:flex;align-items:center;gap:8px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:10px;border:none;font-family:'Plus Jakarta Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.2s ease;white-space:nowrap}
+.btn-primary{background:var(--primary);color:#000}.btn-primary:hover{background:var(--primary-hover)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}.btn-outline:hover{background:var(--surface-hover)}
+.hero{position:relative;padding:120px clamp(20px,5vw,60px) 80px;text-align:center;z-index:1}
+.hero h1{font-family:'Syne',sans-serif;font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1px;line-height:1.1;margin-bottom:16px;background:linear-gradient(135deg,var(--primary),var(--info),var(--purple));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{font-size:clamp(14px,2vw,18px);color:var(--text-muted);max-width:640px;margin:0 auto 28px;line-height:1.6}
+.hero-actions{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.btn-hero-primary{padding:12px 28px;font-size:15px;background:var(--primary);color:#fff;border-radius:12px;border:none;font-weight:700;cursor:pointer;text-decoration:none;transition:all 0.3s}.btn-hero-primary:hover{background:var(--primary-hover);transform:translateY(-2px)}
+.btn-hero-secondary{padding:12px 28px;font-size:15px;background:transparent;color:var(--text);border:1px solid var(--border);border-radius:12px;cursor:pointer;text-decoration:none;transition:all 0.3s}.btn-hero-secondary:hover{background:var(--surface-hover);transform:translateY(-2px)}
+.portals{padding:40px clamp(20px,5vw,60px);max-width:1100px;margin:0 auto}
+.portals-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
+.portal-card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px;transition:all 0.3s;position:relative;overflow:hidden}
+.portal-card:hover{border-color:var(--primary);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,0.3)}
+.portal-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--info),var(--purple))}
+.portal-card h3{font-size:18px;font-weight:700;margin:12px 0 8px}
+.portal-card p{font-size:13px;color:var(--text-muted);line-height:1.6;margin-bottom:16px}
+.portal-features{list-style:none;padding:0}
+.portal-features li{font-size:12px;color:var(--text-muted);padding:4px 0;display:flex;align-items:center;gap:8px}
+.portal-features li::before{content:'\2713';color:var(--primary);font-weight:700}
+.portal-card .btn{margin-top:12px;width:100%;justify-content:center}
+.workflow{padding:60px clamp(20px,5vw,60px);max-width:1100px;margin:0 auto;text-align:center}
+.workflow h2{font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);font-weight:800;margin-bottom:40px}
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;text-align:left}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;position:relative}
+.step-num{font-size:40px;font-weight:800;color:var(--primary-dim);position:absolute;top:12px;right:16px}
+.step-icon{font-size:28px;margin-bottom:12px}
+.step h4{font-size:15px;font-weight:700;margin-bottom:8px}
+.step p{font-size:13px;color:var(--text-muted);line-height:1.6}
+.features{padding:60px clamp(20px,5vw,60px);max-width:1100px;margin:0 auto}
+.features h2{font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);font-weight:800;margin-bottom:12px;text-align:center}
+.features>p{text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:32px}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}
+.feature-item{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;transition:all 0.2s}
+.feature-item:hover{border-color:var(--primary)}
+.feature-item .fi-icon{font-size:24px;margin-bottom:10px}
+.feature-item h4{font-size:14px;font-weight:700;margin-bottom:6px}
+.feature-item p{font-size:12px;color:var(--text-muted);line-height:1.5}
+.exam-types{padding:60px clamp(20px,5vw,60px);max-width:1100px;margin:0 auto;text-align:center}
+.exam-types h2{font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);font-weight:800;margin-bottom:12px}
+.exam-types>p{color:var(--text-muted);font-size:14px;margin-bottom:28px}
+.type-pills{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.type-pill{padding:8px 18px;background:var(--surface);border:1px solid var(--border);border-radius:20px;font-size:13px;font-weight:600;transition:all 0.2s;cursor:default}
+.type-pill:hover{border-color:var(--primary);color:var(--primary)}
+.brand{padding:60px clamp(20px,5vw,60px);max-width:900px;margin:0 auto;text-align:center}
+.brand h2{font-family:'Syne',sans-serif;font-size:clamp(20px,3vw,30px);font-weight:800;margin-bottom:32px;background:linear-gradient(135deg,var(--primary),var(--info));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;text-align:left}
+.brand-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px}
+.brand-item .bi-icon{font-size:22px;margin-bottom:8px}
+.brand-item h4{font-size:13px;font-weight:700;margin-bottom:6px}
+.brand-item p{font-size:12px;color:var(--text-muted);line-height:1.5}
+.brand-item a{color:var(--primary);text-decoration:none;font-size:12px;font-weight:600}
+.brand-item a:hover{text-decoration:underline}
+footer{text-align:center;padding:40px 20px;border-top:1px solid var(--border);color:var(--text-muted);font-size:12px}
+footer a{color:var(--primary);text-decoration:none}
+footer a:hover{text-decoration:underline}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+
+.install-card{max-width:900px;margin:32px auto 0;background:linear-gradient(135deg,rgba(16,185,129,.10),rgba(59,130,246,.08));border:1px solid rgba(16,185,129,.28);border-radius:18px;padding:20px;text-align:left;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.install-card h3{font-size:16px;margin-bottom:6px}.install-card p{font-size:13px;margin:0;color:var(--text-muted);line-height:1.6}.install-actions{display:flex;gap:8px;flex-wrap:wrap}.install-btn{background:var(--primary);color:#000;border:none;border-radius:10px;padding:10px 16px;font-weight:800;cursor:pointer}.install-btn.secondary{background:transparent;color:var(--text);border:1px solid var(--border)}
+@media(max-width:720px){.install-card{grid-template-columns:1fr}.install-actions{display:grid}.install-actions>*{width:100%}}
+
+@media(max-width:768px){.hero{padding:100px 16px 60px}.portals-grid,.steps,.features-grid,.brand-grid{grid-template-columns:1fr}.enterprise-banner{padding:16px;gap:10px}}
+</style>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<nav>
+  <a href="#" class="nav-logo"><div class="nav-logo-icon">&#x1F393;</div><div><div class="nav-logo-text">HMG Academy</div><div class="nav-logo-sub">CBT Pro System v3.1</div></div></a>
+  <span class="nav-badge">v3.1 Enterprise</span>
+  <div class="nav-cta"><a href="#portals" class="btn btn-outline">Explore</a><a href="teacher.html" class="btn btn-primary">Teacher Login</a></div>
+</nav>
+
+<section class="hero">
+  <img src="assets/hmg-academy-logo.png" alt="HMG Academy logo" class="hero-brand-logo" onerror="this.style.background='var(--surface)';this.style.padding='20px';this.alt='&#x1F393; HMG Academy';">
+  <h1>The CBT Platform Built for African Classrooms</h1>
+  <p>Set exams, generate a link or access code, and let students start instantly &mdash; no app download, no account creation. Real-time results, analytics, and certificates included.</p>
+  <div class="hero-actions"><a href="student.html" class="btn btn-hero-primary">&#x1F4DD; Take an Exam</a><a href="teacher.html" class="btn btn-hero-secondary">&#x1F58A;&#xFE0F; Teacher Dashboard</a><a href="admin.html" class="btn btn-hero-secondary">&#x2699;&#xFE0F; Admin Panel</a></div>
+  <div class="enterprise-banner">
+    <div class="enterprise-mini"><strong>&#x1F3EB; Enterprise Ready</strong><span>Institution branding, reusable exam packages, registered-student mode, and backup/export workflows.</span></div>
+    <div class="enterprise-mini"><strong>&#x1F522; Link + Code Access</strong><span>Teachers share direct links or 6-character access codes. Students use either option.</span></div>
+    <div class="enterprise-mini"><strong>&#x1F9E0; 17 Question Types</strong><span>Objective, multiple response, numeric, matching, ordering, cloze, essay, categorization, multi-part numeric, assertion-reason, case-study, image, matrix, hot-text, and code/algorithm responses.</span></div>
+    <div class="enterprise-mini"><strong>&#x20A6;0 AI API Cost</strong><span>Insights and advanced scoring use browser logic &mdash; no paid AI API required.</span></div>
+  </div>
+  <div class="install-card" id="install-app">
+    <div>
+      <h3>📲 Install HMG CBT on phone, tablet, or computer</h3>
+      <p>This platform is a Progressive Web App (PWA). Students, teachers and administrators can add it to Android, iPhone/iPad, Windows, macOS or Chromebook for quick access and offline app-shell loading.</p>
+    </div>
+    <div class="install-actions">
+      <button class="install-btn" id="pwa-install-btn" style="display:none;">Install App</button>
+      <button class="install-btn secondary" onclick="document.getElementById('install-help').scrollIntoView({behavior:'smooth'})">How to Install</button>
+    </div>
+  </div>
+</section>
+
+<section class="portals" id="portals">
+  <h2 style="font-family:'Syne',sans-serif;font-size:clamp(22px,3vw,36px);font-weight:800;text-align:center;margin-bottom:8px;">Choose Your Role</h2>
+  <p style="text-align:center;color:var(--text-muted);font-size:14px;margin-bottom:32px;">Three portals &mdash; candidates sit exams, staff sign in to their workspaces.</p>
+  <div class="portals-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));">
+    <div class="portal-card">
+      <div style="font-size:36px;">📝</div>
+      <h3>Candidate &mdash; Take Exam</h3>
+      <p>Enter your exam code or link to sit single-subject or multi-subject exams. Zero app installation, zero signup.</p>
+      <ul class="portal-features">
+        <li>Multi-Subject UTME/JAMB Tabbed Switching</li>
+        <li>Face Gate &amp; Audio Activity Monitor</li>
+        <li>STEM Virtual Keyboard &amp; Calculator</li>
+        <li>Auto-Save Draft &amp; Offline JSON Backup</li>
+      </ul>
+      <a href="student.html" class="btn btn-primary">Enter Exam Portal &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">👨‍🏫</div>
+      <h3>Teacher Login &mdash; Assessment Hub</h3>
+      <p>Staff sign-in required. Author exams, manage 17+ question types, import CSV/Excel, configure anti-cheat, and analyse results.</p>
+      <ul class="portal-features">
+        <li>17+ Advanced Question Types Builder</li>
+        <li>Multi-Subject UTME Builder &amp; AI Prompts Studio</li>
+        <li>Batch Actions (Open, Lock, Archive, Delete)</li>
+        <li>Live Candidate Proctoring &amp; Broadsheets</li>
+      </ul>
+      <a href="teacher.html" class="btn btn-primary">Teacher Sign In &rarr;</a>
+    </div>
+
+    <div class="portal-card">
+      <div style="font-size:36px;">🛡️</div>
+      <h3>Admin Login &mdash; Super Supervisor</h3>
+      <p>Administrator sign-in required. Supervise platform metrics, approve teacher accounts, and govern data, storage, health, and audit.</p>
+      <ul class="portal-features">
+        <li>Teacher Registration Approval Queue</li>
+        <li>Data, Drive Sync &amp; Disaster Recovery Suite</li>
+        <li>Storage, Health &amp; Platform Settings</li>
+        <li>Global Results Supervision &amp; Audit Trail</li>
+      </ul>
+      <a href="admin.html" class="btn btn-primary">Admin Sign In &rarr;</a>
+    </div>
+  </div>
+</section>
+
+<section class="workflow">
+  <h2>How It Works</h2>
+  <div class="steps">
+    <div class="step"><span class="step-num">01</span><div class="step-icon">&#x1F4C4;</div><h4>Upload Questions</h4><p>Teachers prepare questions in a CSV, Excel, or type them directly. The system parses everything automatically with support for 20 question types.</p></div>
+    <div class="step"><span class="step-num">02</span><div class="step-icon">&#x2699;&#xFE0F;</div><h4>Configure the Exam</h4><p>Set duration, question count, randomisation, passing score, attempt limits, and exam mode. Full editing available at any time.</p></div>
+    <div class="step"><span class="step-num">03</span><div class="step-icon">&#x1F4F2;</div><h4>Share the Code</h4><p>Share the exam code or WhatsApp link. Students enter it on the student portal &mdash; no registration needed, works on any device.</p></div>
+    <div class="step"><span class="step-num">04</span><div class="step-icon">&#x1F4CA;</div><h4>Analyse Results</h4><p>Results appear instantly with score distributions, pass/fail ratios, average time-per-question, and CSV export for further analysis.</p></div>
+  </div>
+</section>
+
+<section class="features">
+  <h2>Everything a Classroom Needs</h2>
+  <p>No paid add-ons. No hidden limits. Every feature ships free.</p>
+  <div class="features-grid">
+    <div class="feature-item"><div class="fi-icon">&#x1F500;</div><h4>Randomised Questions &amp; Options</h4><p>Questions and answer options are shuffled per student, making it harder to copy and improving exam integrity.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F6A9;</div><h4>Question Flagging</h4><p>Students can flag uncertain questions and jump back to them before submitting &mdash; reducing careless mistakes.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x23F1;&#xFE0F;</div><h4>Countdown Timer</h4><p>A live countdown timer with colour warnings keeps students aware of remaining time throughout the exam.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F3C5;</div><h4>Result Certificate</h4><p>Students receive a shareable certificate immediately after submission showing their score and performance grade.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F4AC;</div><h4>Teacher Explanations</h4><p>Teachers can attach explanations to each question, which students see during their result review.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F512;</div><h4>One Submission Only</h4><p>The system prevents students from submitting multiple times, ensuring fair and clean result records.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F4C8;</div><h4>Analytics &amp; Charts</h4><p>Teachers see score distributions, pass/fail ratios, average time-per-question, and more on built-in charts.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F4F2;</div><h4>WhatsApp Sharing</h4><p>Generate a direct WhatsApp link from any exam &mdash; students can join with one tap from the shared message.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x270F;&#xFE0F;</div><h4>Full Exam Editing</h4><p>Edit every aspect of any exam &mdash; subject, class, term, topic, duration, pass mark, question count, exam mode. Add or remove questions at any time.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F4E6;</div><h4>Exam Package Export/Import</h4><p>Export entire exams as JSON packages for backup, sharing, or re-use across different deployments and terms.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x2705;</div><h4>Deployment Validator</h4><p>A free browser-only readiness checker verifies required files, PWA assets, Supabase configuration, and security basics.</p></div>
+    <div class="feature-item"><div class="fi-icon">&#x1F4D6;</div><h4>Detailed Feature Guide</h4><p>A built-in system guide explains every portal, feature, question type, free tool, and deployment step for school administrators.</p></div>
+  </div>
+</section>
+
+<section class="exam-types">
+  <h2>Built for Nigerian &amp; International Standards</h2>
+  <p>Use the CBT system to practise and assess across all major examinations.</p>
+  <div class="type-pills">
+    <span class="type-pill">Admission Screening</span><span class="type-pill">Scholarship Tests</span><span class="type-pill">Common Entrance Exams</span><span class="type-pill">Recruitment / Aptitude Tests</span>
+    <span class="type-pill">Certification Exams</span><span class="type-pill">STEM Exams</span><span class="type-pill">UTME / JAMB Practice</span><span class="type-pill">WAEC / NECO / BECE Practice</span>
+    <span class="type-pill">Post-UTME</span><span class="type-pill">JUPEB</span><span class="type-pill">IGCSE</span><span class="type-pill">SAT</span>
+    <span class="type-pill">IELTS</span><span class="type-pill">School Terminal Exams</span><span class="type-pill">Class Quizzes</span><span class="type-pill">Custom Assessments</span>
+  </div>
+</section>
+
+
+<section class="features" id="install-help">
+  <h2>Download / Install on Any Device</h2>
+  <p>Use HMG Academy CBT Pro like an app without visiting an app store.</p>
+  <div class="features-grid">
+    <div class="feature-item"><div class="fi-icon">🤖</div><h4>Android phones/tablets</h4><p>Open the site in Chrome, tap the menu ⋮, then choose <strong>Install app</strong> or <strong>Add to Home screen</strong>.</p></div>
+    <div class="feature-item"><div class="fi-icon">🍎</div><h4>iPhone / iPad</h4><p>Open in Safari, tap Share, then choose <strong>Add to Home Screen</strong>. The CBT icon will appear like a normal app.</p></div>
+    <div class="feature-item"><div class="fi-icon">💻</div><h4>Windows / macOS / Chromebook</h4><p>Open in Chrome or Edge and click the install icon in the address bar, or use browser menu → <strong>Install HMG CBT</strong>.</p></div>
+    <div class="feature-item"><div class="fi-icon">🔎</div><h4>Search engine visibility</h4><p>The landing page includes SEO metadata, sitemap, robots file, structured data and links to the HMG Concepts ecosystem for discovery and lead generation.</p></div>
+  </div>
+</section>
+
+
+<section class="features" id="hmg-ecosystem">
+  <h2>Connect With the HMG Concepts Ecosystem</h2>
+  <p>Need a CBT platform, school data dashboard, website, EdTech consultation, tutoring, exam preparation, or digital transformation support? Start here.</p>
+  <div class="features-grid">
+    <div class="feature-item"><div class="fi-icon">🏫</div><h4>HMG Academy</h4><p>Virtual learning, exam preparation and academic support from Nursery to Secondary, WAEC, NECO, BECE, UTME/JAMB, Post-UTME, IGCSE, IELTS, SAT and JUPEB.</p><p><a href="https://hmgacademy.pages.dev/" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800;text-decoration:none;">Visit HMG Academy →</a></p></div>
+    <div class="feature-item"><div class="fi-icon">💼</div><h4>HMG Concepts</h4><p>Education technology, data solutions, school systems, automation and digital products built for Nigerian and African institutions.</p><p><a href="https://hmgconcepts.pages.dev/" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800;text-decoration:none;">Explore HMG Concepts →</a></p></div>
+    <div class="feature-item"><div class="fi-icon">🧑‍💻</div><h4>HMG Technologies</h4><p>Custom CBT deployments, dashboards, analytics, student performance tools, school websites, question bank tools and practical ICT solutions.</p><p><a href="mailto:buildingmyictcareer@gmail.com?subject=CBT%20Platform%20or%20EdTech%20Project%20Enquiry" style="color:var(--primary);font-weight:800;text-decoration:none;">Request a project discussion →</a></p></div>
+    <div class="feature-item"><div class="fi-icon">📲</div><h4>Lead / Partnership Enquiry</h4><p>For school deployment, training, partnership or support, contact HMG directly through WhatsApp or email.</p><p><a href="https://wa.me/2348100866322?text=Hello%20HMG%20Concepts%2C%20I%20am%20interested%20in%20the%20CBT%20platform" target="_blank" rel="noopener" style="color:var(--primary);font-weight:800;text-decoration:none;">Start WhatsApp enquiry →</a></p></div>
+  </div>
+</section>
+
+<section class="brand">
+  <h2>Built by HMG Concepts for Real Nigerian Classrooms</h2>
+  <p style="color:var(--text-muted);font-size:14px;margin-bottom:28px;">CBT Pro is part of the HMG Technologies mission: free, practical EdTech tools that help teachers assess, analyse, and support learners without paid AI APIs or expensive software.</p>
+  <div class="brand-grid">
+    <div class="brand-item"><div class="bi-icon">&#x1F468;&#x200D;&#x1F3EB;</div><h4>Adewale Samson Adeagbo</h4><p>Founder of HMG Concepts, Data Scientist, STEM Educator, and AI-Augmented Solutions Developer with 15+ years in Nigerian classrooms across Lagos and Ogun State.</p></div>
+    <div class="brand-item"><div class="bi-icon">&#x1F3EB;</div><h4>HMG Academy</h4><p>A full-service virtual learning institution covering Nursery through Secondary, WAEC, NECO, BECE, UTME/JAMB, Post-UTME, IGCSE, IELTS, SAT, and JUPEB preparation.</p><a href="https://hmgacademy.pages.dev/" target="_blank">Visit HMG Academy &rarr;</a></div>
+    <div class="brand-item"><div class="bi-icon">&#x1F4BB;</div><h4>HMG Technologies</h4><p>The EdTech and data arm building CBT systems, student performance dashboards, at-risk predictors, question-bank tools, and practical school data solutions.</p><a href="https://hmgconcepts.pages.dev/" target="_blank">HMG Concepts &rarr;</a></div>
+    <div class="brand-item"><div class="bi-icon">&#x1F4DE;</div><h4>Connect With HMG</h4><p>WhatsApp: +234 810 086 6322 &middot; Phone: +234 907 790 7677 &middot; Email: hismarvellousgrace@gmail.com</p><a href="https://wa.me/2348100866322" target="_blank">WhatsApp Chat &rarr;</a></div>
+  </div>
+</section>
+
+<footer>
+  <p>&copy; 2026 HMG Academy CBT Pro. Built with &#x2764;&#xFE0F; for Nigerian education. All features free &mdash; no paid APIs required.</p>
+  <p style="margin-top:8px;"><a href="https://hmgacademy.pages.dev/" target="_blank" rel="noopener">HMG Academy</a> &middot; <a href="https://hmgconcepts.pages.dev/" target="_blank" rel="noopener">HMG Concepts</a> &middot; <a href="https://wa.me/2348100866322" target="_blank" rel="noopener">WhatsApp</a></p>
+  <p style="margin-top:8px;font-size:12.5px;color:var(--text-muted,inherit);">Explore the <strong>HMG Concepts ecosystem</strong>: <a href="https://hmgschoolconnect.vercel.app/" target="_blank" rel="noopener">School Connect</a> &middot; <a href="https://gosaportal.vercel.app/" target="_blank" rel="noopener">GOSA Portal</a> &middot; <a href="https://cbtgen.vercel.app/" target="_blank" rel="noopener">CBT System Generator</a></p>
+</footer>
+
+<script type="application/ld+json">
+{
+  "@context":"https://schema.org",
+  "@graph":[
+    {"@type":"Organization","@id":"https://hmgconcepts.pages.dev/#organization","name":"HMG Concepts","url":"https://hmgconcepts.pages.dev/","email":"hismarvellousgrace@gmail.com","telephone":["+2348100866322","+2349077907677"],"founder":{"@type":"Person","name":"Adewale Samson Adeagbo"},"sameAs":["https://hmgacademy.pages.dev/","https://hmgcbtsystem.vercel.app/","https://hmgschoolconnect.vercel.app/","https://gosaportal.vercel.app/","https://cbtgen.vercel.app/"]},
+    {"@type":"EducationalOrganization","@id":"https://hmgacademy.pages.dev/#academy","name":"HMG Academy","url":"https://hmgacademy.pages.dev/","parentOrganization":{"@id":"https://hmgconcepts.pages.dev/#organization"}},
+    {"@type":"SoftwareApplication","@id":"https://hmgcbtsystem.vercel.app/#software","name":"HMG Academy CBT Pro","applicationCategory":"EducationalApplication","operatingSystem":"Web, Android, iOS, Windows, macOS, ChromeOS","url":"https://hmgcbtsystem.vercel.app/","installUrl":"https://hmgcbtsystem.vercel.app/","isAccessibleForFree":true,"offers":{"@type":"Offer","price":"0","priceCurrency":"NGN"},"creator":{"@id":"https://hmgconcepts.pages.dev/#organization"},"featureList":["20 question types","Teacher dashboard","Student exam portal","Admin panel","Anti-cheat controls","Result analytics","CSV export","Verifiable certificates","Progressive Web App install"]},
+    {"@type":"WebSite","@id":"https://hmgcbtsystem.vercel.app/#website","url":"https://hmgcbtsystem.vercel.app/","name":"HMG Academy CBT Pro","publisher":{"@id":"https://hmgconcepts.pages.dev/#organization"},"potentialAction":{"@type":"SearchAction","target":"https://www.google.com/search?q=site%3Ahmgcbtsystem\.vercel\.app+{search_term_string}","query-input":"required name=search_term_string"}}
+  ]
+}
+</script>
+<script>
+let deferredInstallPrompt=null;
+const installBtn=document.getElementById('pwa-install-btn');
+window.addEventListener('beforeinstallprompt',event=>{
+  event.preventDefault();
+  deferredInstallPrompt=event;
+  if(installBtn)installBtn.style.display='inline-block';
+});
+if(installBtn){installBtn.addEventListener('click',async()=>{
+  if(!deferredInstallPrompt){alert('If the install button is not available, use your browser menu and choose “Install app” or “Add to Home Screen”.');return;}
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice.catch(()=>{});
+  deferredInstallPrompt=null;
+  installBtn.style.display='none';
+});}
+if('serviceWorker' in navigator && location.protocol !== 'file:'){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+</script>
+
+<script src="pwa_install_enforcer.js"></script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

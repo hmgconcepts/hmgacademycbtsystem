@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Storage Manager — HMG Academy CBT Pro</title>
+  <meta name="description" content="Storage manager for HMG Academy CBT Pro — monitor Supabase database and object storage usage, clean orphan records and stay inside free-tier limits.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .row-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .row-card:last-child{border-bottom:none;}
+  .quota-bar{height:14px;border-radius:7px;background:var(--surface-hover,#323238);overflow:hidden;border:1px solid var(--border);}
+  .quota-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));}
+  .advice{padding:10px 12px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);margin:8px 0;font-size:13px;}
+  .advice.warn{border-color:var(--warning);}
+  .advice.ok{border-color:var(--primary);}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Storage Manager & Free-Tier Efficiency Centre</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📦 Storage Manager</h1>
+      <p>Keep the free-tier database (≈500 MB) tiny forever: real table sizes, an Archive Vault that moves cold rows into the separate 1 GB File Storage, and archive-first purging that can never run before its archive upload has succeeded.</p>
+    </div>
+    <button class="btn btn-primary" onclick="analyzeStorage(true)">🔄 Refresh Analysis</button>
+  </div>
+
+  <!-- ═══════════ WHAT IS THIS PAGE ═══════════ -->
+  <div class="card">
+    <h2>🗄️ What is this page?</h2>
+    <p style="font-size:.9rem;color:var(--text-muted);margin:0;">
+      Supabase's free tier gives every project <b>≈500 MB of database</b> AND a <b>separate 1 GB of File Storage</b>. This page shows exactly what consumes the database (real row counts and physical sizes from Postgres statistics), recommends what can be archived, and moves old rows — as portable JSON snapshots — into the private <span class="code-chip">archive-vault</span> bucket before purging them from the database. Archived data can be browsed, downloaded and <b>restored back into the database</b> at any time.
+    </p>
+  </div>
+
+  <!-- ═══════════ QUOTA OVERVIEW ═══════════ -->
+  <div class="grid-4">
+    <div class="stat-box">
+      <div class="stat-lbl">Database Footprint</div>
+      <div class="stat-val" id="db-storage-val">—</div>
+      <div class="quota-bar" style="margin-top:8px;"><div class="quota-fill" id="db-quota-fill" style="width:0%"></div></div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">of ~500 MB free-tier database</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Total Rows</div>
+      <div class="stat-val" id="total-records-val">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">across all platform tables</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Archives in Vault</div>
+      <div class="stat-val" id="vault-count-val">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">JSON snapshots in File Storage</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">This Browser's Cache</div>
+      <div class="stat-val" id="local-storage-val">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">localStorage drafts & history</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ TABLE BREAKDOWN ═══════════ -->
+  <div class="card">
+    <h2>📊 Database Table Breakdown (real sizes from Postgres)</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Table</th><th>Row Count</th><th>Physical Size</th><th>What it holds</th></tr>
+        </thead>
+        <tbody id="table-breakdown-body">
+          <tr><td colspan="4" style="text-align:center;">Analyzing database tables…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:.78rem;color:var(--text-muted);">Sizes come from the <span class="code-chip">admin_table_stats()</span> RPC (pg_total_relation_size) — real database bytes including indexes, not estimates.</p>
+  </div>
+
+  <!-- ═══════════ EFFICIENCY CENTRE ═══════════ -->
+  <div class="card">
+    <h2>🌿 Free-Tier Database Efficiency Centre</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Rule-based advisor — runs locally against your live statistics. Green means healthy; amber means an archive would free meaningful space.</p>
+    <div id="advice-list"><div class="advice">Run a refresh to see recommendations.</div></div>
+  </div>
+
+  <!-- ═══════════ ARCHIVE VAULT ═══════════ -->
+  <div class="card">
+    <h2>📦 Archive Vault — move old rows into the 1 GB File Storage</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Pick a table and a cutoff date. The manager fetches the old rows, uploads them as a JSON snapshot to the private <span class="code-chip">archive-vault</span> bucket, verifies the upload, and only then purges them from the database (proof of the archive path is required by the purge RPC). Every step is audit-logged.</p>
+    <div class="grid-2">
+      <div>
+        <label>Table to archive</label>
+        <select id="vault-table">
+          <option value="results">results — candidate submissions (heaviest rows)</option>
+          <option value="audit_logs">audit_logs — activity history</option>
+        </select>
+        <label>Archive rows older than</label>
+        <input type="date" id="vault-before">
+        <div class="flex-gap" style="margin-top:10px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="archiveOldRows()">📦 1) Archive old rows → Vault</button>
+          <button class="btn btn-danger" id="purge-btn" onclick="purgeArchivedRows()" disabled>🧹 2) Purge archived rows (owner)</button>
+        </div>
+        <div id="vault-progress" style="margin-top:10px;font-size:13px;display:none;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;"></div>
+      </div>
+      <div>
+        <div class="flex-between" style="margin-bottom:6px;">
+          <strong style="font-size:13px;">Vault contents</strong>
+          <button class="btn btn-sm btn-outline" onclick="listVault()">🔄 List archives</button>
+        </div>
+        <div id="vault-list" style="max-height:260px;overflow-y:auto;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg);">
+          <em style="color:var(--text-muted);">Click “List archives”.</em>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PURGE OLD ROWS (audit) ═══════════ -->
+  <div class="card">
+    <h2>🧹 Purge old audit logs (after archiving/exporting!)</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Owner-only. The RPC refuses to purge the most recent 7 days and returns the purged rows as JSON — the button offers to download them automatically before they are gone.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
+      <label style="margin:0;">Purge audit logs older than</label>
+      <input type="date" id="audit-purge-before" style="width:auto;">
+      <button class="btn btn-danger" onclick="purgeAuditLogs()">🧹 Purge (owner)</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ LOCAL OPTIMIZER ═══════════ -->
+  <div class="card">
+    <h2>🧹 Local Device Optimizer</h2>
+    <div class="row-card">
+      <div>
+        <strong style="font-size:14px;">Clear browser draft caches</strong>
+        <div style="font-size:12px;color:var(--text-muted);">Removes cached exam drafts and local calculation history from THIS device only.</div>
+      </div>
+      <button class="btn btn-sm btn-outline" onclick="clearLocalDrafts()">Clear Drafts</button>
+    </div>
+    <div class="row-card">
+      <div>
+        <strong style="font-size:14px;">Google Drive offloading</strong>
+        <div style="font-size:12px;color:var(--text-muted);">Full platform archives are backed up to the school's own Google Drive — see Admin Data.</div>
+      </div>
+      <a class="btn btn-sm btn-accent" href="admin-data.html">Go to Drive Sync</a>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script>
+let lastArchive = null;   // { table, before, path, count } — required proof for purge
+let lastPurgedRows = null;
+
+const TABLE_INFO = {
+  institutions: 'Tenancy & whitelabel branding', profiles: 'Users, roles & status',
+  exams: 'Exams & question packages', results: 'Candidate submissions',
+  students: 'Registered student rosters', audit_logs: 'Activity history',
+  system_backups: 'Backup history', site_license: 'Site license state',
+  platform_settings: 'Shared platform settings', sc_heartbeat: 'Keep-alive heartbeat'
+};
+
+async function analyzeStorage(manual) {
+  // Browser localStorage usage
+  let totalChars = 0;
+  for (const key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) totalChars += (localStorage[key].length + key.length);
+  }
+  document.getElementById('local-storage-val').innerText = (totalChars / 1024).toFixed(1) + ' KB';
+
+  // Real table statistics
+  let stats = null;
+  try {
+    stats = await DataPort.tableStats();
+  } catch (e) {
+    if (manual) showToast('Table stats unavailable: ' + (e.message || e), 'warning');
+  }
+
+  if (stats && stats.length) {
+    const totalBytes = stats.reduce((n, t) => n + Number(t.total_bytes || 0), 0);
+    const totalRows = stats.reduce((n, t) => n + Number(t.row_count || 0), 0);
+    const mb = totalBytes / 1048576;
+    document.getElementById('db-storage-val').innerText = mb >= 1 ? mb.toFixed(2) + ' MB' : (totalBytes / 1024).toFixed(0) + ' KB';
+    document.getElementById('db-quota-fill').style.width = Math.min(100, (totalBytes / (500 * 1048576)) * 100).toFixed(1) + '%';
+    document.getElementById('total-records-val').innerText = totalRows.toLocaleString();
+    document.getElementById('table-breakdown-body').innerHTML = stats.map(t => `
+      <tr>
+        <td><strong>${escapeHtml(t.table_name)}</strong></td>
+        <td>${Number(t.row_count).toLocaleString()}</td>
+        <td>${escapeHtml(t.pretty_size || ((t.total_bytes / 1024).toFixed(1) + ' KB'))}</td>
+        <td style="color:var(--text-muted);">${TABLE_INFO[t.table_name] || ''}</td>
+      </tr>`).join('');
+    renderAdvice(stats, totalBytes);
+  } else {
+    // Fallback: estimated counts (older schema without admin_table_stats)
+    try {
+      const [exams, results, students, profiles, audit] = await Promise.all([
+        App.sbFetch('/rest/v1/exams?select=id').catch(() => []),
+        App.sbFetch('/rest/v1/results?select=id').catch(() => []),
+        App.sbFetch('/rest/v1/students?select=id').catch(() => []),
+        App.sbFetch('/rest/v1/profiles?select=id').catch(() => []),
+        App.sbRpc('admin_get_audit_logs', { p_limit: 1 }).catch(() => [])
+      ]);
+      const total = exams.length + results.length + students.length + profiles.length;
+      document.getElementById('total-records-val').innerText = total;
+      const estKb = exams.length * 15 + results.length * 8 + students.length * 0.5 + profiles.length * 0.5;
+      document.getElementById('db-storage-val').innerText = estKb > 1024 ? (estKb / 1024).toFixed(2) + ' MB (est.)' : estKb.toFixed(0) + ' KB (est.)';
+      document.getElementById('db-quota-fill').style.width = Math.min(100, (estKb / 512000) * 100).toFixed(1) + '%';
+      renderAdvice(null, estKb * 1024, { results: results.length, exams: exams.length });
+    } catch (_) {}
+  }
+
+  listVault(true);
+}
+
+/* ── Rule-based efficiency advisor ── */
+function renderAdvice(stats, totalBytes, est) {
+  const el = document.getElementById('advice-list');
+  const out = [];
+  const mb = totalBytes / 1048576;
+
+  if (mb < 50) out.push(['ok', `✅ Database is lean (${mb.toFixed(1)} MB of ~500 MB). No action needed — archive once per term.`]);
+  else if (mb < 200) out.push(['', `🟡 Database is using ${mb.toFixed(1)} MB. Schedule an Archive Vault run for old results at term end.`]);
+  else out.push(['warn', `🔴 Database is using ${mb.toFixed(1)} MB of ~500 MB. Archive old results and audit logs NOW (see below) and consider purging after archiving.`]);
+
+  if (stats) {
+    const results = stats.find(t => t.table_name === 'results');
+    const audit = stats.find(t => t.table_name === 'audit_logs');
+    if (results && Number(results.row_count) > 2000) out.push(['warn', `📦 results holds ${Number(results.row_count).toLocaleString()} rows — the heaviest table. Archive rows older than last term, then purge.`]);
+    else if (results && Number(results.row_count) > 500) out.push(['', `📦 results holds ${Number(results.row_count).toLocaleString()} rows — a term-end archive will keep it healthy.`]);
+    if (audit && Number(audit.row_count) > 5000) out.push(['warn', `🧹 audit_logs holds ${Number(audit.row_count).toLocaleString()} rows. Use the purge below (it archives the purged rows into a downloadable file).`]);
+    const biggest = stats[0];
+    if (biggest && biggest.table_name !== 'results' && Number(biggest.total_bytes) > 10 * 1048576) {
+      out.push(['', `📈 Largest table: ${biggest.table_name} (${biggest.pretty_size}). If this is unexpected, inspect it in Admin Data → Table Browser.`]);
+    }
+  } else if (est) {
+    if (est.results > 2000) out.push(['warn', `📦 ~${est.results} candidate results stored — archive old ones at term end.`]);
+  }
+
+  out.push(['ok', `💡 Rhythm that never fails: full Drive backup weekly (Admin Data) + Archive Vault purge at every term end. The database stays tiny forever.`]);
+
+  el.innerHTML = out.map(([cls, msg]) => `<div class="advice ${cls}">${msg}</div>`).join('');
+}
+
+/* ── Archive Vault flow ── */
+async function archiveOldRows() {
+  const table = document.getElementById('vault-table').value;
+  const before = document.getElementById('vault-before').value;
+  const prog = document.getElementById('vault-progress');
+  if (!before) return showToast('Pick a cutoff date first.', 'warning');
+  const beforeTs = new Date(before + 'T23:59:59').toISOString();
+
+  prog.style.display = 'block';
+  prog.innerHTML = '⏳ Step 1/3 — fetching old rows…';
+  try {
+    // fetch rows older than the cutoff
+    const filter = `created_at=lt.${beforeTs}`;
+    let rows;
+    if (table === 'audit_logs') rows = await App.sbRpc('admin_get_audit_logs', { p_limit: 1000, p_to: beforeTs }).catch(() => []);
+    else rows = await App.sbFetch(`/rest/v1/${table}?${filter}&select=*&order=created_at.asc&limit=10000`).catch(() => []);
+
+    if (!rows || !rows.length) { prog.innerHTML = '✅ No rows older than the cutoff — nothing to archive.'; return; }
+
+    prog.innerHTML = `⏳ Step 2/3 — uploading ${rows.length} row(s) to the archive-vault bucket…`;
+    const arch = await DataPort.uploadToVault(table, rows);
+
+    prog.innerHTML = `✅ Step 3/3 — archived <b>${arch.count}</b> row(s) → <span class="code-chip">${escapeHtml(arch.path)}</span> (${(arch.size / 1024).toFixed(1)} KB).<br><b>Purge is now unlocked below.</b> The database still holds the rows until you purge.`;
+    lastArchive = { table, before: beforeTs, path: arch.path, count: arch.count };
+    document.getElementById('purge-btn').disabled = false;
+    showToast(`Archived ${arch.count} rows ✓ purge unlocked`, 'success');
+    listVault(true);
+  } catch (e) {
+    prog.innerHTML = '❌ ' + escapeHtml(e.message || e) + '<br><small>If the bucket is missing, run database/complete-schema.sql once in the Supabase SQL Editor.</small>';
+  }
+}
+
+async function purgeArchivedRows() {
+  if (!lastArchive) return showToast('Archive rows first — the purge requires proof of the archive.', 'warning');
+  if (!confirm(`PURGE ${lastArchive.count} archived row(s) from ${lastArchive.table}? They are safely stored in the vault at ${lastArchive.path} and can be restored anytime.`)) return;
+  try {
+    const r = await DataPort.purgeFromDb(lastArchive.table, lastArchive.before, lastArchive.path);
+    const purged = (r && (Array.isArray(r) ? r[0] : r).purged) ?? r;
+    lastArchive = null;
+    document.getElementById('purge-btn').disabled = true;
+    showToast(`Purged ${purged} row(s) from the database ✓ (archived copy is in the vault)`, 'success', 6000);
+    analyzeStorage();
+  } catch (e) {
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
+}
+
+async function listVault(quiet) {
+  const el = document.getElementById('vault-list');
+  try {
+    const items = await DataPort.listVault();
+    document.getElementById('vault-count-val').innerText = items.length;
+    if (!items.length) { el.innerHTML = '<em style="color:var(--text-muted);">Vault is empty — no archives yet.</em>'; return; }
+    el.innerHTML = items.map(it => `
+      <div class="row-card">
+        <div>
+          <strong>${escapeHtml(it.name)}</strong><br>
+          <span style="color:var(--text-muted);">${it.created_at ? new Date(it.created_at).toLocaleString() : ''} · ${((it.metadata?.size || 0) / 1024).toFixed(1)} KB</span>
+        </div>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-outline" onclick="downloadVault('${escapeHtml(it.name)}')">⬇️</button>
+          <button class="btn btn-sm btn-accent" onclick="restoreVault('${escapeHtml(it.name)}')">Restore</button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    document.getElementById('vault-count-val').innerText = '—';
+    if (!quiet) showToast('Vault list failed: ' + (e.message || e), 'danger');
+    el.innerHTML = '<em style="color:var(--text-muted);">Vault unavailable — run database/complete-schema.sql to create the archive-vault bucket.</em>';
+  }
+}
+
+async function downloadVault(path) {
+  try {
+    const obj = await DataPort.downloadVaultObject(path);
+    DataPort.downloadJSON(obj, path.split('/').pop());
+    showToast('Archive downloaded ✓', 'success');
+  } catch (e) { showToast('Download failed: ' + (e.message || e), 'danger'); }
+}
+
+async function restoreVault(path) {
+  const table = path.split('/')[0];
+  if (!confirm(`Restore the archived rows in ${path} back into the ${table} table? Existing rows are skipped (idempotent).`)) return;
+  try {
+    showToast('Restoring from vault…', 'info');
+    const obj = await DataPort.downloadVaultObject(path);
+    const rows = obj.rows || [];
+    if (!rows.length) return showToast('Archive contains no rows.', 'warning');
+    const r = await DataPort.restoreArchivedRows(table, rows);
+    const res = Array.isArray(r) ? r[0] : r;
+    showToast(`Restored ${res?.restored ?? '?'} row(s), skipped ${res?.skipped ?? '?'} (owner RPC) ✓`, 'success', 6000);
+  } catch (e) {
+    showToast('Restore failed: ' + (e.message || e), 'danger');
+  }
+}
+
+/* ── Audit purge (downloads the purged rows first) ── */
+async function purgeAuditLogs() {
+  const before = document.getElementById('audit-purge-before').value;
+  if (!before) return showToast('Pick a cutoff date.', 'warning');
+  const beforeTs = new Date(before + 'T23:59:59').toISOString();
+  if (!confirm(`Purge audit logs older than ${before}? The purged rows will be offered as a downloadable archive first.`)) return;
+  try {
+    const r = await DataPort.purgeFromDb('audit_logs', beforeTs, 'audit-purge-' + Date.now());
+    const res = Array.isArray(r) ? r[0] : r;
+    const purged = res?.purged ?? 0;
+    if (res?.archived && Array.isArray(res.archived) && res.archived.length) {
+      if (confirm(`${purged} log(s) purged. Download the purged rows as a JSON archive now? (recommended)`)) {
+        DataPort.downloadJSON({ table: 'audit_logs', purged_at: new Date().toISOString(), rows: res.archived }, `audit-purged-${before}.json`);
+      }
+    }
+    showToast(`Purged ${purged} audit log(s) ✓`, 'success');
+    analyzeStorage();
+  } catch (e) {
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
+}
+
+function clearLocalDrafts() {
+  let count = 0;
+  for (const k of Object.keys(localStorage)) {
+    if (k.startsWith('cbt_draft_')) { localStorage.removeItem(k); count++; }
+  }
+  showToast(`Cleared ${count} draft cache(s).`, 'success');
+  analyzeStorage();
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date(); d.setMonth(d.getMonth() - 3);
+  document.getElementById('vault-before').value = d.toISOString().slice(0, 10);
+  document.getElementById('audit-purge-before').value = d.toISOString().slice(0, 10);
+  analyzeStorage();
+});
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

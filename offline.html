@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Offline Mode — HMG Academy CBT Pro</title>
+  <meta name="description" content="Offline mode for HMG Academy CBT Pro — cached exam access and service-worker status when the network is unavailable.">
+<style>
+:root{--bg:#09090b;--surface:#18181b;--border:#27272a;--text:#f4f4f5;--muted:#a1a1aa;--primary:#10b981;--danger:#ef4444;}
+*{box-sizing:border-box}body{margin:0;min-height:100vh;display:grid;place-items:center;background:radial-gradient(circle at top,rgba(16,185,129,.18),transparent 42%),var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;padding:22px}.card{max-width:560px;background:rgba(24,24,27,.92);border:1px solid var(--border);border-radius:24px;padding:28px;text-align:center;box-shadow:0 18px 70px rgba(0,0,0,.35)}img{width:150px;border-radius:22px;margin-bottom:16px;border:1px solid rgba(139,92,246,.35)}h1{margin:0 0 10px;font-size:26px}p{color:var(--muted);line-height:1.7}.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:center;margin-top:18px}a,button{background:var(--primary);color:#000;text-decoration:none;border:0;border-radius:12px;padding:12px 18px;font-weight:800;cursor:pointer}.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.warn{margin-top:18px;padding:12px;border-radius:14px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.25);font-size:13px;color:#fecaca}</style>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<div class="card">
+<img src="assets/hmg-academy-logo.png" alt="HMG Academy logo">
+<h1>You are offline</h1>
+<p>The CBT app shell may still open after it has been cached, but login, exam loading, roster verification, and result submission require internet access to Supabase.</p>
+<div class="warn">If you already completed an exam and saving failed, use the Student Portal result page to download the emergency backup JSON and send it to your teacher.</div>
+<div class="btns"><button onclick="location.reload()">Try Again</button><a class="ghost" href="index.html">Go Home</a><a class="ghost" href="student.html">Student Portal</a></div>
+</div>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

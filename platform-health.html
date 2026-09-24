@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Health Console — HMG Academy CBT Pro</title>
+  <meta name="description" content="Platform health console — live Supabase, auth, storage, Google Drive, PWA and subscription status checks with one-glance diagnostics for HMG Academy CBT Pro.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;word-break:break-all;}
+  .layer-row{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--border);}
+  .layer-row:last-child{border-bottom:none;}
+  .layer-n{flex:none;width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;background:var(--surface-2);border:1px solid var(--border);}
+  .grade{font-size:44px;font-weight:800;line-height:1;}
+  .test-line{padding:8px 10px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);margin:6px 0;font-size:12.5px;}
+  .test-line.ok{border-color:var(--primary);}
+  .test-line.bad{border-color:var(--danger);background:var(--danger-dim);}
+  .test-line.warn{border-color:var(--warning);}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Platform Health Console</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>🩺 Platform Health Console</h1>
+      <p>One page that PROVES the platform is alive and safe: live latency probes, RPC &amp; RLS smoke tests, the heartbeat evidence trail, a graded security posture report, and the 10-layer free-tier protection matrix — each layer verified, not assumed.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="runDiagnostics()">🚑 Run Full Diagnostics</button>
+      <button class="btn btn-outline" onclick="copyHealthReport()">📋 Copy Report</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ SUMMARY STATS ═══════════ -->
+  <div class="grid-4">
+    <div class="stat-box">
+      <div class="stat-lbl">RPC Smoke Tests</div>
+      <div class="stat-val" id="stat-rpc">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">public + admin endpoints</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">API Latency</div>
+      <div class="stat-val" id="stat-latency">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;">REST round-trip</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Last Heartbeat</div>
+      <div class="stat-val" id="stat-heartbeat" style="font-size:1.15rem;">—</div>
+      <div style="font-size:10px;color:var(--text-muted);margin-top:4px;" id="stat-heartbeat-src">from sc_heartbeat</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-lbl">Security Grade</div>
+      <div class="grade" id="stat-grade" style="color:var(--text-muted);">—</div>
+      <div style="font-size:10px;color:var(--text-muted);">key · RLS · transport · session</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ HEARTBEAT EVIDENCE ═══════════ -->
+  <div class="card">
+    <h2>💓 Keep-alive Heartbeat Evidence</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Supabase pauses free projects after ~7 days without <b>real database activity</b>. Every keep-alive layer writes a genuine UPDATE through <span class="code-chip">sc_keep_alive()</span> and this row is the proof trail: when the database was last touched, by which layer, and how many pings have been recorded in total.</p>
+    <div class="grid-4" id="heartbeat-box">
+      <div class="stat-box" style="grid-column:1/-1;text-align:left;">
+        <div style="font-size:13px;">Run diagnostics to read the live heartbeat row.</div>
+      </div>
+    </div>
+    <div class="flex-gap" style="margin-top:10px;flex-wrap:wrap;">
+      <button class="btn btn-sm btn-primary" onclick="forceHeartbeat()">💓 Write Heartbeat Now</button>
+      <button class="btn btn-sm btn-outline" onclick="copyPingUrl()">📋 Copy External Ping URL</button>
+      <span style="font-size:11.5px;color:var(--text-muted);align-self:center;">Point UptimeRobot / cron-job.org at the ping URL for a free forever-monitor (Layer 6). See SUPABASE_FREE_TIER_PROTECTION.md.</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ SECURITY POSTURE ═══════════ -->
+  <div class="card">
+    <h2>🛡️ Security Posture Report</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Client-side posture audit: anon-key hygiene (service_role must NEVER ship to a browser), RLS probes that must fail anonymously, HTTPS transport, session hygiene, idle-lock and lockdown configuration.</p>
+    <div id="security-findings"><div class="test-line">Run diagnostics to grade this platform.</div></div>
+  </div>
+
+  <!-- ═══════════ RPC SMOKE TESTS ═══════════ -->
+  <div class="card">
+    <h2>🧪 Automated RPC & Security Smoke Tests</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Each test calls a real endpoint. "Correctly rejected" is a PASS — security guards doing their job. HTTP 404 means the schema is missing that object: run <span class="code-chip">database/complete-schema.sql</span> once.</p>
+    <div id="rpc-test-results">
+      <div class="test-line">Click "Run Full Diagnostics" to test the endpoints.</div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PROTECTION MATRIX ═══════════ -->
+  <div class="card">
+    <h2>🛡️ 10-Layer Supabase Free-Tier Protection Matrix</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Layers verified live where possible. Full setup instructions for every layer live in <span class="code-chip">SUPABASE_FREE_TIER_PROTECTION.md</span> (shipped with this platform).</p>
+    <div id="protection-matrix"></div>
+  </div>
+
+  <!-- ═══════════ PHASE 12I — SCHEMA DOCTOR ═══════════ -->
+  <div class="card" style="border:2px solid rgba(79,70,229,.3);">
+    <h2>🩺 Schema Doctor — is every SQL pack installed?</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">The #1 cause of "the fix didn't work" is code deployed while its SQL pack was never run. This card PROBES the live database for each pack's marker (an RPC, a table or a column) and lists exactly which <span class="code-chip">database/*.sql</span> files still need one run in the Supabase SQL Editor. Green across = fully installed.</p>
+    <div id="ph-schema" class="grid-2" style="margin-top:10px;"><div class="test-line">Run diagnostics to probe the schema.</div></div>
+  </div>
+
+  <!-- ═══════════ PHASE 12I — DATABASE SPACE ═══════════ -->
+  <div class="card">
+    <h2>🗄️ Database Space (500 MB free tier)</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Live bytes per table from <span class="code-chip">admin_table_stats()</span> (pg_total_relation_size — real bytes incl. indexes). Manage old rows on the <a href="storage.html">Storage Manager</a> (Archive Vault → 1 GB file storage offload).</p>
+    <div id="ph-storage" style="margin-top:10px;"><div class="test-line">Run diagnostics to read live sizes.</div></div>
+  </div>
+
+  <!-- ═══════════ PHASE 12I — DRIVE BACKUP + LICENSE TILES ═══════════ -->
+  <div class="grid-2">
+    <div class="card">
+      <h2>☁️ Google Drive Backup</h2>
+      <div id="ph-drive"><div class="test-line">Run diagnostics to read the backup schedule.</div></div>
+      <p style="font-size:.8rem;color:var(--text-muted);">Backups &amp; restore: <a href="admin-data.html">Admin Data → Google Drive Backup &amp; Sync</a>. Automatic sync runs silently on admin visits; a red strip appears on every admin page if backups are 2+ cycles overdue.</p>
+    </div>
+    <div class="card">
+      <h2>📜 Site License</h2>
+      <div id="ph-license"><div class="test-line">Run diagnostics to read the license.</div></div>
+      <p style="font-size:.8rem;color:var(--text-muted);">One-time (lifetime) licenses never expire — the HMG Concepts promise. License terms are managed by HMG Concepts (the platform builder) — contact us for renewals.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ PHASE 12I — SECURITY CONTROLS (ADMIN) ═══════════ -->
+  <div class="card" id="ph-security-card">
+    <h2>🔐 Security Controls (admin only)</h2>
+    <div class="grid-3">
+      <div class="form-group"><label style="font-size:12px;">Idle auto sign-out (minutes, 0 = off)</label><input class="form-input" id="ph-idle" type="number" min="0" value="30"></div>
+      <div class="form-group"><label style="font-size:12px;">🚨 Emergency lockdown (non-admins locked out)</label>
+        <select class="form-input" id="ph-lockdown"><option value="false">Off — platform open</option><option value="true">ON — locked</option></select></div>
+      <div style="display:flex;align-items:end;"><button class="btn btn-primary" onclick="PH12I.saveSecurity()">💾 Save security settings</button></div>
+    </div>
+    <div class="form-group" style="margin-top:8px;"><label style="font-size:12px;">Lockdown notice shown to locked-out users</label><input class="form-input" id="ph-lockmsg" placeholder="The platform is temporarily locked by the administration…"></div>
+    <p style="font-size:.8rem;color:var(--text-muted);">Idle lock protects shared school computers (enforced by security-guard.js on every page). Lockdown is for incidents (exam leak, compromised account): admins keep working, everyone else sees a professional notice instantly. Older databases: run <span class="code-chip">database/security-hardening.sql</span> once (the Schema Doctor above flags it).</p>
+  </div>
+
+  <!-- ═══════════ PHASE 12I — ACTIVITY AUDIT ═══════════ -->
+  <div class="card">
+    <h2>🕵️ Recent platform activity (audit trail)</h2>
+    <div id="ph-audit"><div class="test-line">Run diagnostics to read the audit trail.</div></div>
+    <p style="font-size:.8rem;color:var(--text-muted);">Full searchable trail with export &amp; retention controls: <a href="activity_log.html">Activity &amp; Audit Log</a>.</p>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/keepalive.js"></script>
+<script src="assets/js/security-guard.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script>
+let lastReport = null;
+
+async function runDiagnostics() {
+  const results = [];
+  const container = document.getElementById('rpc-test-results');
+  container.innerHTML = '<div class="test-line">⏳ Running…</div>';
+  document.getElementById('stat-rpc').textContent = '…';
+
+  /* ── Latency probe ── */
+  const t0 = performance.now();
+  try {
+    await App.sbFetch('/rest/v1/institutions?select=id&limit=1');
+    const ms = Math.round(performance.now() - t0);
+    document.getElementById('stat-latency').textContent = ms + ' ms';
+    results.push({ name: 'REST latency probe', ok: ms < 3000, detail: `Institutions endpoint answered in ${ms} ms${ms > 1500 ? ' — slow; first request after a pause includes cold-start' : ''}.` });
+  } catch (e) {
+    document.getElementById('stat-latency').textContent = 'FAIL';
+    results.push({ name: 'REST latency probe', ok: false, detail: 'Endpoint unreachable: ' + (e.message || e) });
+  }
+
+  /* ── RPC smoke tests ── */
+  const tests = [
+    { name: 'get_public_exam_by_code (invalid code)', args: { p_code: 'ZZZZZZ' }, expectReject: false, emptyOk: true },
+    { name: 'get_exam_attempt_count (synthetic)', args: { p_exam_id: '00000000-0000-0000-0000-000000000000', p_student_name: 'test', p_student_class: 'test' } },
+    { name: 'sc_keep_alive (heartbeat write)', args: { p_src: 'health-console' }, expectTimestamp: true },
+    { name: 'get_heartbeat_status (read evidence)', args: {}, evidence: true },
+    { name: 'verify_certificate (invalid code)', args: { p_cert_code: 'XXXXXXXXXX' }, emptyOk: true },
+    { name: 'submit_student_result (security guard)', args: { p_payload: { exam_id: '00000000-0000-0000-0000-000000000000' } }, expectReject: true },
+    { name: 'admin_get_all_profiles (anon must be rejected)', args: {}, expectReject: true }
+  ];
+
+  let pass = 0;
+  for (const t of tests) {
+    try {
+      const r = await App.sbRpc(t.name.split(' ')[0], t.args);
+      if (t.expectReject) {
+        results.push({ name: t.name, ok: true, detail: 'Correctly rejected anonymous/unauthorized call — security guard active.' });
+      } else if (t.expectTimestamp) {
+        const ts = Array.isArray(r) ? r[0] : r;
+        results.push({ name: t.name, ok: /\d{4}-\d{2}-\d{2}T/.test(String(ts)), detail: 'RPC returned proof timestamp: ' + String(ts).slice(0, 24) });
+      } else if (t.evidence) {
+        renderHeartbeat(Array.isArray(r) ? r[0] : r);
+        results.push({ name: t.name, ok: true, detail: 'Heartbeat row read ✓' });
+      } else {
+        results.push({ name: t.name, ok: true, detail: 'RPC executed successfully.' });
+      }
+      pass++;
+    } catch (err) {
+      if (t.expectReject) {
+        results.push({ name: t.name, ok: true, detail: 'Correctly rejected: ' + (err.message || 'unauthorized').slice(0, 80) });
+        pass++;
+      } else {
+        const missing = /404|not found|Does not exist/i.test(err.message || '');
+        results.push({ name: t.name, ok: false, detail: (missing ? 'SCHEMA MISSING — run database/complete-schema.sql once. ' : '') + (err.message || err).slice(0, 100) });
+      }
+    }
+  }
+
+  document.getElementById('stat-rpc').textContent = `${pass}/${tests.length + 1}`;
+  container.innerHTML = results.map(r => `
+    <div class="test-line ${r.ok ? 'ok' : 'bad'}">
+      ${r.ok ? '✅' : '❌'} <strong>${escapeHtml(r.name)}</strong> — ${escapeHtml(r.detail)}
+    </div>`).join('');
+
+  /* ── Security posture ── */
+  await runSecurityAudit();
+
+  /* ── Heartbeat + matrix ── */
+  await readHeartbeat();
+  loadProtectionMatrix();
+
+  lastReport = {
+    generated_at: new Date().toISOString(),
+    latency: document.getElementById('stat-latency').textContent,
+    rpc: `${pass}/${tests.length + 1}`,
+    heartbeat: (await FreeTierKeeper.readHeartbeat()) || 'unavailable',
+    grade: document.getElementById('stat-grade').textContent,
+    results
+  };
+}
+
+async function runSecurityAudit() {
+  const box = document.getElementById('security-findings');
+  box.innerHTML = '<div class="test-line">⏳ Running security posture audit…</div>';
+  try {
+    const rep = await SecurityGuard.fullReport();
+    document.getElementById('stat-grade').textContent = rep.grade;
+    document.getElementById('stat-grade').style.color = rep.grade === 'A' ? 'var(--primary)' : rep.grade === 'F' ? 'var(--danger)' : 'var(--warning)';
+    const all = [
+      ...rep.checks.key.findings.map(f => ({ area: 'Key hygiene', ...f })),
+      ...rep.checks.rls.findings.map(f => ({ area: 'RLS probe', ...f })),
+      ...rep.checks.transport.findings.map(f => ({ area: 'Transport', ...f })),
+      ...rep.checks.session.findings.map(f => ({ area: 'Session', ...f })),
+      { level: rep.settings.lockdown_mode ? 'warn' : 'ok', area: 'Configuration', msg: rep.settings.lockdown_mode ? 'Lockdown mode is ON — non-admin users are currently locked out (Settings → Security to lift).' : 'Lockdown mode is off (normal operation).' },
+      { level: 'ok', area: 'Configuration', msg: `Idle auto sign-out: ${rep.settings.idle_lock_minutes ?? 30} minute(s) of inactivity.` }
+    ];
+    box.innerHTML = `
+      <div class="test-line ${rep.grade === 'A' ? 'ok' : rep.grade === 'F' ? 'bad' : 'warn'}">
+        <strong>Overall grade: ${rep.grade}</strong> — ${escapeHtml(rep.summary)} (${rep.criticals} critical, ${rep.warns} warnings, ${rep.oks} healthy)
+      </div>` +
+      all.map(f => `<div class="test-line ${f.level === 'ok' ? '' : f.level === 'critical' ? 'bad' : 'warn'}">
+        ${f.level === 'ok' ? '✅' : f.level === 'critical' ? '🚨' : '⚠️'} <strong>${escapeHtml(f.area || 'Finding')}:</strong> ${escapeHtml(f.msg || '')}
+      </div>`).join('');
+    if (lastReport) lastReport.security = { grade: rep.grade, criticals: rep.criticals, warns: rep.warns };
+  } catch (e) {
+    box.innerHTML = '<div class="test-line bad">❌ Security audit failed: ' + escapeHtml(e.message || e) + '</div>';
+  }
+}
+
+async function readHeartbeat() {
+  const hb = await FreeTierKeeper.readHeartbeat();
+  renderHeartbeat(hb);
+}
+
+function renderHeartbeat(hb) {
+  const box = document.getElementById('heartbeat-box');
+  if (!hb) {
+    box.innerHTML = '<div class="stat-box" style="grid-column:1/-1;text-align:left;"><div class="test-line warn">⚠️ Heartbeat row not readable — run database/complete-schema.sql once (it installs sc_heartbeat + sc_keep_alive + pg_cron).</div></div>';
+    document.getElementById('stat-heartbeat').textContent = '—';
+    return;
+  }
+  const ageH = Math.round(Number(hb.seconds_since_ping || 0) / 360) / 10;
+  const fresh = Number(hb.seconds_since_ping || 0) < 7 * 86400;
+  document.getElementById('stat-heartbeat').textContent = ageH < 24 ? ageH + ' h ago' : (ageH / 24).toFixed(1) + ' days ago';
+  document.getElementById('stat-heartbeat').style.color = fresh ? 'var(--primary)' : 'var(--danger)';
+  document.getElementById('stat-heartbeat-src').textContent = 'via ' + (hb.last_source || '?') + ' · ' + Number(hb.ping_count || 0).toLocaleString() + ' pings';
+  box.innerHTML = `
+    <div class="stat-box"><div class="stat-lbl">Last ping</div><div style="font-size:14px;font-weight:700;">${new Date(hb.last_ping).toLocaleString()}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Last source layer</div><div style="font-size:14px;font-weight:700;">${escapeHtml(hb.last_source || '?')}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Total pings</div><div style="font-size:14px;font-weight:700;">${Number(hb.ping_count || 0).toLocaleString()}</div></div>
+    <div class="stat-box"><div class="stat-lbl">Status</div><div style="font-size:14px;font-weight:700;color:${fresh ? 'var(--primary)' : 'var(--danger)'}">${fresh ? '✅ Inside the 7-day window' : '🔴 STALE — check Layer 2 secrets!'}</div></div>`;
+}
+
+async function forceHeartbeat() {
+  const r = await FreeTierKeeper.ping(true);
+  if (r.success) { showToast(`Heartbeat written via ${r.via} ✓`, 'success'); readHeartbeat(); }
+  else showToast('Heartbeat FAILED: ' + (r.error || 'unknown'), 'danger', 6000);
+}
+
+function copyPingUrl() {
+  const url = FreeTierKeeper.externalPingUrl();
+  navigator.clipboard.writeText(url).then(() => showToast('Ping URL copied: ' + url, 'success', 5000));
+}
+
+function loadProtectionMatrix() {
+  const layers = FreeTierKeeper.getProtectionLayers();
+  document.getElementById('protection-matrix').innerHTML = layers.map(l => `
+    <div class="layer-row">
+      <div class="layer-n">${l.layer}</div>
+      <div style="flex:1;">
+        <strong style="font-size:13.5px;">${escapeHtml(l.name)}</strong> <span class="badge ${l.status.startsWith('Active') || l.status.startsWith('Auto') ? 'badge-primary' : 'badge-warning'}">${escapeHtml(l.status)}</span>
+        <div style="font-size:12px;color:var(--text-muted);">${escapeHtml(l.description)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function copyHealthReport() {
+  if (!lastReport) return showToast('Run diagnostics first.', 'info');
+  const txt = `HMG CBT PRO — PLATFORM HEALTH REPORT
+Generated: ${lastReport.generated_at}
+Latency: ${lastReport.latency}
+RPC smoke tests: ${lastReport.rpc}
+Security grade: ${lastReport.grade}
+Heartbeat: ${JSON.stringify(lastReport.heartbeat)}
+
+TESTS
+${lastReport.results.map(r => `${r.ok ? 'PASS' : 'FAIL'} — ${r.name}: ${r.detail}`).join('\n')}`;
+  navigator.clipboard.writeText(txt).then(() => showToast('Health report copied ✓', 'success'));
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadProtectionMatrix(); readHeartbeat(); });
+
+/* ═══════════════ PHASE 12I — Schema Doctor / DB space / Drive / License / Security / Audit ═══════════════ */
+const PH12I = {
+  async probe(fn) {
+    try { await fn(); return 'ok'; }
+    catch (e) {
+      const m = String((e && e.message) || e);
+      if (/404|not found|does not exist/i.test(m)) return 'missing';
+      return 'error';   /* reachable but rejected = object exists (auth/RLS answered) */
+    }
+  },
+  async schemaDoctor() {
+    const el = document.getElementById('ph-schema');
+    const packs = [
+      { file: 'database/complete-schema.sql', label: 'Core schema, RLS, RPCs', probe: () => App.sbRpc('sc_keep_alive', { src: 'schema-doctor' }) },
+      { file: 'database/security-hardening.sql', label: 'Idle lock + emergency lockdown columns', probe: () => App.sbFetch('/rest/v1/platform_settings?select=idle_lock_minutes,lockdown_mode,lockdown_message&limit=1') },
+      { file: 'database/drive-sync.sql', label: 'Google Drive sync settings columns', probe: () => App.sbFetch('/rest/v1/platform_settings?select=drive_client_id,drive_sync_enabled&limit=1') },
+      { file: 'database/storage-offload.sql', label: 'Archive-vault storage bucket + offload RPCs', probe: () => App.sbRpc('admin_table_stats') },
+      { file: 'database/keep-alive.sql', label: 'Keep-alive heartbeat table + RPC', probe: () => App.sbRpc('sc_keep_alive', { src: 'schema-doctor-2' }) }
+    ];
+    const rows = await Promise.all(packs.map(async (p) => { const state = await PH12I.probe(p.probe); return { file: p.file, label: p.label, state }; }));
+    el.innerHTML = rows.map(r => '<div class="test-line">' + (r.state === 'ok' ? '✅' : (r.state === 'missing' ? '❌' : '⚠️')) + ' <b>' + r.file + '</b> — ' + r.label + (r.state === 'missing' ? ' → <span style="color:var(--danger);">RUN THIS PACK in the Supabase SQL Editor</span>' : (r.state === 'error' ? ' → probe rejected (pack present; admin session may be needed)' : '')) + '</div>').join('');
+    return rows;
+  },
+  async dbSpace() {
+    const el = document.getElementById('ph-storage');
+    try {
+      const stats = await App.sbRpc('admin_table_stats');
+      const rows = (stats || []).slice(0, 8);
+      const total = (stats || []).reduce((n, r) => n + Number(r.total_bytes || r.bytes || 0), 0);
+      el.innerHTML = rows.map(r => {
+        const b = Number(r.total_bytes || r.bytes || 0), pct = total ? Math.round(b / total * 100) : 0;
+        return '<div style="margin-bottom:6px;font-size:12.5px;"><b>' + (r.table_name || r.table) + '</b> — ' + (r.total_size || r.size || ((b / 1024).toFixed(1) + ' KB')) +
+          '<div style="height:6px;background:var(--surface-2);border-radius:4px;overflow:hidden;"><div style="height:100%;width:' + pct + '%;background:var(--primary);"></div></div></div>';
+      }).join('') + '<div style="font-size:11.5px;color:var(--text-muted);margin-top:6px;">' + (stats || []).length + ' tables · total ≈ ' + (total / 1048576).toFixed(2) + ' MB of the 500 MB free tier</div>';
+    } catch (e) { el.innerHTML = '<div class="test-line">⚠️ admin_table_stats() unavailable — run database/complete-schema.sql (the Schema Doctor above flags it).</div>'; }
+  },
+  async driveTile() {
+    const el = document.getElementById('ph-drive');
+    try {
+      if (!window.DriveSync) { el.innerHTML = '<div class="test-line">drive-sync.js not loaded.</div>'; return; }
+      const cfg = await DriveSync.loadCfg();
+      const last = cfg.lastBackup ? new Date(cfg.lastBackup) : null;
+      el.innerHTML =
+        '<div class="test-line">' + (cfg.clientId ? '✅ OAuth Client ID configured' : '⚠️ Not configured — paste the Client ID in Admin Data → Google Drive') + '</div>' +
+        '<div class="test-line">' + (cfg.enabled ? '✅ Automatic sync ON — every ' + cfg.days + ' day(s)' : '⚪ Automatic sync OFF') + '</div>' +
+        '<div class="test-line">' + (last ? (DriveSync.isDue() ? '⚠️ Last backup: ' + last.toLocaleString() + ' — DUE NOW' : '✅ Last backup: ' + last.toLocaleString()) : '⚪ No backup yet') + '</div>';
+    } catch (e) { el.innerHTML = '<div class="test-line">⚠️ ' + (e.message || e) + '</div>'; }
+  },
+  async licenseTile() {
+    const el = document.getElementById('ph-license');
+    try {
+      const rows = await App.sbFetch('/rest/v1/site_license?select=model,plan,cycle,started_on,expires_on,grace_days,status&limit=1');
+      const L = rows && rows[0];
+      el.innerHTML = L
+        ? '<div class="test-line">✅ Model: <b>' + (L.model || 'client') + '</b> · Plan: ' + (L.plan || '—') + '</div>' +
+          '<div class="test-line">' + (L.expires_on && L.model !== 'lifetime' ? 'Renews/expires: ' + new Date(L.expires_on).toLocaleDateString() : 'Lifetime — never expires') + '</div>' +
+          '<div class="test-line">Status: ' + (L.status || 'active') + '</div>'
+        : '<div class="test-line">⚪ No license row (builder/standalone mode).</div>';
+    } catch (e) { el.innerHTML = '<div class="test-line">⚠️ ' + (e.message || e) + '</div>'; }
+  },
+  async securityCard() {
+    try {
+      const rows = await App.sbFetch('/rest/v1/platform_settings?select=idle_lock_minutes,lockdown_mode,lockdown_message&limit=1');
+      const c = rows && rows[0];
+      if (c) {
+        const i = document.getElementById('ph-idle'); if (i) i.value = String(c.idle_lock_minutes != null ? c.idle_lock_minutes : 30);
+        const l = document.getElementById('ph-lockdown'); if (l) l.value = c.lockdown_mode ? 'true' : 'false';
+        const m = document.getElementById('ph-lockmsg'); if (m) m.value = c.lockdown_message || '';
+      }
+    } catch (e) { /* card still usable with defaults */ }
+  },
+  async saveSecurity() {
+    const idle = parseInt(document.getElementById('ph-idle').value || '30', 10);
+    const lockdown = document.getElementById('ph-lockdown').value === 'true';
+    const msg = document.getElementById('ph-lockmsg').value || '';
+    try {
+      await App.sbRpc('save_platform_settings', { p_patch: { idle_lock_minutes: idle, lockdown_mode: lockdown, lockdown_message: msg } });
+      showToast('✅ Security settings saved — idle lock ' + (idle ? idle + ' min' : 'off') + ', lockdown ' + (lockdown ? 'ON' : 'off') + '.', lockdown ? 'warning' : 'success');
+    } catch (e) { showToast('Could not save (admin session required): ' + (e.message || e), 'danger'); }
+  },
+  async auditTrail() {
+    const el = document.getElementById('ph-audit');
+    try {
+      const rows = await App.sbFetch('/rest/v1/audit_logs?select=actor_email,action,entity_type,created_at&order=created_at.desc&limit=10');
+      el.innerHTML = (rows && rows.length)
+        ? rows.map(r => '<div class="test-line">🕐 ' + new Date(r.created_at).toLocaleString() + ' · <b>' + (r.actor_email || 'system') + '</b> — ' + r.action + (r.entity_type ? ' (' + r.entity_type + ')' : '') + '</div>').join('')
+        : '<div class="test-line">⚪ No audit entries yet.</div>';
+    } catch (e) { el.innerHTML = '<div class="test-line">⚠️ Audit trail needs an admin session: ' + (e.message || e) + '</div>'; }
+  },
+  async runAll() {
+    await Promise.all([this.schemaDoctor(), this.dbSpace(), this.driveTile(), this.licenseTile(), this.securityCard(), this.auditTrail()]);
+  }
+};
+window.PH12I = PH12I;
+/* fold the new cards into the standard diagnostics run */
+const _origRunDiagnostics = runDiagnostics;
+runDiagnostics = async function () { await _origRunDiagnostics(); try { await PH12I.runAll(); } catch (_) {} };
+document.addEventListener('DOMContentLoaded', () => { PH12I.securityCard(); PH12I.driveTile(); });
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

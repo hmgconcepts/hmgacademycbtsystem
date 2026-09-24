@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Verify the authenticity of HMG Academy CBT Pro student certificates and result verification codes — instant public lookup, no account needed.">>
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://hmgcbtsystem.vercel.app/certificate.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HMG Academy CBT Pro">
+<meta property="og:title" content="HMG Academy CBT Pro — Certificate Verification">
+<meta property="og:description" content="Verify any HMG Academy CBT Pro result certificate by its verification code — employers and parents can confirm results in seconds.">
+<meta property="og:url" content="https://hmgcbtsystem.vercel.app/certificate.html">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#10b981">
+<title>Verify Certificate — HMG Academy CBT Pro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="assets/hmg-academy-logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#09090b;--surface:#18181b;--surface-2:#27272a;--primary:#10b981;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;--border:#27272a;--text:#f4f4f5;--text-muted:#a1a1aa;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:20px;display:flex;flex-direction:column;align-items:center;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:30px;width:100%;max-width:700px;margin:20px auto;box-shadow:0 10px 30px rgba(0,0,0,0.25);}
+h1{font-size:24px;font-weight:800;margin-bottom:8px;text-align:center;}
+h2{font-size:18px;font-weight:700;margin-bottom:16px;}
+p{color:var(--text-muted);line-height:1.6;margin-bottom:16px;}
+input{width:100%;padding:15px;margin-bottom:14px;border-radius:12px;border:1px solid var(--border);background:#000;color:#fff;font-size:15px;font-family:inherit;}
+input:focus{border-color:var(--primary);outline:none;}
+button{width:100%;padding:15px;border-radius:12px;border:none;background:var(--primary);color:#000;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;transition:0.2s;}
+button:hover{opacity:0.9;}
+.hidden{display:none!important;}
+.cert-seal{text-align:center;margin-bottom:20px;}
+.cert-seal-icon{font-size:64px;}
+.cert-code{font-family:monospace;font-size:18px;font-weight:800;color:var(--primary);letter-spacing:2px;text-align:center;padding:12px;background:rgba(16,185,129,0.08);border:2px dashed rgba(16,185,129,0.4);border-radius:10px;margin:16px 0;}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0;}
+.stat-box{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px;text-align:center;}
+.stat-num{font-size:24px;font-weight:800;color:var(--primary);}
+.stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-top:4px;}
+.grade-badge{display:inline-block;padding:8px 20px;border-radius:20px;font-size:14px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
+.grade-pass{background:rgba(16,185,129,0.15);color:var(--primary);}
+.grade-fail{background:rgba(239,68,68,0.15);color:var(--danger);}
+.grade-warn{background:rgba(245,158,11,0.15);color:var(--warning);}
+.verified-badge{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:700;margin:16px auto;justify-content:center;}
+.verified-true{background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);color:var(--primary);}
+.verified-false{background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);color:var(--danger);}
+.footer{text-align:center;padding:20px;font-size:12px;color:var(--text-muted);}
+#qr-code{text-align:center;margin:20px 0;}
+@media print{body{background:#fff;color:#000;}.card{border:1px solid #ccc;box-shadow:none;background:#fff;}button{display:none;}}
+</style>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+
+<div class="card" style="max-width:500px;text-align:center;">
+  <img src="assets/hmg-academy-logo.png" alt="HMG Academy" style="width:80px;height:80px;border-radius:20px;margin-bottom:12px;">
+  <h1>HMG Academy CBT</h1>
+  <p style="margin-bottom:20px;">Verify a student's certificate using the unique certificate code.</p>
+
+  <div id="verify-form">
+    <input type="text" id="cert-code-input" placeholder="Enter certificate code (e.g., CERT-A1B2C3D4)" onkeydown="if(event.key==='Enter') verifyCertificate()">
+    <button onclick="verifyCertificate()">🔍 Verify Certificate</button>
+    <p style="font-size:12px;margin-top:12px;">Certificate code is printed on the student's result certificate. Verification is done against the Supabase result record, so altered/forged certificates will not verify.</p>
+  </div>
+
+  <div id="loading" class="hidden">
+    <p>⏳ Verifying certificate...</p>
+  </div>
+
+  <div id="result-valid" class="hidden">
+    <div class="verified-badge verified-true">✅ VERIFIED CERTIFICATE</div>
+    <div class="cert-seal"><div class="cert-seal-icon">🏅</div></div>
+    <div class="cert-code" id="vc-code"></div>
+    <h2 id="vc-student" style="font-size:22px;"></h2>
+    <p id="vc-subject" style="font-size:16px;font-weight:600;"></p>
+    <div id="vc-grade" class="grade-badge"></div>
+    <div class="stats-grid">
+      <div class="stat-box"><div class="stat-num" id="vc-score"></div><div class="stat-label">Score</div></div>
+      <div class="stat-box"><div class="stat-num" id="vc-percentage"></div><div class="stat-label">Percentage</div></div>
+    </div>
+    <p id="vc-issued" style="font-size:13px;margin-top:12px;"></p>
+    <p id="vc-issuer" style="font-size:12px;color:var(--text-muted);"></p>
+    <div id="qr-code"></div>
+    <button onclick="window.print()" style="background:rgba(59,130,246,0.15);color:var(--info);border:1px solid rgba(59,130,246,0.4);margin-top:12px;">🖨 Print Certificate</button>
+  </div>
+
+  <div id="result-invalid" class="hidden">
+    <div class="verified-badge verified-false">❌ Certificate Not Found</div>
+    <p>No certificate was found with this code.</p>
+    <button onclick="resetForm()">Try Another Code</button>
+  </div>
+</div>
+
+<div class="footer">
+  HMG Academy CBT Pro v3.2 Enterprise · Built by Adewale Samson Adeagbo<br>
+  HMG Concepts · hismarvellousgrace@gmail.com · +234 810 086 6322
+</div>
+
+<script>
+const SB_URL='https://pstnsaqjshmtintjrnas.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzdG5zYXFqc2htdGludGpybmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MDEzODUsImV4cCI6MjA5MTI3NzM4NX0.KNVgpVN0xp1njin1HL3udntc7psfzjnz7mqzpEN_Z6w';
+
+async function verifyCertificate() {
+  const code = document.getElementById('cert-code-input').value.trim();
+  if (!code) return alert('Please enter a certificate code.');
+  document.getElementById('verify-form').classList.add('hidden');
+  document.getElementById('loading').classList.remove('hidden');
+  document.getElementById('result-valid').classList.add('hidden');
+  document.getElementById('result-invalid').classList.add('hidden');
+  try {
+    const data = await sbRpc('verify_certificate', { p_cert_code: code });
+    document.getElementById('loading').classList.add('hidden');
+    if (data && data.length > 0) {
+      const cert = data[0];
+      if(cert.is_valid === false){
+        document.getElementById('result-invalid').classList.remove('hidden');
+        document.getElementById('result-invalid').querySelector('p').innerText = 'This certificate code exists, but the certificate is disabled or expired. Contact the issuing teacher/school.';
+        return;
+      }
+      document.getElementById('vc-code').innerText = code.toUpperCase();
+      document.getElementById('vc-student').innerText = cert.student_name;
+      document.getElementById('vc-subject').innerText = cert.subject;
+      const gradeEl = document.getElementById('vc-grade');
+      gradeEl.innerText = cert.grade;
+      if (cert.percentage >= 90) gradeEl.className = 'grade-badge grade-pass';
+      else if (cert.percentage >= 70) gradeEl.className = 'grade-badge grade-pass';
+      else if (cert.percentage >= 50) gradeEl.className = 'grade-badge grade-warn';
+      else gradeEl.className = 'grade-badge grade-fail';
+      document.getElementById('vc-score').innerText = `${cert.score}/${cert.total}`;
+      document.getElementById('vc-percentage').innerText = `${cert.percentage}%`;
+      document.getElementById('vc-issued').innerText = `Issued: ${new Date(cert.issued_at).toLocaleDateString('en-GB', { weekday:'long', year:'numeric', month:'long', day:'numeric' })}`;
+      document.getElementById('vc-issuer').innerText = `Issued by: ${cert.issuer_name || 'HMG Academy'}`;
+      document.getElementById('result-valid').classList.remove('hidden');
+      generateQR(code.toUpperCase());
+    } else {
+      document.getElementById('result-invalid').classList.remove('hidden');
+    }
+  } catch (e) {
+    document.getElementById('loading').classList.add('hidden');
+    document.getElementById('result-invalid').classList.remove('hidden');
+    document.getElementById('result-invalid').querySelector('p').innerText = 'Error: ' + e.message;
+  }
+}
+
+function resetForm() {
+  document.getElementById('verify-form').classList.remove('hidden');
+  document.getElementById('result-valid').classList.add('hidden');
+  document.getElementById('result-invalid').classList.add('hidden');
+  document.getElementById('cert-code-input').value = '';
+}
+
+async function sbRpc(name, body) {
+  const res = await fetch(`${SB_URL}/rest/v1/rpc/${name}`, {
+    method: 'POST',
+    headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${SB_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {})
+  });
+  const text = await res.text();
+  let data = null;
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = text; }
+  if (!res.ok) throw new Error((data && (data.message || data.error || data.hint)) || `HTTP ${res.status}`);
+  return data;
+}
+
+function generateQR(text) {
+  // FIX (m4): the QR relied on an external image API with no fallback — offline or
+  // sandboxed users simply saw a blank box. The verification URL is now always
+  // shown as text, and the QR image degrades gracefully when unreachable.
+  const container = document.getElementById('qr-code');
+  container.innerHTML = '';
+  const verifyUrl = window.location.href.split('?')[0] + '?code=' + text;
+  const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(verifyUrl)}`;
+  const img = document.createElement('img');
+  img.src = qrUrl;
+  img.alt = 'Certificate QR Code';
+  img.title = verifyUrl;
+  img.style.borderRadius = '8px';
+  img.style.width = '150px';
+  img.style.height = '150px';
+  img.onerror = () => {
+    img.remove();
+    const fb = document.createElement('div');
+    fb.style.cssText = 'font-size:11px;color:var(--text-muted);max-width:180px;word-break:break-all;text-align:center;padding:10px;border:1px dashed var(--border);border-radius:8px;';
+    fb.innerText = 'QR unavailable offline — verify at:\n' + verifyUrl;
+    container.appendChild(fb);
+  };
+  container.appendChild(img);
+}
+
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get('code');
+  if (code) {
+    document.getElementById('cert-code-input').value = code;
+    verifyCertificate();
+  }
+})();
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

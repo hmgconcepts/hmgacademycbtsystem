@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <!-- PUBLIC pages only. Internal tools (Multi-Subject, AI Prompts Studio, Admin
+       Data, Storage, Health, Roles, Settings, License, Audit, Validator, Link
+       Checker) sit behind the teacher/admin logins and are excluded on purpose. -->
+  <url><loc>https://hmgcbtsystem.vercel.app/</loc><changefreq>weekly</changefreq><priority>1.00</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/index.html</loc><changefreq>weekly</changefreq><priority>0.95</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/student.html</loc><changefreq>weekly</changefreq><priority>0.90</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/teacher.html</loc><changefreq>monthly</changefreq><priority>0.80</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/admin.html</loc><changefreq>monthly</changefreq><priority>0.60</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/certificate.html</loc><changefreq>monthly</changefreq><priority>0.70</priority></url>
+  <url><loc>https://hmgcbtsystem.vercel.app/feature_guide.html</loc><changefreq>monthly</changefreq><priority>0.70</priority></url>
+</urlset>

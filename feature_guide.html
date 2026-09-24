@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Step-by-step guide to every HMG Academy CBT Pro feature — exam creation, proctoring, analytics, certificates, Google Drive sync, disaster recovery and governance.">>
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://hmgcbtsystem.vercel.app/feature_guide.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HMG Academy CBT Pro">
+<meta property="og:title" content="HMG Academy CBT Pro — Complete Feature Guide">
+<meta property="og:description" content="Every feature of the free HMG Academy CBT Pro platform explained: 20 question types, anti-cheat, analytics, certificates, Drive backup and more.">
+<meta property="og:url" content="https://hmgcbtsystem.vercel.app/feature_guide.html">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#10b981">
+<title>Feature Guide — HMG Academy CBT Pro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="assets/hmg-academy-logo.png">
+<style>
+:root{--bg:#09090b;--surface:#18181b;--surface2:#27272a;--border:#27272a;--text:#f4f4f5;--muted:#a1a1aa;--primary:#10b981;--danger:#ef4444;--warning:#f59e0b;--info:#3b82f6;--purple:#8b5cf6}*{box-sizing:border-box}body{margin:0;background:linear-gradient(180deg,#09090b,#0f1020 52%,#09090b);color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Arial,sans-serif}.wrap{max-width:1160px;margin:0 auto;padding:28px}.hero{display:grid;grid-template-columns:120px 1fr;gap:20px;align-items:center;margin-bottom:18px}.logo{width:120px;height:120px;object-fit:cover;border-radius:28px;border:1px solid rgba(139,92,246,.45);box-shadow:0 18px 70px rgba(59,130,246,.25)}h1{margin:0;font-size:clamp(28px,5vw,48px);letter-spacing:-1px}h2{font-size:22px;margin:0 0 12px}.sub,p,li{color:var(--muted);line-height:1.75}.card{background:rgba(24,24,27,.92);border:1px solid var(--border);border-radius:20px;padding:22px;margin-bottom:18px;box-shadow:0 16px 50px rgba(0,0,0,.25)}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}.tile{background:var(--bg);border:1px solid var(--border);border-radius:16px;padding:17px}.tile h3{margin:0 0 8px;font-size:15px}.tile .icon{font-size:26px;margin-bottom:10px}.badge{display:inline-block;padding:4px 10px;border-radius:999px;background:rgba(16,185,129,.1);color:var(--primary);font-size:11px;font-weight:900;margin:3px;text-transform:uppercase;letter-spacing:.4px}.step{display:grid;grid-template-columns:42px 1fr;gap:12px;margin-bottom:12px}.num{width:42px;height:42px;border-radius:50%;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.35);display:flex;align-items:center;justify-content:center;font-weight:900;color:var(--primary)}code{background:#050505;border:1px solid var(--border);border-radius:6px;padding:2px 6px;color:var(--primary)}pre{background:#050505;border:1px solid var(--border);border-radius:14px;padding:14px;overflow:auto;color:#d1fae5;line-height:1.7}.toolbar{display:flex;gap:9px;flex-wrap:wrap;margin-top:14px}a.btn,button{display:inline-flex;align-items:center;gap:8px;border:0;border-radius:10px;background:var(--primary);color:#000;font-weight:900;padding:11px 16px;cursor:pointer;text-decoration:none;font-size:13px}a.ghost,button.ghost{background:transparent;color:var(--text);border:1px solid var(--border)}.warning{border-color:rgba(245,158,11,.35);background:rgba(245,158,11,.05)}.danger{border-color:rgba(239,68,68,.35);background:rgba(239,68,68,.05)}table{width:100%;border-collapse:collapse;font-size:13px}td,th{padding:10px;border-bottom:1px solid var(--border);text-align:left;vertical-align:top}th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.6px}@media(max-width:720px){.wrap{padding:16px}.hero{grid-template-columns:1fr;text-align:center}.logo{margin:0 auto}.toolbar{display:grid}.toolbar>*{justify-content:center}}
+</style>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <section class="hero">
+    <img class="logo" src="assets/hmg-academy-logo.png" alt="HMG Academy logo">
+    <div>
+      <span class="badge">Free Tools</span><span class="badge">No AI API</span><span class="badge">Browser + Supabase</span>
+      <h1>HMG Academy CBT Pro v3.1 Feature & Deployment Guide</h1>
+      <p class="sub">A detailed expert explanation of every major system feature and the exact deployment process for schools, tutors, academies, and virtual classrooms.</p>
+      <div class="toolbar"><a class="btn" href="teacher.html">Teacher Dashboard</a><a class="btn ghost" href="student.html">Student Portal</a><a class="btn ghost" href="admin.html">Admin Panel</a><a class="btn ghost" href="deployment_validator.html">Deployment Validator</a></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>1. System Purpose</h2>
+    <p>HMG Academy CBT Pro is a zero-build, static-web computer-based testing platform. It allows teachers to create exams, students to take exams by link or code, and administrators to supervise teacher accounts and platform-wide data. It deliberately avoids paid AI APIs. All advanced marking is transparent rule-based browser/Supabase logic, while data storage uses the Supabase free tier. v3.1 adds secure student RPCs, decimal partial-credit scoring, negative marking, held results, and certificate/submission codes.</p>
+  </section>
+
+  <section class="card">
+    <h2>2. Role-Based Portals</h2>
+    <div class="grid">
+      <div class="tile"><div class="icon">🏠</div><h3>Landing Page</h3><p><code>index.html</code> explains the platform, shows supported exams, and routes users to Teacher, Student, and Admin portals.</p></div>
+      <div class="tile"><div class="icon">🖊️</div><h3>Teacher Dashboard</h3><p>Teachers create exams, upload/enter questions, manage rosters, view results, run analytics, export reports, and download backups.</p></div>
+      <div class="tile"><div class="icon">📝</div><h3>Student Portal</h3><p>Students enter via direct link or access code, verify identity if required, sit timed exams, and receive instant result review.</p></div>
+      <div class="tile"><div class="icon">⚙️</div><h3>Admin Panel</h3><p>Administrators approve/deactivate teachers, view platform KPIs, export platform CSV, and run security diagnostics without service-role exposure.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>3. Teacher Features Explained</h2>
+    <div class="grid">
+      <div class="tile"><h3>Exam Configuration</h3><p>Teachers define subject, class, term, topic, exam type, session, pass mark, duration, attempt limit, question pull count, open/closed status, and optional scheduled close time.</p></div>
+      <div class="tile"><h3>Multiple Input Methods</h3><p>Questions can be added through CSV, Excel/XLSX, text-based PDF extraction, manual typing, and JSON exam package import. SheetJS and PDF.js are free CDN tools.</p></div>
+      <div class="tile"><h3>Question Bank Editor</h3><p>Existing exam questions can be previewed, edited, extended, deleted, exported as CSV, duplicated into new exams, and reused through package exports.</p></div>
+      <div class="tile"><h3>Sharing Tools</h3><p>Every exam receives a six-character code and a direct <code>student.html?code=XXXXXX</code> link, plus WhatsApp share, printable access sheet, and copyable instructions.</p></div>
+      <div class="tile"><h3>Registered Students</h3><p>Teachers can create or import class rosters. Registered-mode exams require the student to enter a matching Student ID before the start button is enabled.</p></div>
+      <div class="tile"><h3>Analytics & Reports</h3><p>Teachers see score tables, score distribution charts, pass/fail ratio, trend chart, leaderboard, filtered insights, item analysis CSV, and general CSV export.</p></div>
+      <div class="tile"><h3>Enterprise Backup</h3><p>Teachers can export exams, students, and result summaries as JSON. Student emergency result JSON files can be imported if network saving failed.</p></div>
+      <div class="tile"><h3>SQL Setup Assistant</h3><p>The settings page includes copyable SQL blocks for RLS, result policies, student rosters, profiles, admin RPC functions, and diagnostic queries.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>4. Student Features Explained</h2>
+    <div class="grid">
+      <div class="tile"><h3>Link or Code Entry</h3><p>Students may paste the full link or type only the access code. The parser accepts <code>?code=</code>, <code>?exam=</code>, hash values, and raw codes.</p></div>
+      <div class="tile"><h3>Integrity Pledge</h3><p>Before starting, the student must accept an honesty pledge. This ensures rules are visible and creates a clear conduct expectation.</p></div>
+      <div class="tile"><h3>Timer & Navigation</h3><p>Students get a countdown timer, warning colours near the end, question navigator, answer progress, jump-to-unanswered, and flag-for-review buttons.</p></div>
+      <div class="tile"><h3>Scientific Calculator</h3><p>The built-in browser calculator supports trigonometry, logarithms, powers, constants, memory, and history without external paid services.</p></div>
+      <div class="tile"><h3>Anti-Cheat Logging</h3><p>The portal logs tab switching, blur events, right-click, copy/paste attempts, print/source/devtools shortcuts, fullscreen exits, and screenshot key attempts.</p></div>
+      <div class="tile"><h3>Optional Proctoring</h3><p>Camera intake photos, periodic snapshots, optional face checks, and audio spike detection use browser APIs and free open-source face-api.js. No paid AI API is used.</p></div>
+      <div class="tile"><h3>Instant Result Review</h3><p>Students see score, grade, pass/fail status, time used, integrity summary, explanations, and question-by-question feedback immediately after submission.</p></div>
+      <div class="tile"><h3>Emergency Backup</h3><p>If saving fails because of network/database issues, students can download a backup JSON file and send it to the teacher for later import.</p></div>
+      <div class="tile"><h3>JAMB 8-Key Navigation</h3><p>A/B/C/D select an option, N/→ next, P/← previous, R flag, S submit — the exact UTME keyboard layout, so candidates build real exam muscle memory.</p></div>
+      <div class="tile"><h3>Adaptive Papers (Phase 10)</h3><p>When the teacher enables it, questions get harder while you are doing well and easier while you struggle — forward-only, like real computerised-adaptive tests.</p></div>
+      <div class="tile"><h3>Practice Mode (Phase 10)</h3><p>Homework papers can mark instantly: ✓/✗ with the correct answer and explanation after each question, plus points and streak bonuses.</p></div>
+      <div class="tile"><h3>UTME /400 Score (Phase 10)</h3><p>Combined papers can show a JAMB-style aggregate out of 400 alongside the classic percentage and per-subject breakdown.</p></div>
+      <div class="tile"><h3>Approved Extra Time (Phase 10)</h3><p>Rostered students with a teacher-approved accommodation get their clock extended automatically — never flagged on the result slip.</p></div>
+      <div class="tile"><h3>Script Review Requests (Phase 10)</h3><p>From the result screen, a candidate can ask the teacher to re-check a marked script; the teacher resolves the request in the Appeals queue.</p></div>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>5. Supported Question Types</h2>
+    <table><thead><tr><th>Type</th><th>Code</th><th>How It Works</th><th>Scoring</th></tr></thead><tbody>
+      <tr><td>Multiple Choice</td><td><code>mcq</code></td><td>Choose one option A-D.</td><td>1 or 0.</td></tr>
+      <tr><td>True / False</td><td><code>tf</code></td><td>Choose True or False labels.</td><td>1 or 0.</td></tr>
+      <tr><td>Multiple Response</td><td><code>mrq</code></td><td>Select all correct options.</td><td>Partial credit or all-or-nothing.</td></tr>
+      <tr><td>Short Answer</td><td><code>short</code></td><td>Type a word or phrase.</td><td>Case-insensitive exact/alternate match.</td></tr>
+      <tr><td>Numeric</td><td><code>numeric</code></td><td>Type a number.</td><td>Accepted within teacher tolerance.</td></tr>
+      <tr><td>Matching</td><td><code>matching</code></td><td>Pair left and right items.</td><td>Partial credit per pair.</td></tr>
+      <tr><td>Ordering</td><td><code>ordering</code></td><td>Arrange items in correct sequence.</td><td>Partial credit per position.</td></tr>
+      <tr><td>Cloze</td><td><code>cloze</code></td><td>Fill multiple blanks.</td><td>Partial credit per blank.</td></tr>
+      <tr><td>Essay / Keyword</td><td><code>essay</code></td><td>Write a longer answer.</td><td>Rule-based keywords/minimum words; teacher review recommended.</td></tr>
+      <tr><td>Categorization</td><td><code>categorization</code></td><td>Assign each item to a category.</td><td>Partial credit per item.</td></tr>
+      <tr><td>Multi-Part Numeric</td><td><code>multi_numeric</code></td><td>Answer several numeric parts.</td><td>Partial credit per numeric part.</td></tr>
+    </tbody></table>
+  </section>
+
+  <section class="card warning">
+    <h2>6. Why No AI API Is Used</h2>
+    <p>Paid AI APIs are not cost-effective for a free school CBT platform. This system therefore uses deterministic, explainable rules: exact matching, accepted-answer lists, numeric tolerance, partial-credit rubrics, keyword checks, and teacher review. This keeps running costs near zero and avoids unpredictable API billing.</p>
+  </section>
+
+  <section class="card">
+    <h2>7. Free Tools Used</h2>
+    <p><span class="badge">HTML/CSS/Vanilla JS</span><span class="badge">Supabase Free Tier</span><span class="badge">GitHub Pages</span><span class="badge">Cloudflare Pages</span><span class="badge">Vercel</span><span class="badge">Chart.js</span><span class="badge">SheetJS</span><span class="badge">PDF.js</span><span class="badge">face-api.js</span><span class="badge">Web Audio API</span><span class="badge">Service Worker</span></p>
+  </section>
+
+  <section class="card">
+    <h2>8. Clear Deployment Process</h2>
+    <div class="step"><div class="num">1</div><div><h3>Prepare Supabase</h3><p>Create a Supabase project on the free tier. Copy the Project URL and anon public key. Do not copy or expose the service_role key.</p></div></div>
+    <div class="step"><div class="num">2</div><div><h3>Confirm Configuration</h3><p>Open <code>teacher.html</code>, <code>student.html</code>, and <code>admin.html</code>. Confirm <code>SB_URL</code> and <code>SB_KEY</code> match your Supabase project.</p></div></div>
+    <div class="step"><div class="num">3</div><div><h3>Upload Static Files</h3><p>Upload the entire folder, including <code>assets/</code>, <code>manifest.webmanifest</code>, <code>hmg-icon.svg</code>, <code>sw.js</code>, <code>offline.html</code>, and all HTML files to GitHub Pages, Cloudflare Pages, or Vercel.</p></div></div>
+    <div class="step"><div class="num">4</div><div><h3>Set Auth Redirect URLs</h3><p>In Supabase: Authentication → URL Configuration. Add your deployed site URL and likely callback URLs, for example <code>https://your-domain/teacher.html</code> and <code>https://your-domain/admin.html</code>.</p></div></div>
+    <div class="step"><div class="num">5</div><div><h3>Run SQL Setup</h3><p>Run <code>database/complete-schema.sql</code> from top to bottom in Supabase SQL Editor. This creates/updates tables, RLS policies, secure student RPCs, admin RPCs, triggers, grants, result columns, and verification queries.</p></div></div>
+    <div class="step"><div class="num">6</div><div><h3>Create Admin Profile</h3><p>Use the configured admin email or set <code>profiles.is_admin=true</code> / <code>role='admin'</code> for your admin account. Then test <code>admin.html</code>.</p></div></div>
+    <div class="step"><div class="num">7</div><div><h3>Run Validators</h3><p>Open <code>deployment_validator.html</code> to check static assets. In Teacher Settings, click Live Diagnostic. In Admin Panel, check Security diagnostics and download the SQL smoke test if needed.</p></div></div>
+    <div class="step"><div class="num">8</div><div><h3>Functional Test</h3><p>Create a sample exam, open it, copy the link/code, take it as a student, submit, confirm result appears in Teacher Dashboard, export CSV, and view per-question answers.</p></div></div>
+    <div class="step"><div class="num">9</div><div><h3>Phase 10 Smoke Test</h3><p>Re-run <code>database/complete-schema.sql</code> (it is idempotent and upgrade-safe), then verify: Teacher Hub → Results → 📊 Psychometric Report generates; a Practice-mode exam shows instant feedback; the 👁 Live Monitor shows an in-progress candidate; the 🧾 Appeals queue resolves a request. Full runbook: <code>PHASE10_ENTERPRISE_FEATURES.md</code> §4.</p></div></div>
+    <div class="step"><div class="num">10</div><div><h3>Go Live</h3><p>Approve teachers, create real rosters, publish exams, share codes/links, and schedule routine backups. Store backup JSONs securely.</p></div></div>
+  </section>
+
+  <section class="card danger">
+    <h2>9. Security Notes</h2>
+    <ul>
+      <li>The Supabase anon key is public by design. Security depends on RLS policies.</li>
+      <li>Never place Supabase service_role keys in frontend HTML or JavaScript.</li>
+      <li>Use HTTPS hosting for camera, microphone, PWA, and authentication reliability.</li>
+      <li>Client-side proctoring is evidence/support, not a replacement for school policy.</li>
+      <li>Treat result exports, proctor photos, and backup JSON files as confidential student records.</li>
+    </ul>
+  </section>
+
+  <div class="card">
+    <h2>v3.1 Enterprise Security Highlights</h2>
+    <ul>
+      <li>Students load exams through <code>get_public_exam_by_code</code> instead of broad anonymous table reads.</li>
+      <li>Registered-student ID checks use <code>verify_student_for_exam</code>.</li>
+      <li>Attempt limits use <code>get_exam_attempt_count</code>.</li>
+      <li>Admin RPCs verify admin status inside PostgreSQL.</li>
+      <li>Partial-credit scores are stored as decimal values.</li>
+      <li>Negative marking and teacher-held results are supported.</li>
+    </ul>
+  </div>
+</div>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

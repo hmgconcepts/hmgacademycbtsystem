@@ -1,0 +1,64 @@
+{
+  "name": "HMG Academy CBT Pro — Free Online Exam Platform",
+  "short_name": "HMG CBT",
+  "description": "Installable free CBT and online assessment platform by HMG Concepts for schools, teachers, tutors and training centres. Includes 20 question types, anti-cheat controls, analytics, CSV exports and verifiable certificates.",
+  "start_url": "./index.html?source=pwa",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#09090b",
+  "theme_color": "#10b981",
+  "categories": [
+    "education",
+    "productivity",
+    "utilities",
+    "business"
+  ],
+  "icons": [
+    {
+      "src": "assets/hmg-academy-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "hmg-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Teacher Dashboard",
+      "short_name": "Teacher",
+      "url": "./teacher.html",
+      "description": "Create and manage exams"
+    },
+    {
+      "name": "Student Portal",
+      "short_name": "Student",
+      "url": "./student.html",
+      "description": "Enter exam link or access code"
+    },
+    {
+      "name": "Admin Panel",
+      "short_name": "Admin",
+      "url": "./admin.html",
+      "description": "Manage teachers and platform diagnostics"
+    }
+  ],
+  "id": "./",
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui",
+    "browser"
+  ],
+  "lang": "en-NG",
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  }
+}

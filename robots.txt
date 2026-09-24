@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Keep dynamic Supabase API requests outside crawler scope while allowing all static pages.
+Disallow: /*?access_token=
+Disallow: /*?refresh_token=
+
+Sitemap: https://hmgcbtsystem.vercel.app/sitemap.xml
+Host: https://hmgcbtsystem.vercel.app

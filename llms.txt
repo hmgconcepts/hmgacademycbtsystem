@@ -1,0 +1,39 @@
+# HMG Academy CBT Pro
+
+HMG Academy CBT Pro is a free, installable browser-based computer-based testing platform by HMG Concepts / HMG Academy for schools, teachers, tutors, training centres, and students.
+
+Official CBT platform: https://hmgcbtsystem.vercel.app/
+HMG Academy: https://hmgacademy.pages.dev/
+HMG Concepts: https://hmgconcepts.pages.dev/
+Contact: hismarvellousgrace@gmail.com, +234 810 086 6322, +234 907 790 7677
+Founder: Adewale Samson Adeagbo
+
+Key features:
+- Teacher dashboard for creating exams
+- Student exam portal with access codes and links
+- Admin panel for platform management
+- 20 question types (including range/estimation, hotspot and evidence-based two-part questions)
+- Anti-cheat controls
+- Result analytics and CSV export
+- Verifiable certificates
+- PWA install support for mobile and desktop
+- No paid AI API required
+- Internal tools behind teacher/admin login (role-aware page guard); public homepage exposes only the 3 portals
+- 1,000-student concurrency: jittered submissions, exponential-backoff retries, offline auto-flush queue
+- Phase 10 enterprise pack: adaptive difficulty delivery, instant-feedback practice mode with points and streaks, psychometric report (KR-20, discrimination, distractor analysis), per-candidate extra-time accommodations, UTME /400 aggregate scoring, live invigilation monitor, result appeals workflow, hideable leaderboard, integrity signals (answer-speed and device evidence)
+- JAMB-style 8-key exam navigation (A/B/C/D, N/P, R, S) and question flagging
+
+Useful pages:
+- /index.html — landing page and HMG ecosystem links
+- /teacher.html — teacher dashboard
+- /student.html — student exam portal
+- /admin.html — admin panel
+- /certificate.html — certificate verification
+- /feature_guide.html — detailed platform guide
+- /deployment_validator.html — deployment checks
+- /disaster-recovery.html — guided 7-step disaster recovery console (restore a whole platform from Google Drive backups into a fresh Supabase project)
+- /admin-data.html — backups, Google Drive sync, dry-run restores and table browser
+- /cbt-prompts.html — AI question prompt studio (24 packs + full copy-paste prompt library, free AI chats, no API)
+- /PROMPT_TEMPLATE.md — offline master prompt for AI-assisted CSV question generation
+- /database/ — complete-schema.sql (single run-once idempotent setup), maintenance extracts, demo users, sample CSVs
+- /PHASE10_ENTERPRISE_FEATURES.md — per-feature explanations of the Phase 10 enterprise pack + step-by-step deployment

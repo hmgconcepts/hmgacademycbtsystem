@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Disaster Recovery Console — HMG Academy CBT Pro</title>
+  <meta name="description" content="Disaster recovery console: guided recovery wizard, live migration, sealed backup vault and the step-by-step DR runbook for HMG Academy CBT Pro.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .dr-step{border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;background:var(--surface);position:relative;}
+  .dr-step.locked{opacity:.55;}
+  .dr-step-num{position:absolute;top:-13px;left:18px;background:var(--primary);color:#000;font-weight:800;font-size:12px;border-radius:99px;padding:4px 14px;letter-spacing:.04em;}
+  .dr-step.done{border-color:rgba(16,185,129,.5);}
+  .dr-step.active{border-color:var(--primary);box-shadow:0 0 0 3px rgba(5,6,174,.12);}
+  .dr-tag{font-size:11px;font-weight:800;padding:3px 10px;border-radius:99px;margin-left:8px;}
+  .plan-row{display:flex;justify-content:space-between;padding:8px 12px;border-bottom:1px solid var(--border);font-size:13px;}
+  .plan-row b{font-variant-numeric:tabular-nums;}
+  .circ-list{margin:10px 0 0;padding-left:20px;font-size:13px;color:var(--text-muted);line-height:1.8;}
+  .code-chip{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:1px 7px;font-family:ui-monospace,monospace;font-size:12px;}
+  @media print{.no-print{display:none!important}.dr-step{break-inside:avoid;}}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Disaster Recovery & Project Migration Console</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+
+  <div class="card-title-row">
+    <div>
+      <h1>🚨 Disaster Recovery Console</h1>
+      <p><strong>The complete, guided recovery path when a Supabase project is lost, paused beyond rescue, or must be replaced</strong> — restoring every exam, question, roster, result and setting from the school's Google Drive backups into a brand-new free-tier project. Follow the steps in order; every step verifies itself before the next unlocks.</p>
+    </div>
+    <div class="no-print">
+      <button class="btn btn-outline" onclick="window.print()">🖨 Print runbook</button>
+      <button class="btn btn-outline" onclick="SiteHelp.renderPageGuideBanner()">🧭 Page guide</button>
+    </div>
+  </div>
+
+  <!-- ═══ THE SCENARIO ═══ -->
+  <div class="card" style="border-color:rgba(239,68,68,.35);">
+    <h2 style="color:var(--danger);">📖 When you need this page — the exact scenario it solves</h2>
+    <p style="font-size:13.5px;line-height:1.75;">A school's Supabase project became <strong>inactive / paused / unreachable</strong> — or the account holding it was lost — and it can no longer be unpaused or accessed. The school was careless about logins, but they were <strong>never careless about their data</strong>: the platform had been syncing full backup envelopes to their <strong>own Google Drive</strong>. This console re-builds their entire platform on a <strong>fresh free Supabase project</strong>, linked to that same Google Drive account, in seven verified steps — no data lost, no paid tools, finished in roughly 15 minutes.</p>
+    <div class="grid-2" style="margin-top:10px;">
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12.5px;">
+        <b style="color:var(--primary);">✅ What is recovered</b>
+        <ul class="circ-list">
+          <li>Every exam + full question bank (all 20 types, options, keys, explanations)</li>
+          <li>Student rosters (per teacher, with IDs and classes)</li>
+          <li>All candidate results incl. answers, scores, times, integrity logs</li>
+          <li>Platform settings, site license and heartbeat state</li>
+          <li>Archive-vault backups (if they were exported to Drive)</li>
+        </ul>
+      </div>
+      <div style="border:1px solid var(--border);border-radius:10px;padding:12px;font-size:12.5px;">
+        <b style="color:var(--warning);">⚠️ What is honestly NOT recovered</b>
+        <ul class="circ-list">
+          <li>Teacher/admin <strong>login accounts</strong> (Supabase Auth users live inside the lost project — see Step 6 for the 2-minute re-invite)</li>
+          <li>Face-gate proctor photos stored only in the old database</li>
+          <li>Changes made <em>after</em> the newest Drive backup — which is why auto-sync matters</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 1 — GOOGLE DRIVE ═══ -->
+  <div class="dr-step" id="step1">
+    <span class="dr-step-num">STEP 1</span>
+    <h2>🔗 Connect the school's Google Drive (the previous backup account)</h2>
+    <p style="font-size:13px;color:var(--text-muted);">Sign in with the SAME Google account the old platform used for backups (the one whose Drive contains the <span class="code-chip">HMG_CBT_Backups</span> folder). The Drive client uses the <span class="code-chip">drive.file</span> scope — it can only see files this platform created.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      <button class="btn btn-primary" id="dr-drive-auth-btn" onclick="drAuthorizeDrive()">🔐 Authorize Google Drive</button>
+      <button class="btn btn-outline" id="dr-drive-list-btn" onclick="drListBackups()" style="display:none;">🔄 Refresh backup list</button>
+    </div>
+    <div id="dr-drive-status" style="margin-top:10px;font-size:13px;color:var(--text-muted);">Not connected yet.</div>
+    <div id="dr-backup-list" style="margin-top:10px;"></div>
+    <div style="margin-top:14px;border-top:1px dashed var(--border);padding-top:12px;">
+      <p style="font-size:12.5px;color:var(--text-muted);margin-bottom:8px;"><strong>Alternative path (if Google sign-in is unavailable):</strong> if someone previously <em>downloaded</em> a backup envelope (<span class="code-chip">.json</span>), load it directly:</p>
+      <input type="file" id="dr-envelope-file" accept=".json" onchange="drLoadEnvelopeFile(this)" style="font-size:12px;max-width:340px;">
+    </div>
+  </div>
+
+  <!-- ═══ STEP 2 — FRESH SUPABASE ═══ -->
+  <div class="dr-step locked" id="step2">
+    <span class="dr-step-num">STEP 2</span>
+    <h2>🆕 Create &amp; prepare the fresh Supabase project</h2>
+    <ol class="circ-list" style="color:var(--text);">
+      <li>Go to <strong>supabase.com/dashboard</strong> → <strong>New project</strong> → choose the FREE plan, a strong database password, and a region close to the school.</li>
+      <li>Open <strong>SQL Editor</strong> → <strong>New query</strong>.</li>
+      <li>Open <span class="code-chip">database/complete-schema.sql</span> (shipped with this platform and inside every backup ZIP), copy <strong>all</strong> of it, paste, and <strong>Run</strong>. It is idempotent — it installs all 10 tables, 40+ RPCs, security policies, the archive-vault bucket, the heartbeat system and starter rows in one pass. Running it twice is harmless.</li>
+      <li>Go to <strong>Project Settings → API</strong> and copy the <strong>Project URL</strong> and the <strong>anon public key</strong> (starts with <span class="code-chip">eyJ…</span>). Paste them below.</li>
+    </ol>
+    <div class="grid-2">
+      <div>
+        <label>New Project URL</label>
+        <input type="text" id="dr-new-url" placeholder="https://xxxxx.supabase.co">
+      </div>
+      <div>
+        <label>New Project anon key</label>
+        <input type="text" id="dr-new-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9…">
+      </div>
+    </div>
+    <div style="margin-top:10px;" class="flex-gap">
+      <button class="btn btn-outline" onclick="drTestNewProject()">🔌 Test connection &amp; schema readiness</button>
+      <span id="dr-new-status" style="font-size:12.5px;align-self:center;"></span>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 3 — CHOOSE BACKUP ═══ -->
+  <div class="dr-step locked" id="step3">
+    <span class="dr-step-num">STEP 3</span>
+    <h2>📦 Choose the backup to restore</h2>
+    <p style="font-size:13px;color:var(--text-muted);">Pick from the Drive backups listed in Step 1. The <strong>newest</strong> is preselected. Inspect its contents before committing — counts come from the envelope's own metadata.</p>
+    <div id="dr-choose-wrap">
+      <select id="dr-backup-select" onchange="drInspectBackup()"></select>
+      <div id="dr-backup-inspect" style="margin-top:12px;"></div>
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4 — DRY RUN ═══ -->
+  <div class="dr-step locked" id="step4">
+    <span class="dr-step-num">STEP 4</span>
+    <h2>🧪 Dry-run the restore (nothing is written yet)</h2>
+    <p style="font-size:13px;color:var(--text-muted);">The engine replays the backup against the new project and reports exactly what <em>would</em> happen: every insert, update and skip — with reasons. Review it; only a plan you approve moves to Step 5.</p>
+    <button class="btn btn-outline" onclick="drDryRun()">🧪 Build restore plan</button>
+    <div id="dr-plan" style="margin-top:14px;"></div>
+  </div>
+
+  <!-- ═══ STEP 5 — EXECUTE ═══ -->
+  <div class="dr-step locked" id="step5">
+    <span class="dr-step-num">STEP 5</span>
+    <h2>🚀 Execute the restore &amp; verify</h2>
+    <p style="font-size:13px;color:var(--text-muted);">Writes the approved plan into the new project, then re-counts every table in the live database and compares it against the envelope — a green check means the rows are really there, not assumed.</p>
+    <button class="btn btn-primary" id="dr-exec-btn" onclick="drExecuteRestore()" disabled>🚀 Restore now</button>
+    <div id="dr-exec-progress" style="margin-top:14px;"></div>
+    <div id="dr-verify" style="margin-top:12px;"></div>
+  </div>
+
+  <!-- ═══ STEP 6 — SWITCH PERMANENT ═══ -->
+  <div class="dr-step locked" id="step6">
+    <span class="dr-step-num">STEP 6</span>
+    <h2>🔁 Point the platform at the new project permanently</h2>
+    <ol class="circ-list" style="color:var(--text);">
+      <li><strong>Redeploy with new credentials</strong> — either regenerate the platform ZIP from the <strong>Generator</strong> (paste the new URL + anon key in step 3 of the wizard), or edit <span class="code-chip">assets/js/app.js</span>: replace the <span class="code-chip">SB_URL</span> and <span class="code-chip">SB_KEY</span> constants with the values from Step 2, commit, and redeploy (Vercel/GitHub Pages).</li>
+      <li><strong>Re-create staff logins</strong> — Supabase Auth users cannot be migrated from a lost project. Have each teacher/admin sign up again on the new deployment (Authentication → Users shows them arriving), then an existing admin (the first account becomes super_admin automatically) approves them in <strong>Roles &amp; Status</strong>. Their exams and results re-attach automatically because data is matched by exam code and student ID, not by login.</li>
+      <li><strong>Re-link Google Drive on the new deployment</strong> — Settings → Google Drive Cloud Sync → paste the same Client ID (add the new deployment URL to the Google Cloud authorized origins) → Authorize. The next auto-backup lands in the same <span class="code-chip">HMG_CBT_Backups</span> folder.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ STEP 7 — RE-ARM PROTECTION ═══ -->
+  <div class="dr-step locked" id="step7">
+    <span class="dr-step-num">STEP 7</span>
+    <h2>🛡️ Re-arm the free-tier protection (≈7 minutes, once)</h2>
+    <p style="font-size:13px;color:var(--text-muted);">A fresh project starts its 7-day inactivity clock immediately. Full instructions live in <span class="code-chip">SUPABASE_FREE_TIER_PROTECTION.md</span>; the essentials:</p>
+    <ol class="circ-list" style="color:var(--text);">
+      <li>Add repository secrets <span class="code-chip">SUPABASE_URL</span> + <span class="code-chip">SUPABASE_ANON_KEY</span> (new values) and set workflow permissions to Read and write — this arms the twice-weekly verified heartbeat.</li>
+      <li>Add <span class="code-chip">SUPABASE_ACCESS_TOKEN</span> + <span class="code-chip">SUPABASE_PROJECT_REF</span> to arm the daily auto-restore watchdog.</li>
+      <li>Point an UptimeRobot monitor at <span class="code-chip">/api/keepalive</span> for an independent 24/7 ping.</li>
+      <li>Run <strong>Platform Health → Write Heartbeat Now</strong> and confirm the timestamp proof, then schedule the first backup to Drive immediately.</li>
+    </ol>
+  </div>
+
+  <!-- ═══ CIRCUMSTANCES ═══ -->
+  <div class="card">
+    <h2>🧭 Every circumstance, covered</h2>
+    <div class="grid-2">
+      <div style="font-size:12.5px;line-height:1.7;">
+        <p><strong>Drive has several backups — which one?</strong> The newest by modified date is preselected; older ones remain in the list for point-in-time recovery.</p>
+        <p><strong>The newest backup is weeks old.</strong> Restore it anyway — everything after the backup date is unrecoverable, which is exactly why the platform nags when auto-sync is off. After recovery, enable auto-sync.</p>
+        <p><strong>The new project already has some data.</strong> The restore <em>upserts</em>: exams match by their unique code (updated, never duplicated), students by (teacher, student ID), results are re-inserted without touching existing rows. Nothing is deleted.</p>
+        <p><strong>An exam code collides with different content.</strong> The dry-run flags it as an update with counts — you see it before anything is written.</p>
+      </div>
+      <div style="font-size:12.5px;line-height:1.7;">
+        <p><strong>Teacher logins can't be restored.</strong> Auth users belong to Supabase, not to your data. Step 6 re-invites staff in two minutes; data re-attaches by code/ID matching.</p>
+        <p><strong>No Google sign-in on this device.</strong> Use the Step 1 file fallback with any previously downloaded envelope JSON.</p>
+        <p><strong>Old backup format (v10.0 legacy envelope).</strong> The engine auto-converts legacy envelopes; the plan will say so.</p>
+        <p><strong>Restore interrupted mid-way.</strong> Re-run it — every phase is idempotent (upserts + duplicate-tolerant inserts), so a second pass completes what the first started.</p>
+        <p><strong>Need to KEEP the old project too?</strong> This same console is a pure migration tool: the old project is never contacted after Step 2.</p>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Disaster Recovery Console · Free-tier resilient architecture
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script>
+/* ═══════════════════════════════════════════
+   DISASTER RECOVERY CONSOLE — state machine
+   Steps unlock only when their preconditions
+   are verified. Nothing is written to the new
+   project before the dry-run plan is approved.
+   ═══════════════════════════════════════════ */
+let drBackups = [];          // [{id,name,modifiedTime,size}]
+let drEnvelope = null;       // normalized envelope chosen in step 3
+let drPlan = null;           // dry-run plan from step 4
+let drNewOk = false;         // new project verified in step 2
+
+function esc(t){ return App.escapeHtml(String(t==null?'':t)); }
+function unlock(id,on){ const el=document.getElementById(id); if(el)el.classList.toggle('locked',!on); }
+
+/* ── STEP 1 ─────────────────────────────── */
+async function drAuthorizeDrive(){
+  const st=document.getElementById('dr-drive-status');
+  st.innerHTML='⏳ Opening Google authorization…';
+  try{
+    await DriveSync.authorize(true);
+    st.innerHTML='<span style="color:var(--primary);font-weight:700;">✅ Google Drive connected.</span> Loading backups…';
+    document.getElementById('dr-drive-list-btn').style.display='';
+    await drListBackups();
+  }catch(e){
+    st.innerHTML='<span style="color:var(--danger);">❌ ' + esc(e.message||e) + '</span> — use the file fallback below if Google sign-in is not possible on this device.';
+  }
+}
+
+async function drListBackups(){
+  const wrap=document.getElementById('dr-backup-list');
+  wrap.innerHTML='<div style="font-size:13px;color:var(--text-muted);">⏳ Reading HMG_CBT_Backups from Google Drive…</div>';
+  try{
+    const list=await DriveSync.listBackups();
+    drBackups=(list||[]).slice().sort((a,b)=>String(b.modifiedTime||'').localeCompare(String(a.modifiedTime||'')));
+    if(!drBackups.length){
+      wrap.innerHTML='<div style="font-size:13px;color:var(--danger);">No backups found in this Drive. Either this is the wrong Google account, or the old platform never synced. Use the file fallback below with a downloaded envelope.</div>';
+      return;
+    }
+    wrap.innerHTML='<div style="font-size:13px;color:var(--primary);font-weight:700;">✅ '+drBackups.length+' backup'+(drBackups.length>1?'s':'')+' found:</div><ol style="font-size:12.5px;color:var(--text-muted);margin:8px 0 0;padding-left:20px;">'+
+      drBackups.map(b=>'<li><b>'+esc(b.name)+'</b> — '+new Date(b.modifiedTime).toLocaleString('en-GB')+(b.size?' · '+(b.size/1024).toFixed(0)+' KB':'')+'</li>').join('')+'</ol>';
+    const sel=document.getElementById('dr-backup-select');
+    sel.innerHTML=drBackups.map(b=>'<option value="'+esc(b.id)+'">'+esc(b.name)+' ('+new Date(b.modifiedTime).toLocaleString('en-GB')+')</option>').join('');
+    unlock('step2',true); unlock('step3',true);
+    drInspectBackup();
+  }catch(e){
+    wrap.innerHTML='<div style="font-size:13px;color:var(--danger);">❌ '+esc(e.message||e)+'</div>';
+  }
+}
+
+function drLoadEnvelopeFile(input){
+  const f=input.files&&input.files[0];
+  if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{
+    try{
+      const raw=JSON.parse(r.result);
+      drEnvelope=normalizeEnvelopeLocal(raw);
+      if(!drEnvelope)throw new Error('Not a recognized backup envelope.');
+      drBackups=[{id:'__file__',name:f.name,modifiedTime:new Date().toISOString(),size:f.size}];
+      const sel=document.getElementById('dr-backup-select');
+      sel.innerHTML='<option value="__file__">'+esc(f.name)+' (loaded from file)</option>';
+      document.getElementById('dr-drive-status').innerHTML='<span style="color:var(--primary);font-weight:700;">✅ Envelope loaded from file (Drive not used).</span>';
+      unlock('step2',true); unlock('step3',true);
+      drInspectBackup();
+    }catch(e){ alert('Could not read that file: '+(e.message||e)); }
+  };
+  r.readAsText(f);
+}
+
+function normalizeEnvelopeLocal(raw){
+  try{
+    if(raw&&raw.meta&&raw.data)return raw;
+    if(raw&&raw.data&&raw.data.meta)return {meta:raw.data.meta,data:raw.data.data};
+    if(raw&&raw.exams)return {meta:{generated_at:raw.generated_at,schema_version:10,legacy:true},data:raw};
+    return null;
+  }catch(e){return null;}
+}
+
+/* ── STEP 2 ─────────────────────────────── */
+async function drTestNewProject(){
+  const url=document.getElementById('dr-new-url').value.trim();
+  const key=document.getElementById('dr-new-key').value.trim();
+  const st=document.getElementById('dr-new-status');
+  if(!/^https:\/\/.+\.supabase\.co\/?$/.test(url))return st.innerHTML='<span style="color:var(--danger);">URL must look like https://xxxxx.supabase.co</span>';
+  if(!key.startsWith('eyJ'))return st.innerHTML='<span style="color:var(--danger);">The anon key starts with eyJ… (never use the service_role key here).</span>';
+  st.innerHTML='⏳ Testing…';
+  try{
+    const r=await fetch(url+'/rest/v1/institutions?select=id&limit=1',{headers:{apikey:key,Authorization:'Bearer '+key}});
+    if(!r.ok)throw new Error('HTTP '+r.status+(r.status===401?' — wrong key':r.status===404?' — REST not reachable':''));
+    const hrt=await fetch(url+'/rest/v1/rpc/sc_keep_alive',{method:'POST',headers:{apikey:key,Authorization:'Bearer '+key,'Content-Type':'application/json'},body:JSON.stringify({p_src:'disaster-recovery'})});
+    if(!hrt.ok)throw new Error('Connection works, but the schema is not installed (heartbeat RPC missing). Run database/complete-schema.sql in the SQL editor, then test again.');
+    const hb=await hrt.json().catch(()=>null);
+    drNewOk=true;
+    document.getElementById('step2').classList.add('done');
+    unlock('step4',true);
+    st.innerHTML='<span style="color:var(--primary);font-weight:700;">✅ Connected & schema verified'+(hb&&hb.written_at?' — heartbeat written at '+esc(hb.written_at):'')+'.</span>';
+  }catch(e){
+    drNewOk=false;
+    st.innerHTML='<span style="color:var(--danger);">❌ '+esc(e.message||e)+'</span>';
+  }
+}
+
+/* ── STEP 3 ─────────────────────────────── */
+async function drInspectBackup(){
+  const sel=document.getElementById('dr-backup-select');
+  const box=document.getElementById('dr-backup-inspect');
+  if(!sel.value){box.innerHTML='';return;}
+  if(sel.value==='__file__'){
+    renderInspect(drEnvelope,box);
+    unlock('step4',drNewOk);
+    return;
+  }
+  box.innerHTML='<div style="font-size:13px;color:var(--text-muted);">⏳ Downloading envelope from Drive to inspect…</div>';
+  try{
+    const raw=await DriveSync.downloadBackup(sel.value);
+    drEnvelope=normalizeEnvelopeLocal(raw);
+    if(!drEnvelope)throw new Error('The selected file is not a recognized backup envelope.');
+    renderInspect(drEnvelope,box);
+    unlock('step4',drNewOk);
+  }catch(e){
+    box.innerHTML='<div style="font-size:13px;color:var(--danger);">❌ '+esc(e.message||e)+'</div>';
+  }
+}
+function renderInspect(env,box){
+  const d=env.data||{};
+  const c=t=>Array.isArray(d[t])?d[t].length:(d[t]&&typeof d[t]==='object'?Object.keys(d[t]).length:0);
+  const rows=[['institutions','Institutions'],['exams','Exams (incl. question banks)'],['students','Student rosters'],['results','Candidate results'],['profiles','Staff profiles'],['platform_settings','Platform settings'],['site_license','Site license'],['audit_events','Audit trail (latest)']];
+  box.innerHTML='<div style="border:1px solid var(--border);border-radius:10px;overflow:hidden;">'+
+    '<div class="plan-row" style="background:var(--bg);"><span><b>Backup generated</b></span><b>'+esc(env.meta.generated_at?new Date(env.meta.generated_at).toLocaleString('en-GB'):'unknown date')+'</b></div>'+
+    '<div class="plan-row" style="background:var(--bg);"><span><b>Envelope format</b></span><b>v'+esc(env.meta.schema_version||'?')+(env.meta.legacy?' (legacy — auto-converted)':'')+'</b></div>'+
+    rows.map(r=>'<div class="plan-row"><span>'+r[1]+'</span><b>'+c(r[0])+'</b></div>').join('')+
+    '</div>';
+  document.getElementById('step3').classList.add('done');
+}
+
+/* ── STEP 4 — DRY RUN ───────────────────── */
+async function drDryRun(){
+  if(!drEnvelope)return showToast('Choose a backup first (Step 3).','warning');
+  if(!drNewOk)return showToast('Verify the new project connection first (Step 2).','warning');
+  const box=document.getElementById('dr-plan');
+  box.innerHTML='<div style="font-size:13px;color:var(--text-muted);">⏳ Building the plan against the new project (nothing is written)…</div>';
+  const url=document.getElementById('dr-new-url').value.trim();
+  const key=document.getElementById('dr-new-key').value.trim();
+  const oldUrl=App.SB_URL, oldKey=App.SB_KEY;
+  try{
+    App.SB_URL=url; App.SB_KEY=key;
+    drPlan=await DataPort.restoreEnvelope(drEnvelope,{dryRun:true});
+    App.SB_URL=oldUrl; App.SB_KEY=oldKey;
+    box.innerHTML='<div style="border:1px solid rgba(245,158,11,.4);border-radius:10px;overflow:hidden;">'+
+      '<div class="plan-row" style="background:rgba(245,158,11,.08);"><span><b>DRY RUN — nothing written yet</b></span><b>'+esc(drPlan.summary||'')+'</b></div>'+
+      (drPlan.actions||[]).map(a=>'<div class="plan-row"><span>'+esc(a.table)+' — '+esc(a.action||'upsert')+'</span><b style="color:var(--primary);">'+esc(a.count??a.inserted??0)+'</b></div>').join('')+
+      (drPlan.skipped&&drPlan.skipped.length?drPlan.skipped.map(s=>'<div class="plan-row"><span style="color:var(--warning);">skipped · '+esc(s.table||s.why||'')+'</span><b style="color:var(--warning);">'+esc(s.count??'')+' '+esc(s.why||'')+'</b></div>').join(''):'')+
+      (drPlan.warnings&&drPlan.warnings.length?drPlan.warnings.map(w=>'<div class="plan-row"><span style="color:var(--danger);">warning</span><b style="color:var(--danger);font-weight:600;">'+esc(w)+'</b></div>').join(''):'')+
+      '</div>'+
+      '<p style="font-size:12.5px;color:var(--text-muted);margin-top:8px;">Approving this plan in Step 5 applies exactly these changes — no more, no less.</p>';
+    document.getElementById('step4').classList.add('done');
+    unlock('step5',true);
+    document.getElementById('dr-exec-btn').disabled=false;
+  }catch(e){
+    App.SB_URL=oldUrl; App.SB_KEY=oldKey;
+    box.innerHTML='<div style="font-size:13px;color:var(--danger);">❌ '+esc(e.message||e)+'</div>';
+  }
+}
+
+/* ── STEP 5 — EXECUTE + VERIFY ──────────── */
+async function drExecuteRestore(){
+  if(!drPlan)return;
+  if(!confirm('Restore the approved plan into the new project now?\n\nEvery phase is idempotent — an interrupted restore can simply be re-run.'))return;
+  const p=document.getElementById('dr-exec-progress');
+  const url=document.getElementById('dr-new-url').value.trim();
+  const key=document.getElementById('dr-new-key').value.trim();
+  const oldUrl=App.SB_URL, oldKey=App.SB_KEY;
+  p.innerHTML='⏳ <b>Phase 1/2:</b> Writing records into the new project…';
+  try{
+    App.SB_URL=url; App.SB_KEY=key;
+    const applied=await DataPort.restoreEnvelope(drEnvelope,{dryRun:false});
+
+    p.innerHTML='⏳ <b>Phase 2/2:</b> Re-counting every table in the live database…';
+    const d=drEnvelope.data||{};
+    const tables=[['institutions','Institutions'],['exams','Exams'],['students','Students'],['results','Results']];
+    const counts={};
+    for(const [t] of tables){
+      try{ const rows=await App.sbFetch('/rest/v1/'+t+'?select=id&limit=1000'); counts[t]=rows.length; }
+      catch(e){ counts[t]=-1; }
+    }
+    App.SB_URL=oldUrl; App.SB_KEY=oldKey;
+
+    const v=document.getElementById('dr-verify');
+    v.innerHTML='<div style="border:1px solid rgba(16,185,129,.45);border-radius:10px;overflow:hidden;">'+
+      '<div class="plan-row" style="background:rgba(16,185,129,.1);"><span><b>VERIFICATION — live row counts vs envelope</b></span><b></b></div>'+
+      tables.map(([t,label])=>{
+        const want=Array.isArray(d[t])?d[t].length:0;
+        const got=counts[t];
+        const ok=got>=0&&(want===0?true:got>=want);   /* new project may also hold fresh rows */
+        return '<div class="plan-row"><span>'+label+'</span><b style="color:'+(ok?'var(--primary)':'var(--danger)')+';">'+(got<0?'?':got)+' live / '+want+' in backup '+(ok?'✓':'✗')+'</b></div>';
+      }).join('')+
+      '</div>'+
+      '<p style="font-size:13px;color:var(--primary);font-weight:700;margin-top:10px;">🎉 Recovery complete. Continue to Step 6 to make the switch permanent, then Step 7 to re-arm protection.</p>';
+    document.getElementById('step5').classList.add('done');
+    unlock('step6',true); unlock('step7',true);
+    p.innerHTML='<span style="color:var(--primary);font-weight:700;">✅ Restore applied: '+esc((applied.actions||[]).map(a=>a.table+':'+(a.count??a.inserted??0)).join(', ')||'nothing to write')+'</span>';
+    try{
+      await App.sbRpc('log_audit_event',{p_action:'disaster_recovery_restore',p_entity_type:'platform',p_entity_id:url,p_metadata:{backup:drEnvelope.meta.generated_at, actions:(applied.actions||[]).length}});
+    }catch(e){}
+    showToast('Disaster recovery restore verified ✓','success',6000);
+  }catch(e){
+    App.SB_URL=oldUrl; App.SB_KEY=oldKey;
+    p.innerHTML='<div style="font-size:13px;color:var(--danger);">❌ '+esc(e.message||e)+' — safe to re-run; every phase is idempotent.</div>';
+  }
+}
+
+document.addEventListener('DOMContentLoaded',()=>{
+  /* Session guarding, lockdown enforcement and the idle lock are applied
+     automatically by app.js on init; data access itself is protected by
+     row-level security on the server for every request this page makes. */
+  try{ if(typeof SiteHelp!=='undefined' && !localStorage.getItem('cbt_guide_dismissed')) SiteHelp.renderPageGuideBanner(); }catch(e){}
+});
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

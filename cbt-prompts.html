@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Question Prompts Studio — HMG Academy CBT Pro</title>
+  <meta name="description" content="AI prompts studio: 200+ copy-paste prompts to generate question banks for every CBT subject and question type — no paid AI API required.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .pack-card{border:1px solid var(--border);border-radius:12px;padding:12px 14px;cursor:pointer;transition:.15s;background:var(--surface-2);}
+  .pack-card:hover{border-color:var(--primary);}
+  .pack-card.active{border-color:var(--primary);box-shadow:0 0 0 2px var(--primary-dim);}
+  .pack-card h4{margin:0 0 4px;font-size:.9rem;}
+  .pack-card p{margin:0;font-size:.75rem;color:var(--text-muted);}
+  .contract-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .contract-table th,.contract-table td{border:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top;}
+  .contract-table th{background:var(--surface-2);}
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .step-pill{display:inline-flex;align-items:center;justify-content:center;min-width:26px;height:26px;border-radius:50%;background:var(--primary);color:#04150d;font-weight:800;margin-right:8px;font-size:.8rem;}
+  .full-width{width:100%;}
+
+    .prompt-pre{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:14px 16px;font-size:12px;line-height:1.65;white-space:pre-wrap;word-break:break-word;margin-top:10px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--text);}
+    </style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">AI Prompt Studio & Validator</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>🤖 AI Question Prompts Studio</h1>
+      <p>Compose a fully-structured, strict CSV/JSON question-bank prompt and paste it into <b>any free AI chat</b> (ChatGPT, Claude, Gemini, DeepSeek) — no paid AI APIs anywhere in this platform. 24 tailored packs · 20 question types · one import-safe output contract.</p>
+    </div>
+  </div>
+
+  <!-- HOW IT WORKS -->
+  <div class="card">
+    <h2>🧭 How this studio works (3 steps)</h2>
+    <div class="grid-3">
+      <div><span class="step-pill">1</span><b>Compose &amp; copy</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Pick a pack below, fill the brief, click <i>Build Prompt</i> and copy it.</p></div>
+      <div><span class="step-pill">2</span><b>Paste into a free AI chat</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">The prompt makes the AI return a downloadable <span class="code-chip">.csv</span> file built for this platform's importer.</p></div>
+      <div><span class="step-pill">3</span><b>Validate &amp; load</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Paste / upload the file in the validator below, then load it straight into the Teacher Hub question bank.</p></div>
+    </div>
+  </div>
+
+  <!-- PROMPT STUDIO -->
+  <div class="card">
+    <h2>🎛️ Prompt Studio — build a tailored prompt in seconds</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Each pack is a <b>different prompt</b>: its own examiner role, mission, scaled question-type distribution, briefing sections, quality bar and final checklist. Only the CSV output contract is shared — that is what keeps every pack's file importable.</p>
+
+    <div id="ps-pack-grid" class="grid-3" style="margin:14px 0 18px;"></div>
+
+    <div class="grid-2">
+      <div>
+        <label>Pack</label>
+        <select id="ps-pack" class="full-width" onchange="PS.syncFields();PS.buildFromForm();renderPackGrid()"></select>
+
+        <label>Subject / Course</label>
+        <input type="text" id="ps-subject" value="Mathematics" placeholder="e.g. Further Mathematics, Biology, English" oninput="PS.buildFromForm()">
+
+        <label>Topic / Curriculum Focus</label>
+        <input type="text" id="ps-topic" value="Quadratic Equations &amp; Polynomials" placeholder="e.g. Photosynthesis, Trigonometry" oninput="PS.buildFromForm()">
+
+        <div class="grid-2">
+          <div>
+            <label>Target Level / Class</label>
+            <input type="text" id="ps-level" value="SS 2 / Grade 11" placeholder="e.g. JSS 3, SS 3, 100 Level" oninput="PS.buildFromForm()">
+          </div>
+          <div>
+            <label>Question Count (5–200)</label>
+            <input type="number" id="ps-count" value="20" min="5" max="200" oninput="PS.buildFromForm()">
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Target Exam Style / Board</label>
+            <select id="ps-board" onchange="PS.buildFromForm()">
+              <option value="school internal assessment">School internal assessment</option>
+              <option value="JAMB UTME">JAMB UTME</option>
+              <option value="WAEC / SSCE">WAEC / SSCE</option>
+              <option value="NECO">NECO</option>
+              <option value="BECE / Common Entrance">BECE / Common Entrance</option>
+              <option value="Cambridge IGCSE / GCE">Cambridge IGCSE / GCE</option>
+              <option value="SAT / ACT">SAT / ACT</option>
+              <option value="professional certification">Professional certification</option>
+            </select>
+          </div>
+          <div>
+            <label>Difficulty Mix</label>
+            <select id="ps-difficulty" onchange="PS.buildFromForm()">
+              <option>Balanced (40% medium, 30% easy, 30% hard)</option>
+              <option>Easy / Foundational</option>
+              <option>Hard / High Order Thinking (HOTS)</option>
+              <option>30% easy / 50% medium / 20% hard (certification standard)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid-2">
+          <div>
+            <label>Language of the paper</label>
+            <select id="ps-language" onchange="PS.buildFromForm()">
+              <option>English</option><option>French</option><option>Yoruba</option>
+              <option>Igbo</option><option>Hausa</option><option>English (simplified for EAL learners)</option>
+            </select>
+          </div>
+          <div>
+            <label>Output Format</label>
+            <select id="ps-format" onchange="PS.buildFromForm()">
+              <option value="csv">Strict 17-column CSV (recommended)</option>
+              <option value="json">JSON array</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Source material (packs that need it) -->
+        <div data-ps-need="source" hidden>
+          <label>Source material (notes / textbook section / past paper / syllabus)</label>
+          <textarea id="ps-source" rows="6" style="width:100%;font-family:ui-monospace,Consolas,monospace;font-size:12px;" placeholder="Paste the material the paper must stay inside…" oninput="PS.buildFromForm()"></textarea>
+        </div>
+
+        <!-- Multi-subject builder -->
+        <div data-ps-need="subjects" hidden>
+          <label>Subjects (comma-separated — one topic box appears per subject)</label>
+          <input type="text" id="ps-subjects-list" placeholder="English Language, Mathematics, Physics" oninput="PS.syncSubjectTopics();PS.buildFromForm()">
+          <div id="ps-subject-topics" style="margin-top:8px;"></div>
+          <p style="font-size:.75rem;color:var(--text-muted);">Suggested groups: <a href="#" onclick="fillSubjects('Junior (BECE)');return false;">Junior BECE</a> · <a href="#" onclick="fillSubjects('Senior (SSCE/UTME)');return false;">Senior SSCE/UTME</a> · <a href="#" onclick="fillSubjects('Primary');return false;">Primary</a></p>
+        </div>
+
+        <button class="btn btn-primary" style="width:100%;margin-top:10px;" onclick="PS.buildFromForm();showToast('Prompt rebuilt','success')">⚡ Build Prompt</button>
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:8px;">Live type distribution (scales to your count):<br><span id="ps-distribution" style="font-family:ui-monospace,Consolas,monospace;color:var(--primary);"></span></p>
+      </div>
+
+      <div>
+        <div class="flex-between" style="margin-bottom:10px;">
+          <h2 style="margin:0;">📋 Your Prompt</h2>
+          <div class="flex-gap">
+            <button class="btn btn-sm btn-primary" onclick="PS.copy('ps-out')">📋 Copy</button>
+            <button class="btn btn-sm btn-outline" onclick="PS.download('ps-out')">⬇️ Download .txt</button>
+          </div>
+        </div>
+        <textarea id="ps-out" style="height:520px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;background:var(--bg);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;width:100%;" readonly></textarea>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ STATIC PROMPT LIBRARY ═══════════ -->
+  <div class="card" id="library">
+    <h2>⚡ Quick classics — one-click prompts</h2>
+    <div class="grid-2">
+      <div class="pack-card" onclick="loadStatic('utme')">
+        <h4>🎓 UTME / Common Entrance — multi-subject strict CSV</h4>
+        <p>The proven one-pager for full multi-subject sittings. The AI is instructed to return a <b>downloadable .csv file</b>; the Section column splits it into subject tabs.</p>
+        <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;" onclick="event.stopPropagation()">
+          <a class="btn btn-sm btn-outline" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample multi-subject CSV</a>
+          <a class="btn btn-sm btn-outline" href="cbt-multi.html">🧪 Build the tabbed exam</a>
+        </div>
+        <p style="color:var(--text-muted);font-size:.78rem;margin:8px 0 0;">Click the card to load the prompt. Got the CSV back? Open the Multi-Subject Builder → <b>⚡ Fast lane</b> → paste/upload once — subjects split automatically.</p>
+      </div>
+      <div class="pack-card" onclick="loadStatic('mcq_only')">
+        <h4>✅ MCQ-only strict CSV — any subject</h4>
+        <p>Pure 4-option MCQ paper that imports everywhere. Click to load into the studio output above.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📚 The Prompt Library — six complete copy-paste prompts</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;margin-bottom:14px;">
+      The studio above <i>builds</i> a prompt for you; this library hands you the finished classics in full.
+      Every prompt is self-contained — copy one, fill the <span class="code-chip">{{double-brace}}</span> placeholders, paste it into any AI chat
+      (ChatGPT, Claude, DeepSeek, Gemini — free tiers are fine), and paste the CSV it returns into the validator further down this page.
+      No AI API is ever called by this platform. Start at the level that matches your exam; move up when you need more.
+    </p>
+
+    <!-- L1 SIMPLE -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>Level 1 · 🟢 Simple — "Quick Paper" <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(20 questions · mcq + true_false · any subject)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">For class quizzes, end-of-topic checks and homework reviews. Fills in 30 seconds, works in every AI chat, imports first time.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-simple')">📋 Copy Level 1 prompt</button>
+      <pre id="lib-simple" class="prompt-pre">You are an expert teacher writing a quick class quiz.
+
+TASK: Write 20 questions on {{SUBJECT and TOPIC, e.g. "JSS 2 Basic Science — The Human Digestive System"}} at {{LEVEL, e.g. "JSS 2 / Year 8"}} level.
+Use 15 multiple-choice (mcq) and 5 true/false (true_false) questions. Difficulty: 12 easy, 6 medium, 2 hard.
+
+OUTPUT: ONE CSV code block. First line exactly:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+
+RULES
+1. 17 columns per row, in that exact order. Wrap every cell in double quotes; write inner double-quotes as two ("").
+2. mcq: options in columns A-D (4 options), CorrectAnswer = one letter (A/B/C/D). One clearly correct answer.
+3. true_false: column A = "True", column B = "False", C and D empty, CorrectAnswer = "True" or "False".
+4. Explanation (column 7) is MANDATORY for every question, 2-4 sentences:
+   state the correct answer in words, give the reason, and say why the most tempting wrong option is wrong.
+5. No "all of the above" / "none of the above" options. No trick questions.
+6. Difficulty column: easy / medium / hard. Tags column: topic and subtopic, comma-separated.
+7. Output ONLY the CSV block — no commentary before or after.</pre>
+    </div>
+
+    <!-- L2 INTERMEDIATE -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>Level 2 · 🟡 Intermediate — "Mixed Skills Paper" <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(30 questions · 7 types incl. numeric, matching, ordering)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">For term tests that should feel like a real exam: typed answers, tolerance-based numerics, and drag-to-match interactions.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-intermediate')">📋 Copy Level 2 prompt</button>
+      <pre id="lib-intermediate" class="prompt-pre">You are an expert examiner setting a term test for {{SUBJECT, e.g. "SS 1 Mathematics"}} at {{LEVEL/BOARD, e.g. "WAEC SS 1"}} level.
+
+TASK: Write exactly 30 questions on {{TOPIC(S), e.g. "Algebraic processes and mensuration"}} with this mix:
+12 mcq, 4 true_false, 5 short_answer, 4 numeric, 3 matching, 2 ordering.
+Difficulty spread: 12 easy, 12 medium, 6 hard.
+
+OUTPUT: ONE CSV code block with this exact header:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+
+RULES
+1. 17 columns per row in that order. Every cell double-quoted; inner double-quotes doubled (""). No line breaks inside a cell.
+2. mcq: 4 options (A-D), CorrectAnswer = one letter. true_false: A="True", B="False", CorrectAnswer="True"/"False".
+3. short_answer: the exact answer in CorrectAnswer; accepted alternative spellings in Accept, pipe-separated (e.g. "photosynthesis|photosyntheses").
+   Keep required answers to 1-3 words. The question text must end with a blank indicator like ___ if a word is to be typed.
+4. numeric: CorrectAnswer = the number; Tolerance = allowed error (e.g. 0.05); Unit = the unit label (e.g. "cm"). Questions must have one definite numeric answer.
+5. matching: CorrectAnswer empty. Pairs (column 13) = one-line JSON array like [{"l":"Nigeria","r":"Abuja"},{"l":"Ghana","r":"Accra"}]
+   with 4-6 pairs. Add 1 decoy as {"l":"DISTRACTOR","r":"Cairo"}.
+6. ordering: CorrectAnswer empty. Items (column 14) = one-line JSON array of the items in their CORRECT order, e.g. ["evaporation","condensation","precipitation"].
+7. Explanation (column 7) MANDATORY, 3-5 sentences: correct answer in words → the working or rule → why the classic wrong answer fails → one takeaway rule.
+8. No "all/none of the above". Real names, real values, real contexts. Difficulty and Tags columns filled on every row.
+9. Output ONLY the CSV block.</pre>
+    </div>
+
+    <!-- L3 ADVANCED -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>Level 3 · 🟠 Advanced — "Full Interactive Paper" <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(40 questions · every interactive type + cloze, categorization, multi-part numeric)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">For premium mock exams: cloze passages, categorization grids, multi-part numerics and assertion/reason — all with JSON keys.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-advanced')">📋 Copy Level 3 prompt</button>
+      <pre id="lib-advanced" class="prompt-pre">You are a chief examiner building a full-scale mock examination for {{SUBJECT, e.g. "SS 3 Chemistry"}} at {{BOARD, e.g. "WAEC SSCE"}} standard.
+
+TASK: Write exactly 40 questions on {{SYLLABUS AREA}} with this mix:
+14 mcq, 4 multi_select, 3 true_false, 5 short_answer, 5 numeric, 3 matching, 3 ordering, 2 cloze (fill-in-the-blank), 1 categorization, plus optionally 1 assertion_reason or multi-part numeric.
+Difficulty: 16 easy, 16 medium, 8 hard.
+
+OUTPUT: ONE CSV code block with this exact header:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+
+RULES
+1. 17 columns, exact order, every cell double-quoted, inner quotes doubled, no raw newlines inside cells.
+2. multi_select: 2-3 options are correct; CorrectAnswer = comma letters (e.g. "A,C"); MRQ_AON column = "false" for partial credit (or "true" if you want all-or-nothing).
+3. cloze: the Question contains one ___ per blank; Items (column 14) = one-line JSON array with one answer per blank in order, e.g. ["solid","liquid","gas"].
+4. categorization: Pairs (column 13) = one-line JSON array like [{"l":"HCl","r":"Acid"},{"l":"NaOH","r":"Base"}] — every left item must have a right category.
+5. assertion_reason / multi-part numeric (optional): Items (column 14) = one-line JSON per this platform's spec:
+   assertion_reason: {"assertion":"the assertion text","reason":"the reason text"} (or [{"a":…},{"r":…}]); multi_numeric: [{"label":"part a","ans":5,"unit":"cm"},{"label":"part b","ans":12,"unit":"cm"}] (answer/tolerance keys also accepted).
+6. matching and ordering follow the JSON rules: Pairs = [{"l":"…","r":"…"},…] with optional {"l":"DISTRACTOR","r":"…"} decoys;
+   Items = ["…","…",…] in correct order.
+7. numeric: Tolerance + Unit always set. short_answer: Accept lists synonyms, pipe-separated.
+8. Explanation MANDATORY, 4 moves, 40-70 words: VERDICT (restate the correct answer) → REASONING (the working/rule, numbered) → MISCONCEPTIONS (why each tempting wrong answer fails, or the one classic mistake) → TAKEAWAY (one transferable rule).
+9. Senior-secondary level vocabulary only for the stated board. Real data and real contexts. No "all/none of the above".
+10. Output ONLY the CSV block. Before answering, silently verify: 17 columns per row, exact count and mix, valid one-line JSON in columns 13/14 — then fix anything that fails.</pre>
+    </div>
+
+    <!-- L4 ENTERPRISE -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>Level 4 · 🔴 Enterprise v3 — "Exam Board Simulation" <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(section budgets · reference distribution · QA gates · full spec)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">The master prompt for whole exam sittings: it plans sections, budgets types, targets documented misconceptions, and self-verifies before answering.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-enterprise')">📋 Copy Level 4 prompt</button>
+      <pre id="lib-enterprise" class="prompt-pre">ROLE
+You are a chief examiner and psychometrician with 20 years at a national examination board (WAEC/NECO/JAMB standard). You write curriculum-aligned, defensible, discrimination-tested items and full marking schemes.
+
+MISSION
+Produce a complete CSV question bank of exactly {{N, e.g. 60}} questions for:
+  SUBJECT : {{subject, class, syllabus reference}}
+  BOARD   : {{exam board + level, e.g. "JAMB UTME", "WAEC SSCE", "IGCSE Core"}}
+  SECTIONS: {{section plan with per-section budgets, e.g. "Section A: 30 mcq (1 mark), Section B: 15 short/numeric (2 marks), Section C: 10 interactive (3 marks)"}}
+  SOURCES : {{"based on the past questions / lesson notes / textbook chapters pasted below" or "original items only"}}
+  STRESS  : target the documented misconceptions for this topic (from the sources, or well-established ones).
+
+OUTPUT CONTRACT — one CSV code block, nothing else. Header exactly:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+Every cell double-quoted; inner double-quotes written as two (""); no line breaks inside any cell; JSON in columns 13/14 stays on one line.
+
+TYPE-SPECIFIC KEYS (emit ONLY for types you actually use)
+- mcq: one letter key; 4 plausible options of similar length; exactly one defensibly correct.
+- multi_select: 2-3 correct; comma-letter key; MRQ_AON set ("false" = partial credit).
+- true_false: A="True", B="False"; key = "True"/"False"; statements must be unambiguously one or the other.
+- short_answer: 1-3 word answers; Accept = pipe-separated synonyms/alternative spellings; question ends with ___.
+- numeric: single definite value; Tolerance (e.g. 0.05) and Unit mandatory; no compound calculations without stated intermediate results.
+- matching: Pairs = [{"l":"…","r":"…"},…] 4-6 pairs + 1-2 {"l":"DISTRACTOR","r":"…"} decoys.
+- ordering: Items = ["…","…"] in correct order; the platform scrambles them.
+- cloze: one ___ per blank; Items = one answer per blank, in order.
+- categorization: Pairs = [{"l":"item","r":"category"},…]; every item categorised.
+
+EXPLANATION STANDARD — every row, 40-70 words, four moves:
+1. VERDICT — restate the correct answer in full words.
+2. REASONING — the working or rule, in logical order.
+3. MISCONCEPTIONS — why each tempting distractor fails (name the misconception it embeds), or the one classic wrong method for typed types.
+4. TAKEAWAY — one transferable rule for the candidate.
+
+QUALITY GATES (silently self-check, then fix, before you answer)
+G1. Exact count and per-section budgets; type mix as ordered.
+G2. Every row has exactly 17 columns; JSON cells are valid one-line JSON.
+G3. Every Explanation has all four moves; no row without an explanation.
+G4. Difficulty spread within ±10% of 40% easy / 40% medium / 20% hard.
+G5. No duplicate stems, no "all/none of the above", no opinion items, no content outside the stated syllabus.
+G6. Maths in plain text (x^2, sqrt(x), 3/4); no LaTeX.
+Then output the final CSV block only.</pre>
+    </div>
+
+    <!-- STRICT UTME -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>🎓 Strict UTME / JAMB Multi-Subject Sitting <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(4 subjects · one code · tabbed paper)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">Builds the 4-in-1 paper this platform runs in tabbed multi-subject mode — the Section column splits it into subject tabs. Ask the AI to attach a <b>downloadable .csv file</b>; then import it in one step on the <a href="cbt-multi.html">Multi-Subject Builder</a> ⚡ Fast lane.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-utme')">📋 Copy UTME strict prompt</button>
+      <a class="btn btn-sm btn-outline" style="margin-left:6px;" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample CSV</a>
+      <pre id="lib-utme" class="prompt-pre">You are a UTME preparation expert with 20 years of JAMB standard item-writing.
+
+TASK: Write a complete 4-subject UTME-style paper. Subjects and counts:
+  {{e.g. "English: 30, Mathematics: 25, Physics: 20, Chemistry: 20" — total exactly {{TOTAL}} questions}}.
+All questions are 4-option mcq. One mark each.
+
+OUTPUT: ONE CSV code block with this exact header:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+
+STRICT RULES
+1. 17 columns per row. Every cell double-quoted; inner quotes doubled. No newlines inside cells.
+2. Column 17 (Section) = the SUBJECT NAME on every row (e.g. "English"). The platform uses this column to build the subject tabs — never leave it empty and never invent other values.
+3. JAMB/UTME standard: options of similar length; one defensibly correct answer; no "all/none of the above"; stems state exactly one problem; SS2-SS3 syllabus scope only; nothing outside the stated subject.
+4. English sections to cover: comprehension-inference, lexis and structure, oral forms, register. Science subjects: spread across the syllabus proportionally.
+5. Explanation (column 7) MANDATORY on every row, 3-5 sentences: correct answer in words → the rule/working → why the two most tempting wrong options fail.
+6. Difficulty per subject: roughly 50% easy, 35% medium, 15% hard, recorded in column 15.
+7. Output ONLY the CSV block.</pre>
+    </div>
+
+    <!-- STRICT MCQ -->
+    <div class="pack-card" style="margin-bottom:14px;">
+      <h4>✅ Strict MCQ-Only Paper <span style="font-weight:400;color:var(--text-muted);font-size:.8rem;">(pure 4-option · imports into any CBT)</span></h4>
+      <p style="color:var(--text-muted);font-size:.82rem;margin:6px 0 8px;">The most compatible format on earth — use it when the bank must load into other CBT software too.</p>
+      <button class="btn btn-sm btn-primary" onclick="PS.copy('lib-mcqonly')">📋 Copy MCQ-only strict prompt</button>
+      <pre id="lib-mcqonly" class="prompt-pre">You are an expert item writer. Write {{N}} four-option multiple-choice questions on {{SUBJECT/TOPIC}} at {{LEVEL}} level.
+
+OUTPUT: ONE CSV code block with this exact header:
+Question,A,B,C,D,CorrectAnswer,Explanation,Type,Tolerance,Unit,Accept,MRQ_AON,Pairs,Items,Difficulty,Tags,Section
+
+STRICT RULES
+1. Every row: Question text, exactly 4 option texts in A-D, one letter (A/B/C/D) in CorrectAnswer, a full explanation in column 7, "mcq" in column 8. Columns 9-14 empty. Difficulty, Tags, Section filled.
+2. 17 columns per row, every cell double-quoted, inner quotes doubled, no line breaks in cells.
+3. Exactly one correct answer per question; three distractors each embedding a DIFFERENT specific misconception; all four options similar in length and style.
+4. Explanation: 3-5 sentences — correct answer in words, the rule or working, and why the most tempting distractor is wrong.
+5. No "all of the above", "none of the above", no negative stems unless the skill itself requires them, no trick questions.
+6. Difficulty: {{e.g. "40% easy, 40% medium, 20% hard"}}.
+7. Output ONLY the CSV block — no preamble, no notes.</pre>
+    </div>
+  </div>
+
+  <!-- STEP BY STEP -->
+  <div class="card">
+    <h2>🧭 Step-by-step: from prompt to loaded question bank</h2>
+    <div class="grid-2" style="gap:12px;">
+      <div><span class="step-pill">1</span><b>Copy a prompt</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Use the studio above or one of the six library prompts. Fill the {{placeholders}} — subject, level, count, mix.</p></div>
+      <div><span class="step-pill">2</span><b>Paste into any AI chat</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">ChatGPT, Claude, DeepSeek, Gemini — free tiers are fine. This platform never calls an AI API; you stay in control and pay nothing.</p></div>
+      <div><span class="step-pill">3</span><b>Save the CSV it returns</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Copy the code block the AI outputs and save it as <span class="code-chip">questions.csv</span> (UTF-8). Don't paste the AI's commentary — just the CSV.</p></div>
+      <div><span class="step-pill">4</span><b>Validate on this page</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Scroll to <i>Test &amp; Load AI Output</i>, paste or upload the file, click Validate. The validator checks the header, row shapes, answer keys and JSON cells, and reports problems per row.</p></div>
+      <div><span class="step-pill">5</span><b>Load into the Teacher Hub</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Click <i>Load into Teacher Hub</i>. Your validated questions land in the import buffer ready to become an exam.</p></div>
+      <div><span class="step-pill">6</span><b>Preview as a student</b><p style="color:var(--text-muted);font-size:.85rem;margin:6px 0 0;">Create the exam, open the student preview, and check one matching and one ordering question render properly. Regenerate any lazy rows by telling the AI: "Rewrite rows 7, 12, 19 with full four-move explanations."</p></div>
+    </div>
+  </div>
+
+  <!-- WHAT IS THIS PAGE -->
+  <div class="card">
+    <h2>❓ What is this page?</h2>
+    <p style="color:var(--text-muted);font-size:.9rem;line-height:1.7;">
+      <b style="color:var(--text);">AI Prompts Studio</b> is the teacher's question-writing workbench. This platform deliberately ships with
+      <b style="color:var(--text);">no paid AI API</b> — instead it gives you battle-tested prompt packs that make any free AI chat produce
+      <b style="color:var(--text);">CSV question banks in this platform's exact 17-column format</b>, plus a validator that checks the AI's
+      work row-by-row before anything reaches your question bank. The <b style="color:var(--text);">studio</b> tailors a prompt to your subject,
+      board and type mix; the <b style="color:var(--text);">library</b> holds the finished classics; the <b style="color:var(--text);">validator</b>
+      is the quality gate. Everything is free, offline-capable and private — your questions only ever move between your browser, your AI chat,
+      and your Supabase database. A printable master copy of the prompt also ships with the platform as
+      <span class="code-chip">PROMPT_TEMPLATE.md</span> in the site root.
+    </p>
+  </div>
+
+  <!-- THE CSV CONTRACT -->
+  <div class="card">
+    <h2>📜 The 17-column CSV contract (all packs share it)</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">This exact header is what the Teacher Hub importer parses. Every generated prompt enforces it character-for-character, and every field is double-quoted with inner quotes doubled.</p>
+    <div class="table-wrap">
+      <table class="contract-table">
+        <tr><th>#</th><th>Column</th><th>Purpose</th><th>Required for</th></tr>
+        <tr><td>1</td><td><span class="code-chip">Question</span></td><td>Question text. <span class="code-chip">&lt;br&gt;</span> for line breaks; $…$ for LaTeX; [[tappable]] for hot_text.</td><td>All types</td></tr>
+        <tr><td>2–5</td><td><span class="code-chip">A B C D</span></td><td>Options. C/D empty for True/False.</td><td>mcq, multi_select, true_false</td></tr>
+        <tr><td>6</td><td><span class="code-chip">CorrectAnswer</span></td><td>A/B/C/D · "A,C" for multi-select · numeric value · "True"/"False" · exact short text · "essay".</td><td>All objective types</td></tr>
+        <tr><td>7</td><td><span class="code-chip">Explanation</span></td><td>The 4-move marking scheme: verdict in words → numbered reasoning → misconceptions → takeaway.</td><td>All types (never empty)</td></tr>
+        <tr><td>8</td><td><span class="code-chip">Type</span></td><td>One of the 20 types (see table below).</td><td>All</td></tr>
+        <tr><td>9</td><td><span class="code-chip">Tolerance</span></td><td>Numeric marking margin, e.g. 0.05.</td><td>numeric, multi_numeric</td></tr>
+        <tr><td>10</td><td><span class="code-chip">Unit</span></td><td>Unit symbol shown to the candidate (m/s, kg, ₦, °C).</td><td>numeric</td></tr>
+        <tr><td>11</td><td><span class="code-chip">Accept</span></td><td>Pipe-separated accepted synonyms for short answers.</td><td>short_answer</td></tr>
+        <tr><td>12</td><td><span class="code-chip">MRQ_AON</span></td><td>"true" = all-or-nothing marking, "false" = partial credit.</td><td>multi_select</td></tr>
+        <tr><td>13</td><td><span class="code-chip">Pairs</span></td><td>JSON [{l,r}] — matching &amp; categorization pairs.</td><td>matching, categorization</td></tr>
+        <tr><td>14</td><td><span class="code-chip">Items</span></td><td>JSON — assertion/reason, passages, ordering arrays, multi-part numerics, images, hotspots, essay guides, code specs.</td><td>most interactive types</td></tr>
+        <tr><td>15</td><td><span class="code-chip">Difficulty</span></td><td>easy | medium | hard.</td><td>Optional (all)</td></tr>
+        <tr><td>16</td><td><span class="code-chip">Tags</span></td><td>Comma-separated topics/misconceptions/domains.</td><td>Optional (all)</td></tr>
+        <tr><td>17</td><td><span class="code-chip">Section</span></td><td>Subject name — the platform splits multi-subject papers into tabs by this column.</td><td>Multi-subject papers</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- THE 18 TYPES -->
+  <div class="card">
+    <h2>🧩 The 20 question types this platform marks</h2>
+    <p style="color:var(--text-muted);font-size:.8rem;margin:0 0 10px;">Full reference with copy-paste examples for every type: <a href="question-types.html" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;">📖 Question Type Reference</a>.</p>
+    <div class="table-wrap">
+      <table class="contract-table">
+        <tr><th>Type (Col8)</th><th>Candidate interaction</th><th>Type (Col8)</th><th>Candidate interaction</th></tr>
+        <tr><td><span class="code-chip">mcq</span></td><td>Choose 1 of 4 options</td><td><span class="code-chip">matching</span></td><td>Match left items to right items</td></tr>
+        <tr><td><span class="code-chip">multi_select</span></td><td>Choose 2–3 of 4 (partial credit)</td><td><span class="code-chip">ordering</span></td><td>Drag items into the correct order</td></tr>
+        <tr><td><span class="code-chip">true_false</span></td><td>True or False</td><td><span class="code-chip">categorization</span></td><td>Sort items into groups</td></tr>
+        <tr><td><span class="code-chip">short_answer</span></td><td>Type the exact answer (synonyms accepted)</td><td><span class="code-chip">matrix</span></td><td>Fill a Yes/No grid</td></tr>
+        <tr><td><span class="code-chip">numeric</span></td><td>Type a number (± tolerance, with unit)</td><td><span class="code-chip">hot_text</span></td><td>Tap the correct words in a sentence</td></tr>
+        <tr><td><span class="code-chip">multi_numeric</span></td><td>Multi-part numeric answers</td><td><span class="code-chip">assertion_reason</span></td><td>Assertion &amp; Reason judgement</td></tr>
+        <tr><td><span class="code-chip">range</span></td><td>Any value inside an accepted interval</td><td><span class="code-chip">evidence_mcq</span></td><td>Two-part: answer, then the evidence for it</td></tr>
+        <tr><td><span class="code-chip">cloze</span></td><td>Fill numbered gaps {{1}} {{2}}</td><td><span class="code-chip">case_study</span></td><td>Passage-pinned questions</td></tr>
+        <tr><td><span class="code-chip">image_based</span></td><td>Question with an image/diagram</td><td><span class="code-chip">hotspot</span></td><td>Click labelled points on a diagram</td></tr>
+        <tr><td><span class="code-chip">essay</span></td><td>Long-form answer with word limits</td><td><span class="code-chip">code</span></td><td>Code / SQL output or solution</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI OUTPUT VALIDATOR & INSTANT LOADER (kept from v3, hardened) -->
+  <div class="card">
+    <h2>🧪 Test &amp; Load AI Output into Question Bank</h2>
+    <p>Paste the CSV/JSON output returned by your AI assistant below (or load the downloaded file) to validate its syntax and verify the questions before loading.</p>
+
+    <textarea id="ai-raw-response" style="height:160px;font-family:ui-monospace,Consolas,monospace;font-size:12px;margin-bottom:10px;" placeholder="Paste AI CSV or JSON response here…"></textarea>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      <label class="btn btn-sm btn-outline" style="cursor:pointer;">📁 Load .csv/.json/.txt file<input type="file" id="ai-file-input" accept=".csv,.json,.txt" style="display:none;" onchange="loadAIFile(this)"></label>
+      <button class="btn btn-primary" onclick="validateAndPreviewQuestions()">🔍 Validate AI Output</button>
+      <button class="btn btn-accent" onclick="loadIntoTeacherHub()">📥 Load into Teacher Dashboard</button>
+    </div>
+
+    <div id="ai-preview-box" style="margin-top:16px;display:none;"></div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script src="assets/js/prompt-studio.js"></script>
+<script>
+/* ── Pack card grid + selector wiring ── */
+function renderPackGrid() {
+  const grid = document.getElementById('ps-pack-grid');
+  const sel = document.getElementById('ps-pack');
+  if (!grid || !sel) return;
+  grid.innerHTML = Object.entries(PS.PACKS).map(([id, P]) => `
+    <div class="pack-card ${sel.value === id ? 'active' : ''}" onclick="selectPack('${id}')">
+      <h4>${escapeHtml(P.label)}</h4>
+      <p>${Object.keys(P.ref).length} type${Object.keys(P.ref).length > 1 ? 's' : ''} · ${P.minOne ? 'every type guaranteed' : 'focused mix'}</p>
+    </div>`).join('');
+}
+
+function selectPack(id) {
+  document.getElementById('ps-pack').value = id;
+  PS.syncFields();
+  PS.buildFromForm();
+  renderPackGrid();
+}
+
+function fillSubjects(group) {
+  const list = PS.SUBJECT_SUGGESTIONS[group] || [];
+  document.getElementById('ps-subjects-list').value = list.join(', ');
+  PS.syncSubjectTopics();
+  PS.buildFromForm();
+  showToast(group + ' subjects loaded (' + list.length + ')', 'success');
+}
+
+function loadStatic(key) {
+  const s = PS.STATIC[key];
+  if (!s) return;
+  document.getElementById('ps-out').value = s.text;
+  showToast('Classic prompt loaded — copy it below', 'success');
+  document.getElementById('ps-out').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ── Validator + Teacher Hub loader (preserved from v3, hardened) ── */
+let parsedQuestionsBuffer = [];
+
+function parseCSVLine(line) {
+  const out = [];
+  let cur = '', inQ = false;
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (line[i + 1] === '"') { cur += '"'; i++; }
+        else inQ = false;
+      } else cur += ch;
+    } else {
+      if (ch === '"') inQ = true;
+      else if (ch === ',') { out.push(cur); cur = ''; }
+      else cur += ch;
+    }
+  }
+  out.push(cur);
+  return out.map(s => s.trim());
+}
+
+function validateAndPreviewQuestions() {
+  const raw = document.getElementById('ai-raw-response').value.trim();
+  if (!raw) return showToast('Please paste the AI output first (or load a file).', 'warning');
+  const box = document.getElementById('ai-preview-box');
+  box.style.display = 'block';
+
+  try {
+    if (raw.startsWith('[') || raw.startsWith('{')) {
+      let json = raw;
+      try { parsedQuestionsBuffer = JSON.parse(json); }
+      catch (_) {
+        // AI chats often wrap JSON in ```json fences
+        json = raw.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
+        parsedQuestionsBuffer = JSON.parse(json);
+      }
+      if (!Array.isArray(parsedQuestionsBuffer)) parsedQuestionsBuffer = [parsedQuestionsBuffer];
+      parsedQuestionsBuffer = parsedQuestionsBuffer.map(q => ({
+        q: q.Question || q.q || '', a: q.A || q.a || '', b: q.B || q.b || '',
+        c: q.C || q.c || '', d: q.D || q.d || '',
+        ans: q.CorrectAnswer || q.ans || '', exp: q.Explanation || q.exp || '',
+        type: q.Type || q.type || 'mcq'
+      }));
+    } else {
+      // CSV — strip optional markdown fences, split lines, honour quoted commas
+      const clean = raw.replace(/^```[a-z]*\s*/i, '').replace(/```\s*$/, '').trim();
+      const lines = clean.split(/\r?\n/).filter(l => l.trim());
+      const hasHeader = /^["']?question/i.test(lines[0]);
+      const dataLines = hasHeader ? lines.slice(1) : lines;
+      parsedQuestionsBuffer = dataLines.map((line, idx) => {
+        const p = parseCSVLine(line);
+        return {
+          q: p[0] || `Question ${idx + 1}`, a: p[1] || '', b: p[2] || '',
+          c: p[3] || '', d: p[4] || '', ans: p[5] || 'A',
+          exp: p[6] || '', type: (p[7] || 'mcq').toLowerCase()
+        };
+      });
+    }
+
+    const n = parsedQuestionsBuffer.length;
+    const withExp = parsedQuestionsBuffer.filter(q => (q.exp || '').length > 20).length;
+    const problems = parsedQuestionsBuffer.filter(q => !q.q || (['mcq', 'true_false', 'multi_select'].includes(q.type) && !q.ans));
+
+    box.innerHTML = `
+      <div style="background:var(--surface-2);border:1px solid ${n ? 'var(--primary)' : 'var(--danger)'};border-radius:var(--radius-sm);padding:14px;">
+        <strong style="color:${n ? 'var(--primary)' : 'var(--danger)'};">${n ? '✅ Validated ' + n + ' Question(s) Successfully!' : '❌ No questions found'}</strong>
+        <div style="margin-top:6px;font-size:12px;color:var(--text-muted);">
+          ${withExp}/${n} carry full explanations (4-move standard) · ${problems.length ? '⚠️ ' + problems.length + ' row(s) missing question text or answer key — they will still load but review them' : 'All rows have answer keys ✓'}
+        </div>
+        <div style="margin-top:8px;max-height:220px;overflow-y:auto;font-size:12px;">
+          ${parsedQuestionsBuffer.map((q, i) => `<div style="padding:4px 0;border-bottom:1px solid var(--border);">Q${i + 1}. ${escapeHtml(String(q.q).slice(0, 110))} <span class="badge badge-info">${escapeHtml(q.type)}</span> (Ans: ${escapeHtml(String(q.ans).slice(0, 40))})</div>`).join('')}
+        </div>
+      </div>`;
+    showToast(`Validated ${n} questions!`, 'success');
+  } catch (e) {
+    box.innerHTML = `<div style="color:var(--danger);background:var(--danger-dim);border-radius:var(--radius-sm);padding:12px;">❌ Parse error: ${escapeHtml(e.message)}<br><small>Tip: ask the AI to re-send as a downloadable .csv file and load the file with the 📁 button instead of pasting.</small></div>`;
+  }
+}
+
+function loadAIFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('ai-raw-response').value = String(reader.result || '');
+    showToast('File loaded — click Validate', 'success');
+    validateAndPreviewQuestions();
+  };
+  reader.readAsText(f);
+}
+
+function loadIntoTeacherHub() {
+  if (!parsedQuestionsBuffer.length) return showToast('Validate questions before loading.', 'warning');
+  localStorage.setItem('cbt_imported_ai_questions', JSON.stringify(parsedQuestionsBuffer));
+  showToast('Questions saved! Redirecting to Teacher Hub...', 'success');
+  setTimeout(() => window.location.href = 'teacher.html', 1000);
+}
+
+/* ── Boot ── */
+document.addEventListener('DOMContentLoaded', () => {
+  const sel = document.getElementById('ps-pack');
+  sel.innerHTML = Object.entries(PS.PACKS).map(([id, P]) => `<option value="${id}">${escapeHtml(P.label)}</option>`).join('');
+  sel.value = 'simple';
+  renderPackGrid();
+  PS.syncFields();
+  PS.buildFromForm();
+});
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

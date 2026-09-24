@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Trail & Activity Log — HMG Academy CBT Pro</title>
+  <meta name="description" content="Audit trail of every sign-in, exam, result, export and administrative action on HMG Academy CBT Pro — searchable, filterable and printable.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .log-row{padding:9px 12px;border:1px solid var(--border);border-radius:9px;margin:6px 0;font-size:12.5px;background:var(--surface-2);}
+  .act-chip{font-family:ui-monospace,Consolas,monospace;font-size:10.5px;background:var(--primary-dim);color:var(--primary);border-radius:6px;padding:1px 7px;font-weight:700;}
+  .bar-wrap{display:flex;align-items:flex-end;gap:2px;height:70px;margin-top:10px;}
+  .bar{flex:1;background:linear-gradient(180deg,var(--primary),var(--accent));border-radius:3px 3px 0 0;min-height:2px;position:relative;}
+  .bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface-hover,#323238);border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:10px;white-space:nowrap;z-index:5;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Audit & Activity Log</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📊 Audit / Activity Log</h1>
+      <p>Every privileged action on the platform — approvals, role changes, purges, restores, settings edits, keep-alive heartbeats — recorded server-side by SECURITY DEFINER RPCs and searchable here.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="loadAuditLogs()">🔄 Refresh</button>
+      <button class="btn btn-outline" onclick="exportAuditLogsCSV()">⬇️ Export CSV</button>
+      <button class="btn btn-outline" onclick="printAuditReport()">🖨️ Print / PDF Report</button>
+      <button class="btn btn-outline" id="tail-btn" onclick="toggleTail()">🔴 Live tail: off</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ STATS ═══════════ -->
+  <div class="grid-4">
+    <div class="stat-box"><div class="stat-lbl">Total Events</div><div class="stat-val" id="s-total">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Last 24 h</div><div class="stat-val" id="s-24h">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Last 7 days</div><div class="stat-val" id="s-7d">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Unique Actors</div><div class="stat-val" id="s-actors">—</div></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 Activity — last 30 days</h2>
+    <div class="bar-wrap" id="daily-chart"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load statistics.</em></div>
+    <h3>Top actions</h3>
+    <div id="top-actions" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+  </div>
+
+  <!-- ═══════════ FILTERS ═══════════ -->
+  <div class="card">
+    <h2>🔎 Search the trail</h2>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:200px;">
+        <label>Action contains</label>
+        <input type="search" id="f-action" placeholder="e.g. admin_set_profile_status" oninput="debouncedLoad()">
+      </div>
+      <div style="flex:1;min-width:200px;">
+        <label>Actor email contains</label>
+        <input type="search" id="f-actor" placeholder="e.g. admin@school" oninput="debouncedLoad()">
+      </div>
+      <div>
+        <label>From</label>
+        <input type="date" id="f-from" onchange="loadAuditLogs()">
+      </div>
+      <div>
+        <label>To</label>
+        <input type="date" id="f-to" onchange="loadAuditLogs()">
+      </div>
+      <div>
+        <label>Page size</label>
+        <select id="f-limit" onchange="loadAuditLogs()"><option>50</option><option selected>100</option><option>250</option><option>500</option></select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ LOG LIST ═══════════ -->
+  <div class="card">
+    <div class="flex-between" style="flex-wrap:wrap;gap:8px;">
+      <h2 style="margin:0;">📜 Events <span id="shown-info" style="font-weight:400;font-size:.85rem;color:var(--text-muted);"></span></h2>
+      <div class="flex-gap">
+        <button class="btn btn-sm btn-outline" onclick="pagePrev()">◀ Newer</button>
+        <button class="btn btn-sm btn-outline" onclick="pageNext()">Older ▶</button>
+      </div>
+    </div>
+    <div id="audit-list"><em style="color:var(--text-muted);">Loading…</em></div>
+  </div>
+
+  <!-- ═══════════ RETENTION & PURGE (owner) ═══════════ -->
+  <div class="card" style="border-color:rgba(239,68,68,0.35);">
+    <h2 style="color:var(--warning);">🧹 Audit Log Retention &amp; Purge (owner only)</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Older audit rows consume free-tier database space. The purge RPC refuses to touch the most recent 7 days and returns the purged rows so they are offered as a downloadable archive first. The term-end rhythm: archive → download → purge (Storage Manager automates the same flow for results).</p>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
+      <label style="margin:0;">Purge events older than</label>
+      <input type="date" id="purge-before" style="width:auto;">
+      <button class="btn btn-danger" onclick="purgeOld()">🧹 Purge (with download)</button>
+    </div>
+    <div id="purge-result" style="margin-top:10px;display:none;"></div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script>
+let PAGE = 0;
+let TAIL = null;
+let _t = null;
+
+function debouncedLoad() { clearTimeout(_t); _t = setTimeout(loadAuditLogs, 350); }
+
+async function loadAuditLogs() {
+  const el = document.getElementById('audit-list');
+  el.innerHTML = '<em style="color:var(--text-muted);">Loading…</em>';
+  const action = document.getElementById('f-action').value.trim();
+  const actor = document.getElementById('f-actor').value.trim();
+  const from = document.getElementById('f-from').value;
+  const to = document.getElementById('f-to').value;
+  const limit = +document.getElementById('f-limit').value;
+  try {
+    const logs = await App.sbRpc('admin_get_audit_logs', {
+      p_limit: limit, p_offset: PAGE * limit,
+      p_action: action, p_actor: actor,
+      p_from: from ? new Date(from + 'T00:00:00').toISOString() : null,
+      p_to: to ? new Date(to + 'T23:59:59').toISOString() : null
+    });
+    document.getElementById('shown-info').textContent = `— showing ${logs.length} event(s), page ${PAGE + 1}`;
+    el.innerHTML = logs.length ? logs.map(l => `
+      <div class="log-row">
+        <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
+          <div>
+            <span class="act-chip">${escapeHtml(l.action)}</span>
+            <strong>${escapeHtml(l.actor_email || 'system')}</strong>
+            ${l.entity_type ? `<span style="color:var(--text-muted);">· ${escapeHtml(l.entity_type)}${l.entity_id ? ' ' + escapeHtml(String(l.entity_id)).slice(0, 18) : ''}</span>` : ''}
+          </div>
+          <span style="color:var(--text-muted);">${new Date(l.created_at).toLocaleString()}</span>
+        </div>
+        ${l.metadata && Object.keys(l.metadata).length ? `<details style="margin-top:4px;"><summary style="font-size:11px;color:var(--text-muted);cursor:pointer;">metadata</summary><pre style="font-size:10.5px;white-space:pre-wrap;">${escapeHtml(JSON.stringify(l.metadata, null, 1))}</pre></details>` : ''}
+      </div>`).join('') : '<em style="color:var(--text-muted);">No events match the filters.</em>';
+  } catch (e) {
+    el.innerHTML = '<div style="color:var(--danger);">❌ ' + escapeHtml(e.message || e) + '<br><small>Admin sign-in required.</small></div>';
+  }
+  loadStats();
+}
+
+async function loadStats() {
+  try {
+    const r = await App.sbRpc('admin_get_audit_stats');
+    const s = Array.isArray(r) ? r[0] : r;
+    document.getElementById('s-total').textContent = Number(s.total_events || 0).toLocaleString();
+    document.getElementById('s-24h').textContent = Number(s.events_24h || 0).toLocaleString();
+    document.getElementById('s-7d').textContent = Number(s.events_7d || 0).toLocaleString();
+    document.getElementById('s-actors').textContent = Number(s.unique_actors || 0).toLocaleString();
+    // 30-day bar chart (pure CSS — no chart library needed)
+    const daily = s.daily_counts || {};
+    const days = Object.keys(daily).sort().slice(-30);
+    const max = Math.max(1, ...days.map(d => Number(daily[d] || 0)));
+    document.getElementById('daily-chart').innerHTML = days.length ? days.map(d =>
+      `<div class="bar" style="height:${(Number(daily[d]) / max) * 100}%" data-tip="${d}: ${daily[d]} events"></div>`).join('')
+      : '<em style="color:var(--text-muted);font-size:12px;">No events in the last 30 days.</em>';
+    const top = s.top_actions || {};
+    document.getElementById('top-actions').innerHTML = Object.entries(top).sort((a, b) => b[1] - a[1]).map(([a, c]) =>
+      `<span class="act-chip">${escapeHtml(a)} × ${c}</span>`).join('') || '<em style="color:var(--text-muted);">—</em>';
+  } catch (_) {}
+}
+
+function pageNext() { PAGE++; loadAuditLogs(); }
+function pagePrev() { if (PAGE > 0) { PAGE--; loadAuditLogs(); } }
+
+function toggleTail() {
+  const btn = document.getElementById('tail-btn');
+  if (TAIL) { clearInterval(TAIL); TAIL = null; btn.textContent = '🔴 Live tail: off'; btn.className = 'btn btn-outline'; return; }
+  TAIL = setInterval(loadAuditLogs, 20000);
+  btn.textContent = '🟢 Live tail: on (20s)'; btn.className = 'btn btn-primary';
+  showToast('Live tail on — refreshing every 20 seconds.', 'info');
+}
+
+async function exportAuditLogsCSV() {
+  try {
+    showToast('Exporting audit logs…', 'info');
+    const n = await DataPort.exportTableCSV('audit_logs');
+    if (!n) return showToast('No audit events to export.', 'info');
+    showToast(`${n} event(s) exported ✓`, 'success');
+  } catch (e) { showToast('Export failed: ' + (e.message || e), 'danger'); }
+}
+
+/* PHASE 12I — printable audit report: opens a clean print window with the
+   CURRENT filters applied (action / actor / date range), headers and a
+   signature line — "Save as PDF" from the browser print dialog. */
+async function printAuditReport() {
+  try {
+    showToast('Building printable report…', 'info');
+    const params = new URLSearchParams();
+    const act = document.getElementById('f-action').value.trim(); if (act) params.set('action', 'ilike.*' + act + '*');
+    const actor = document.getElementById('f-actor').value.trim(); if (actor) params.set('actor_email', 'ilike.*' + actor + '*');
+    const from = document.getElementById('f-from').value; if (from) params.set('created_at', 'gte.' + from + 'T00:00:00');
+    const to = document.getElementById('f-to').value; if (to) params.set('created_at', 'lte.' + to + 'T23:59:59');
+    params.set('order', 'created_at.desc'); params.set('limit', '500');
+    params.set('select', 'created_at,actor_email,action,entity_type,entity_id');
+    const rows = await App.sbFetch('/rest/v1/audit_logs?' + params.toString());
+    const w = window.open('', '_blank');
+    if (!w) return showToast('Allow popups to print the report.', 'warning');
+    const esc = (x) => String(x == null ? '' : x).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+    w.document.write('<html><head><title>Audit Report — ' + new Date().toLocaleString() + '</title>' +
+      '<style>body{font:12px/1.6 -apple-system,Segoe UI,Roboto,sans-serif;color:#111;margin:28px}' +
+      'h1{font-size:18px;margin:0 0 4px}p.sub{color:#555;margin:0 0 18px;font-size:11px}' +
+      'table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px 8px;text-align:left;vertical-align:top;font-size:10.5px}' +
+      'th{background:#f3f4f6}.sig{margin-top:36px;display:flex;gap:60px}.sig div{border-top:1px solid #333;padding-top:4px;font-size:11px;width:220px}' +
+      '@media print{body{margin:8mm}}</style></head><body>' +
+      '<h1>HMG CBT Pro — Audit &amp; Activity Report</h1>' +
+      '<p class="sub">Generated ' + new Date().toLocaleString() + ' · ' + rows.length + ' event(s)' +
+      (act ? ' · action ~ "' + esc(act) + '"' : '') + (actor ? ' · actor ~ "' + esc(actor) + '"' : '') +
+      (from || to ? ' · range ' + (from || '…') + ' → ' + (to || '…') : '') + '</p>' +
+      '<table><thead><tr><th>When</th><th>Actor</th><th>Action</th><th>Entity</th></tr></thead><tbody>' +
+      rows.map(r => '<tr><td>' + new Date(r.created_at).toLocaleString() + '</td><td>' + esc(r.actor_email || 'system') + '</td><td>' + esc(r.action) + '</td><td>' + esc((r.entity_type || '') + (r.entity_id ? ' #' + r.entity_id : '')) + '</td></tr>').join('') +
+      '</tbody></table>' +
+      '<div class="sig"><div>Prepared by (sign)</div><div>Reviewed by (sign)</div></div>' +
+      '</body></html>');
+    w.document.close();
+    setTimeout(() => w.print(), 400);
+  } catch (e) { showToast('Report failed: ' + (e.message || e), 'danger'); }
+}
+
+async function purgeOld() {
+  const before = document.getElementById('purge-before').value;
+  const box = document.getElementById('purge-result');
+  if (!before) return showToast('Pick a cutoff date first.', 'warning');
+  const beforeTs = new Date(before + 'T23:59:59').toISOString();
+  if (!confirm(`Purge all audit events older than ${before}? The purged rows will be offered as a downloadable JSON archive first (the RPC also refuses to purge the last 7 days).`)) return;
+  box.style.display = 'block';
+  box.innerHTML = '⏳ Purging… (owner-only RPC)';
+  try {
+    const r = await DataPort.purgeFromDb('audit_logs', beforeTs, 'audit-purge-' + Date.now());
+    const res = Array.isArray(r) ? r[0] : r;
+    const purged = res?.purged ?? 0;
+    const rows = res?.archived || [];
+    if (rows.length && confirm(`${purged} event(s) purged. Download the purged rows as JSON now?`)) {
+      DataPort.downloadJSON({ table: 'audit_logs', purged_at: new Date().toISOString(), rows }, `audit-purged-${before}.json`);
+    }
+    box.innerHTML = `✅ Purged <strong>${purged}</strong> event(s). ${rows.length ? 'Archive was offered for download.' : ''}`;
+    showToast(`Purged ${purged} audit event(s) ✓`, 'success');
+    loadAuditLogs();
+  } catch (e) {
+    box.innerHTML = '❌ ' + escapeHtml(e.message || e);
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const d = new Date(); d.setMonth(d.getMonth() - 6);
+  document.getElementById('purge-before').value = d.toISOString().slice(0, 10);
+  loadAuditLogs();
+});
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

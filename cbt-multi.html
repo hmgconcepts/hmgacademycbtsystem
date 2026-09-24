@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Multi-Subject CBT Builder — HMG Academy CBT Pro</title>
+  <meta name="description" content="Multi-subject exam builder: combine subjects, sections and all 20 question types into one timed CBT paper for HMG Academy CBT Pro.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Multi-Subject UTME / JAMB Builder</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <!-- PHASE 11 WIRING FIX: proactive sign-in banner. The publish flow needs a
+       TEACHER session (teacher.html stores it under 'cbt_pro_session'); if the
+       visitor is not signed in as a teacher, say so up front — before they
+       upload CSVs and hit the publish wall. -->
+  <div id="teacher-session-banner" class="hidden" style="margin-bottom:16px;padding:14px 18px;border-radius:12px;background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.35);display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+    <span style="font-size:20px;">🔐</span>
+    <div style="flex:1;min-width:240px;font-size:14px;line-height:1.6;">
+      <b>Publishing requires a teacher account.</b><br>
+      <span style="font-size:13px;color:var(--text-muted,#666);">You are not currently signed in as a teacher. You can build the package now, but you must sign in before publishing — packages must be owned by a teacher account.</span>
+    </div>
+    <a href="teacher.html" class="btn btn-primary" style="text-decoration:none;padding:9px 16px;font-size:13px;">Open Teacher Hub to sign in →</a>
+  </div>
+  <div class="card-title-row">
+    <div>
+      <h1>🧪 Multi-Subject CBT Package Builder</h1>
+      <p>Create a combined multi-subject examination (e.g. UTME / JAMB with English, Mathematics, Physics, Chemistry). Candidates receive ONE access code and can switch subject tabs during the test.</p>
+    </div>
+    <button class="btn btn-primary" onclick="publishMultiSubjectExam()">🚀 Publish Combined Assessment</button>
+  </div>
+
+  <div class="grid-2">
+    <!-- Exam General Settings -->
+    <div class="card">
+      <h2>⚙️ Combined Exam Parameters</h2>
+
+      <label>Package Title</label>
+      <input type="text" id="ms-title" value="UTME 2026 Mega Mock Assessment" placeholder="e.g. JAMB UTME Comprehensive Practice">
+
+      <div class="grid-2">
+        <div>
+          <label>Target Class / Level</label>
+          <input type="text" id="ms-class" value="SS 3 / UTME Candidates" placeholder="e.g. SS 3">
+        </div>
+        <div>
+          <label>Total Combined Duration (Mins)</label>
+          <input type="number" id="ms-duration" value="120" min="10" max="360">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Max Candidate Attempts</label>
+          <input type="number" id="ms-attempts" value="1" min="1" max="99">
+        </div>
+        <div>
+          <label>Negative Marking Penalty</label>
+          <input type="number" id="ms-negative" value="0" step="0.25" min="0">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Term</label>
+          <select id="ms-term">
+            <option value="1st Term">1st Term</option>
+            <option value="2nd Term">2nd Term</option>
+            <option value="3rd Term">3rd Term</option>
+          </select>
+        </div>
+        <div>
+          <label>Session</label>
+          <input type="text" id="ms-session" value="2025/2026" placeholder="e.g. 2025/2026">
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div>
+          <label>Paper Type</label>
+          <input type="text" id="ms-type" value="UTME / Common Entrance" placeholder="e.g. UTME / Common Entrance">
+        </div>
+        <div>
+          <label>Pass Mark (%)</label>
+          <input type="number" id="ms-passmark" value="50" min="1" max="100">
+        </div>
+      </div>
+
+      <label>Exam Instructions</label>
+      <textarea id="ms-instructions" style="height:80px;" placeholder="e.g. You have 2 hours to complete all 4 subjects. You can switch between subjects at any time."></textarea>
+
+      <!-- PHASE 10 — delivery & scoring -->
+      <label style="margin-top:10px;">Feedback Mode (Phase 10)</label>
+      <select id="ms-feedback">
+        <option value="end">🔒 Standard — results at the end (exam conditions)</option>
+        <option value="immediate">⚡ Practice — instant right/wrong + explanation per question, with points &amp; streaks</option>
+      </select>
+      <label style="margin-top:10px;">Score Model (Phase 10)</label>
+      <select id="ms-score-model">
+        <option value="utme400">UTME /400 — JAMB-style aggregate (each subject contributes up to 100) — recommended</option>
+        <option value="standard">Percent — classic percentage</option>
+      </select>
+    </div>
+
+    <!-- Subjects Manager -->
+    <div class="card">
+      <div class="flex-between" style="margin-bottom:12px;">
+        <h2>📚 Subjects in Package</h2>
+        <button class="btn btn-sm btn-outline" onclick="addSubjectSlot()">➕ Add Subject</button>
+      </div>
+
+      <!-- ⚡ FAST LANE: one combined CSV (what the AI Prompt Studio multi-subject
+           pack produces). The Section column names each row's subject — this
+           splits the file into subject blocks automatically, exactly like the
+           School Connect / GOSA Portal multi-subject builder. -->
+      <div style="border:2px dashed var(--primary);border-radius:var(--radius-sm);padding:14px;margin-bottom:14px;background:var(--surface-2);">
+        <strong style="color:var(--primary);">⚡ Fast lane — one combined CSV (recommended)</strong>
+        <p style="font-size:12px;color:var(--text-muted);margin:6px 0 8px;">
+          Got ONE file with a <code>Section</code> column naming each row's subject — what the
+          <a href="cbt-prompts.html">AI Prompts Studio</a> multi-subject pack (UTME / Common Entrance) produces?
+          Paste or upload it here and the subject blocks below fill themselves.
+          School Connect / GOSA Portal CSVs work unchanged too.
+        </p>
+        <textarea id="ms-combined" rows="4" style="font-family:monospace;font-size:.78rem;width:100%;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);padding:8px;" placeholder="Question,A,B,C,D,CorrectAnswer,Explanation,Type,...,Section  (one file, all subjects)"></textarea>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+          <input type="file" accept=".csv,.json,.txt" onchange="readCombinedFile(this)" style="font-size:11px;max-width:240px;">
+          <button class="btn btn-sm btn-primary" onclick="importCombinedCSV()">🪄 Split into subjects</button>
+          <a class="btn btn-sm btn-outline" href="database/sample-multi-subject.csv" download="hmg-cbt-multi-subject-sample.csv">⬇️ Sample CSV</a>
+          <span id="ms-combined-note" style="font-size:11px;color:var(--text-muted);"></span>
+        </div>
+      </div>
+
+      <p style="font-size:12px;">…or add one block per subject manually. Attach that subject's CSV or JSON question bank. Need questions? Open the <a href="cbt-prompts.html">AI Prompts Studio</a>.</p>
+
+      <div id="subject-slots-container"></div>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/csv-bridge.js"></script>
+<script>
+let subjectsList = [
+  { name: 'Use of English', count: 60, questions: [] },
+  { name: 'Mathematics', count: 40, questions: [] },
+  { name: 'Physics', count: 40, questions: [] },
+  { name: 'Chemistry', count: 40, questions: [] }
+];
+
+function renderSubjectSlots() {
+  const container = document.getElementById('subject-slots-container');
+  container.innerHTML = subjectsList.map((s, idx) => `
+    <div style="background:var(--surface-2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:12px;">
+      <div class="flex-between" style="margin-bottom:8px;">
+        <strong style="color:var(--primary);">Subject ${idx + 1}: ${escapeHtml(s.name)}</strong>
+        ${subjectsList.length > 1 ? `<button class="btn btn-sm btn-danger" onclick="removeSubjectSlot(${idx})">✕</button>` : ''}
+      </div>
+      <div class="grid-2">
+        <div>
+          <label>Subject Name</label>
+          <input type="text" value="${escapeHtml(s.name)}" oninput="subjectsList[${idx}].name = this.value.trim()" style="margin-bottom:6px;">
+        </div>
+        <div>
+          <label>Question Count (0 = all loaded)</label>
+          <input type="number" value="${s.count}" oninput="subjectsList[${idx}].count = Number(this.value)" style="margin-bottom:6px;">
+        </div>
+      </div>
+      <div style="font-size:12px;color:var(--text-muted);display:flex;justify-content:space-between;align-items:center;margin-top:6px;">
+        <span>Loaded: <strong>${s.questions.length} questions</strong>${s.questions.length ? ` · types: ${[...new Set(s.questions.map(q => q.type || 'mcq'))].join(', ')}` : ''}</span>
+        <input type="file" accept=".csv,.json" onchange="loadSubjectFile(${idx}, this.files[0])" style="font-size:11px;">
+      </div>
+    </div>
+  `).join('');
+}
+
+function addSubjectSlot() {
+  subjectsList.push({ name: `Subject ${subjectsList.length + 1}`, count: 40, questions: [] });
+  renderSubjectSlots();
+}
+
+function removeSubjectSlot(idx) {
+  subjectsList.splice(idx, 1);
+  renderSubjectSlots();
+}
+
+/* ── Parse ANY question file (CSV text or JSON text) with the platform's
+   universal bridge — handles the HMG 17-column layout, School Connect /
+   GOSA Portal headers, headerless positional layouts, quoted multi-line
+   fields and type-name aliases. Never the naive line-split. ── */
+function parseQuestionFileText(text) {
+  const t = String(text || '').trim();
+  if (!t) return [];
+  if (t.startsWith('[')) {
+    const arr = JSON.parse(t);
+    return Array.isArray(arr) ? arr : [];
+  }
+  if (t.startsWith('{')) {
+    const o = JSON.parse(t);
+    const qs = Array.isArray(o.questions) ? o.questions : [];
+    return window.CSVBridge ? CSVBridge.normalizeQuestions(qs) : qs;   /* PHASE 12G */
+  }
+  const res = window.CSVBridge ? CSVBridge.parse(t) : { questions: [] };
+  /* PHASE 12G — publish-time doctor: what lands in subjects_data is the
+     canonical contract even if a student build from any earlier phase
+     (or a cached shell) opens the paper. */
+  return window.CSVBridge ? CSVBridge.normalizeQuestions(res.questions || []) : (res.questions || []);
+}
+
+/* ── FAST LANE: one combined CSV (or JSON array) → subjects split by the
+   Section column. Lossless: every structured column (Pairs, Items,
+   Tolerance…) survives because the bridge's parsed objects are used
+   directly — no re-serialising. ── */
+function readCombinedFile(input) {
+  const f = input.files && input.files[0];
+  if (!f) return;
+  const r = new FileReader();
+  r.onload = () => { document.getElementById('ms-combined').value = String(r.result); importCombinedCSV(); };
+  r.readAsText(f);
+}
+
+function importCombinedCSV() {
+  const note = document.getElementById('ms-combined-note');
+  const raw = document.getElementById('ms-combined').value.trim();
+  if (!raw) { note.textContent = 'Paste or upload the combined CSV first.'; return; }
+
+  let qs;
+  try { qs = parseQuestionFileText(raw); }
+  catch (e) { note.textContent = '❌ Could not read that file: ' + e.message; return; }
+  if (!qs.length) { note.textContent = '❌ No questions found in that file.'; return; }
+
+  /* group by Section (fallback: Subject field, then a single block) */
+  const groups = new Map();
+  for (const q of qs) {
+    const sec = String(q.section || q.subject || '').trim() || 'General';
+    if (!groups.has(sec)) groups.set(sec, []);
+    groups.get(sec).push(q);
+  }
+
+  subjectsList = Array.from(groups.entries()).map(([name, questions]) => ({
+    name, count: questions.length, questions
+  }));
+
+  renderSubjectSlots();
+  const types = [...new Set(qs.map(q => q.type || 'mcq'))].join(', ');
+  note.textContent = `✅ Split ${qs.length} questions into ${subjectsList.length} subject${subjectsList.length > 1 ? 's' : ''} (${Array.from(groups.keys()).join(' · ')}) · types: ${types}. Review each block, then publish.`;
+  showToast(`🪄 Split ${qs.length} questions into ${subjectsList.length} subjects — students will get one code with subject tabs.`, 'success');
+}
+
+function loadSubjectFile(idx, file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      subjectsList[idx].questions = parseQuestionFileText(e.target.result);
+      subjectsList[idx].count = subjectsList[idx].questions.length || subjectsList[idx].count;
+      showToast(`Loaded ${subjectsList[idx].questions.length} questions for ${subjectsList[idx].name}!`, 'success');
+      renderSubjectSlots();
+    } catch (err) {
+      showToast('Error parsing file: ' + err.message, 'danger');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function publishMultiSubjectExam() {
+  const title = document.getElementById('ms-title').value.trim();
+  const cls = document.getElementById('ms-class').value.trim();
+  const duration = Number(document.getElementById('ms-duration').value) || 120;
+  const attempts = Number(document.getElementById('ms-attempts').value) || 1;
+  const negative = Number(document.getElementById('ms-negative').value) || 0;
+  const instructions = document.getElementById('ms-instructions').value.trim();
+  const term = document.getElementById('ms-term').value || '1st Term';
+  const session = document.getElementById('ms-session').value.trim() || String(new Date().getFullYear());
+  const paperType = document.getElementById('ms-type').value.trim() || 'Combined';
+  const passmark = Number(document.getElementById('ms-passmark').value) || 50;
+
+  const empty = subjectsList.filter(s => !s.questions.length);
+  if (empty.length) {
+    if (!confirm(`${empty.length} subject(s) have no questions loaded (${empty.map(s => s.name).join(', ')}).\n\nSample placeholder questions will be generated for them so you can test the flow — but remember to replace them before the real exam. Continue?`)) return;
+  }
+  // Create mock questions if not loaded from file
+  subjectsList.forEach(s => {
+    if (!s.questions.length) {
+      s.questions = Array.from({ length: s.count || 10 }, (_, i) => ({
+        q: `Sample ${s.name} Question ${i + 1}`,
+        a: 'Option A', b: 'Option B', c: 'Option C', d: 'Option D',
+        ans: 'A', exp: `Explanation for ${s.name} Q${i+1}`, type: 'mcq'
+      }));
+    }
+  });
+
+  const session_ = App.getTeacherSession();
+  // FIX: publishing without a teacher session used a placeholder UUID that failed
+  // RLS with a cryptic database error. Fail fast with clear guidance instead.
+  // PHASE 11 WIRING FIX: use getTeacherSession() — App.getSession() could not
+  // see teacher.html's 'cbt_pro_session' key, so even signed-in teachers hit
+  // this wall (the live "must be owned by a teacher account" bug). An admin
+  // panel session is deliberately NOT accepted as an exam owner.
+  if(!session_?.user?.id){
+    showToast('⚠️ Not signed in as a teacher — open the Teacher Hub, sign in, then return here and publish again.', 'warning');
+    if(confirm('Publishing needs a teacher account.\n\nOpen the Teacher Hub now to sign in?\n(Your subjects and questions stay on this page — come back with the browser Back button.)')){
+      window.location.href='teacher.html';
+    }
+    return;
+  }
+  const teacherId = session_.user.id;
+  // 6-character access code, same contract as the Teacher Hub generator
+  let code = '';
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  while (code.length < 6) {
+    const buf = new Uint32Array(1);
+    (window.crypto || {}).getRandomValues ? crypto.getRandomValues(buf) : (buf[0] = Math.floor(Math.random() * 0xFFFFFFFF));
+    code += alphabet[buf[0] % alphabet.length];
+  }
+
+  /* PHASE 12B (School Connect / GOSA Portal parity): every question is tagged
+     with its subject (Section), and the paper ships subject_breakdown metadata
+     [{name,start,end,count}] — the same dual representation the sibling
+     platforms publish. The student runner reads subjects_data first and falls
+     back to subject_breakdown, so multi-subject papers stay multi-subject in
+     every reader. */
+  subjectsList.forEach(sub => {
+    (sub.questions || []).forEach(q => { if(!q.section) q.section = sub.name; });
+  });
+  let _msStart = 0;
+  const subject_breakdown = subjectsList.map(sub => {
+    const n = (sub.questions || []).length;
+    const b = { name: sub.name, start: _msStart, count: n, end: _msStart + n - 1 };
+    _msStart += n;
+    return b;
+  });
+
+  const payload = {
+    teacher_id: teacherId,
+    code,
+    subject: `${title}|${cls}|${term}|Combined|${paperType}|${session}|${passmark}`,
+    duration,
+    attempt_limit: attempts,
+    select_count: 0,
+    /* PHASE 12 WIRING FIX — the live "null value in column csv_data violates
+       not-null constraint" bug: this payload used to omit csv_data entirely
+       (present since the ORIGINAL build). Databases where the exams.csv_data
+       column is NOT NULL WITHOUT a default (drifted/older schemas) rejected
+       the insert. csv_data is now ALWAYS sent: the flattened question list in
+       engine order (subject by subject) — which also keeps Duplicate and any
+       single-subject-style reader working. subjects_data entries carry BOTH
+       keys (`questions` — student engine — and `csv_data` — teacher-side
+       analytics and the schema's documented shape). */
+    csv_data: subjectsList.flatMap(s => s.questions),
+    exam_mode: 'open',
+    negative_mark: negative,
+    is_open: true,
+    is_multi_subject: true,
+    feedback_mode: document.getElementById('ms-feedback')?.value || 'end',          // PHASE 10
+    score_model: document.getElementById('ms-score-model')?.value || 'standard',    // PHASE 10
+    subjects_data: subjectsList.map(s => {
+      const qs = window.CSVBridge ? CSVBridge.normalizeQuestions(s.questions) : s.questions;   /* PHASE 12G */
+      return { name: s.name, subject_name: s.name, count: s.count, csv_data: qs, questions: qs };
+    }),
+    anti_cheat_config: { subject_breakdown, subjects: subjectsList.map(s => s.name), multi_subject: true },
+    instructions
+  };
+
+  try {
+    showToast('Publishing multi-subject package...', 'info');
+    try {
+      await App.sbFetch('/rest/v1/exams', 'POST', payload);
+    } catch (firstErr) {
+      /* PHASE 10 resilience: an older database without the new delivery
+         columns rejects the write — retry once without them so the exam
+         still publishes (classic delivery), with clear guidance. */
+      const msg = String(firstErr.message || '');
+      if (/feedback_mode|score_model|adaptive|column/i.test(msg)) {
+        const lean = { ...payload };
+        delete lean.feedback_mode; delete lean.score_model; delete lean.anti_cheat_config;   /* PHASE 12B: anti_cheat_config is also a later column — old DBs reject it too */
+        await App.sbFetch('/rest/v1/exams', 'POST', lean);
+        showToast('Published WITHOUT Phase 10 delivery options — run database/complete-schema.sql to enable them.', 'warning');
+      } else {
+        throw firstErr;
+      }
+    }
+    alert(`🎉 Combined Exam Published Successfully!\n\nStudent Access Code: ${code}\nStudent Link: student.html?code=${code}\n\nStudents will see a tab for each subject (${subjectsList.map(s => s.name).join(', ')}) at the top of the exam.`);
+    window.location.href = 'teacher.html';
+  } catch (e) {
+    showToast('Publish failed: ' + e.message, 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  renderSubjectSlots();
+  /* PHASE 11: show the sign-in banner immediately when there is no teacher
+     session (App.getTeacherSession now reads teacher.html's 'cbt_pro_session'). */
+  try{
+    const t = App.getTeacherSession();
+    const b = document.getElementById('teacher-session-banner');
+    if(b && !(t && t.user && t.user.id)) b.classList.remove('hidden');
+    else if(b && t && t.user) b.innerHTML = '<span style="font-size:20px;">✅</span><div style="font-size:13px;"><b>Signed in as ' + String(t.user.email||'teacher').replace(/[<>&]/g,'') + '</b> — packages you publish here will be owned by this teacher account.</div>';
+  }catch(_){}
+});
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

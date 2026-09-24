@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Roles & Status Manager — HMG Academy CBT Pro</title>
+  <meta name="description" content="Roles and status manager: approve or suspend teacher and admin accounts, assign roles and control platform access for HMG Academy CBT Pro.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .row-card{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+  .row-card:last-child{border-bottom:none;}
+  .avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:15px;flex:none;background:var(--primary-dim);color:var(--primary);}
+  .badge-role{font-size:10px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.4px;}
+  .r-super{background:rgba(139,92,246,.15);color:#a78bfa;border:1px solid rgba(139,92,246,.4);}
+  .r-admin{background:rgba(59,130,246,.15);color:#60a5fa;border:1px solid rgba(59,130,246,.4);}
+  .r-teacher{background:rgba(16,185,129,.15);color:#34d399;border:1px solid rgba(16,185,129,.4);}
+  .r-student{background:rgba(245,158,11,.15);color:#fbbf24;border:1px solid rgba(245,158,11,.4);}
+  .s-active{color:var(--primary);font-weight:700;}
+  .s-pending{color:var(--warning);font-weight:700;}
+  .s-suspended{color:var(--danger);font-weight:700;}
+  .s-inactive{color:var(--text-muted);font-weight:700;}
+  .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:100;padding:20px;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Roles, Status & Access Queue</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>👥 Roles & Status Manager</h1>
+      <p>Approve, suspend, promote and onboard platform users. Every change carries a reason, and every change is written to the audit log server-side — the full trail is on the Audit page.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-outline" onclick="openInvite()">✉️ Invite Users</button>
+      <button class="btn btn-primary" onclick="loadProfiles()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ QUEUE STATS ═══════════ -->
+  <div class="grid-4">
+    <div class="stat-box"><div class="stat-lbl">Pending Approval</div><div class="stat-val" id="q-pending" style="color:var(--warning);">0</div></div>
+    <div class="stat-box"><div class="stat-lbl">Active Users</div><div class="stat-val" id="q-active" style="color:var(--primary);">0</div></div>
+    <div class="stat-box"><div class="stat-lbl">Suspended</div><div class="stat-val" id="q-suspended" style="color:var(--danger);">0</div></div>
+    <div class="stat-box"><div class="stat-lbl">Total Accounts</div><div class="stat-val" id="q-total">0</div></div>
+  </div>
+
+  <!-- ═══════════ PENDING QUEUE ═══════════ -->
+  <div class="card" id="pending-card" style="display:none;">
+    <h2>📬 Access Queue — awaiting approval</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">New sign-ups arrive as <b>pending teachers</b>. Approve to grant Teacher Hub access, or suspend to block. The very first user on a fresh platform is auto-approved as super_admin.</p>
+    <div id="pending-list"></div>
+    <button class="btn btn-primary btn-sm" onclick="approveAllPending()">✅ Approve All Pending</button>
+  </div>
+
+  <!-- ═══════════ FILTERS ═══════════ -->
+  <div class="card">
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:flex-end;">
+      <div style="flex:1;min-width:220px;">
+        <label>Search (name / email)</label>
+        <input type="search" id="f-search" placeholder="Type to filter…" oninput="renderProfiles()">
+      </div>
+      <div>
+        <label>Role</label>
+        <select id="f-role" onchange="renderProfiles()">
+          <option value="">All roles</option><option value="super_admin">super_admin</option>
+          <option value="admin">admin</option><option value="teacher">teacher</option><option value="student">student</option>
+        </select>
+      </div>
+      <div>
+        <label>Status</label>
+        <select id="f-status" onchange="renderProfiles()">
+          <option value="">All statuses</option><option>active</option><option>pending</option>
+          <option>suspended</option><option>inactive</option>
+        </select>
+      </div>
+      <div>
+        <label>Sort</label>
+        <select id="f-sort" onchange="renderProfiles()">
+          <option value="new">Newest first</option><option value="old">Oldest first</option><option value="name">Name A–Z</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ USER LIST ═══════════ -->
+  <div class="card">
+    <div class="flex-between" style="margin-bottom:8px;flex-wrap:wrap;gap:8px;">
+      <h2 style="margin:0;">📋 User Accounts <span id="shown-count" style="font-weight:400;color:var(--text-muted);font-size:.85rem;"></span></h2>
+      <div class="flex-gap">
+        <button class="btn btn-sm btn-outline" onclick="bulkStatus('active')">✅ Activate selected</button>
+        <button class="btn btn-sm btn-outline" onclick="bulkStatus('suspended')">⏸ Suspend selected</button>
+        <button class="btn btn-sm btn-danger" onclick="bulkStatus('inactive')">🚫 Deactivate selected</button>
+      </div>
+    </div>
+    <div id="profiles-list"><em style="color:var(--text-muted);">Loading…</em></div>
+  </div>
+</main>
+
+<!-- ═══════════ INVITE MODAL ═══════════ -->
+<div class="modal-bg" id="invite-modal" onclick="if(event.target===this)closeInvite()">
+  <div class="card" style="max-width:620px;width:100%;margin:0;max-height:88vh;overflow:auto;">
+    <div class="flex-between">
+      <h2 style="margin:0;">✉️ Invite Users</h2>
+      <button class="btn btn-sm btn-outline" onclick="closeInvite()">✕</button>
+    </div>
+    <p style="font-size:.85rem;color:var(--text-muted);">Authentication runs on Supabase (free tier), so invites are <b>shareable onboarding instructions</b> — not emails. Copy the message below and send it through WhatsApp, email or your school broadcast channel.</p>
+    <label>Customise the message</label>
+    <textarea id="invite-text" rows="9" style="font-size:12.5px;"></textarea>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="navigator.clipboard.writeText(document.getElementById('invite-text').value).then(()=>showToast('Invite message copied ✓','success'))">📋 Copy Message</button>
+      <a class="btn btn-outline" href="index.html" target="_blank">🔗 Open Sign-up Page</a>
+    </div>
+    <p style="font-size:.78rem;color:var(--text-muted);">Users self-register, appear in the Access Queue as <b>pending</b>, and get access the moment you approve them here.</p>
+  </div>
+</div>
+
+<!-- ═══════════ DETAIL MODAL ═══════════ -->
+<div class="modal-bg" id="detail-modal" onclick="if(event.target===this)closeDetail()">
+  <div class="card" style="max-width:680px;width:100%;margin:0;max-height:88vh;overflow:auto;" id="detail-body"></div>
+</div>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>
+let PROFILES = [];
+let SELECTED = new Set();
+let meEmail = '';
+
+const ROLE_BADGE = { super_admin: 'r-super', admin: 'r-admin', teacher: 'r-teacher', student: 'r-student' };
+
+async function loadProfiles() {
+  const el = document.getElementById('profiles-list');
+  el.innerHTML = '<em style="color:var(--text-muted);">Loading accounts…</em>';
+  const s = App.getBestSession();
+  meEmail = s?.user?.email || '';
+  try {
+    PROFILES = await App.sbRpc('admin_get_all_profiles');
+    const pending = PROFILES.filter(p => p.status === 'pending');
+    document.getElementById('q-pending').textContent = pending.length;
+    document.getElementById('q-active').textContent = PROFILES.filter(p => p.status === 'active').length;
+    document.getElementById('q-suspended').textContent = PROFILES.filter(p => p.status === 'suspended').length;
+    document.getElementById('q-total').textContent = PROFILES.length;
+    document.getElementById('pending-card').style.display = pending.length ? 'block' : 'none';
+    document.getElementById('pending-list').innerHTML = pending.map(p => pendingRow(p)).join('') || '<em>Queue is empty ✓</em>';
+    renderProfiles();
+  } catch (e) {
+    el.innerHTML = '<div style="color:var(--danger);">❌ ' + escapeHtml(e.message || e) + '<br><small>Admin sign-in required.</small></div>';
+  }
+}
+
+function pendingRow(p) {
+  return `
+  <div class="row-card">
+    <div style="display:flex;gap:12px;align-items:center;">
+      <div class="avatar">${escapeHtml((p.full_name || p.email || '?')[0].toUpperCase())}</div>
+      <div>
+        <strong>${escapeHtml(p.full_name || '—')}</strong> <span class="badge-role ${ROLE_BADGE[p.role] || 'r-teacher'}">${escapeHtml(p.role)}</span><br>
+        <span style="font-size:12px;color:var(--text-muted);">${escapeHtml(p.email)} · joined ${new Date(p.created_at).toLocaleDateString()}</span>
+      </div>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-sm btn-primary" onclick="setStatus('${p.id}','active','approved from access queue')">✅ Approve</button>
+      <button class="btn btn-sm btn-danger" onclick="setStatus('${p.id}','suspended','rejected from access queue')">🚫 Reject</button>
+    </div>
+  </div>`;
+}
+
+function filtered() {
+  const q = document.getElementById('f-search').value.toLowerCase();
+  const role = document.getElementById('f-role').value;
+  const status = document.getElementById('f-status').value;
+  const sort = document.getElementById('f-sort').value;
+  let list = PROFILES.filter(p =>
+    (!q || (p.email || '').toLowerCase().includes(q) || (p.full_name || '').toLowerCase().includes(q)) &&
+    (!role || p.role === role) && (!status || p.status === status));
+  if (sort === 'new') list.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+  if (sort === 'old') list.sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+  if (sort === 'name') list.sort((a, b) => (a.full_name || a.email).localeCompare(b.full_name || b.email));
+  return list;
+}
+
+function renderProfiles() {
+  const list = filtered();
+  document.getElementById('shown-count').textContent = `(${list.length} shown)`;
+  document.getElementById('profiles-list').innerHTML = list.length ? list.map(p => userRow(p)).join('') : '<em style="color:var(--text-muted);">No accounts match the filters.</em>';
+}
+
+function userRow(p) {
+  const isMe = p.email === meEmail;
+  const sel = SELECTED.has(p.id);
+  return `
+  <div class="row-card" style="${isMe ? 'border-left:3px solid var(--primary);' : ''}">
+    <div style="display:flex;gap:12px;align-items:center;min-width:240px;flex:1;">
+      <input type="checkbox" ${sel ? 'checked' : ''} onchange="${sel ? 'SELECTED.delete' : 'SELECTED.add'}('${p.id}');renderProfiles()" style="width:16px;height:16px;">
+      <div class="avatar">${escapeHtml((p.full_name || p.email || '?')[0].toUpperCase())}</div>
+      <div>
+        <strong>${escapeHtml(p.full_name || '—')}</strong> ${isMe ? '<span class="badge badge-primary">you</span>' : ''}
+        <span class="badge-role ${ROLE_BADGE[p.role] || 'r-teacher'}">${escapeHtml(p.role)}</span><br>
+        <span style="font-size:12px;color:var(--text-muted);">${escapeHtml(p.email)} · joined ${new Date(p.created_at).toLocaleDateString()}</span>
+      </div>
+    </div>
+    <div style="text-align:center;min-width:90px;">
+      <span class="s-${escapeHtml(p.status)}">● ${escapeHtml(p.status)}</span><br>
+      <button class="btn btn-sm btn-outline" style="margin-top:4px;" onclick="openDetail('${p.id}')">🔍 Details</button>
+    </div>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      ${p.status !== 'active' ? `<button class="btn btn-sm btn-primary" onclick="setStatus('${p.id}','active','')">✅ Activate</button>` : ''}
+      ${p.status === 'active' && !isMe ? `<button class="btn btn-sm btn-warning" onclick="setStatus('${p.id}','suspended','')">⏸ Suspend</button>` : ''}
+      ${p.role !== 'teacher' && !isMe ? `<button class="btn btn-sm btn-outline" onclick="changeRole('${p.id}','teacher')">🧑‍🏫 → Teacher</button>` : ''}
+      ${p.role !== 'admin' && !isMe ? `<button class="btn btn-sm btn-outline" onclick="changeRole('${p.id}','admin')">🛡️ → Admin</button>` : ''}
+    </div>
+  </div>`;
+}
+
+async function setStatus(id, status, defaultReason) {
+  if (status !== 'active' && !defaultReason) {
+    const reason = prompt(`Reason for setting this account to "${status}" (recorded in the audit log):`, '') || '';
+    if (!reason) return showToast('A reason is required for status changes.', 'info');
+    defaultReason = reason;
+  }
+  try {
+    await App.sbRpc('admin_set_profile_status', { p_id: id, p_status: status, p_reason: defaultReason || 'approved' });
+    showToast(`Status set to ${status} ✓ (audited)`, 'success');
+    loadProfiles();
+  } catch (e) { showToast('Failed: ' + (e.message || e), 'danger'); }
+}
+
+async function changeRole(id, role) {
+  if (role === 'super_admin' && !confirm('Grant OWNER (super_admin) rights? Only a super_admin may do this.')) return;
+  if (!confirm(`Change this user's role to ${role}?`)) return;
+  try {
+    await App.sbRpc('admin_set_profile_role', { p_id: id, p_role: role });
+    showToast(`Role changed to ${role} ✓ (audited)`, 'success');
+    loadProfiles();
+  } catch (e) { showToast('Failed: ' + (e.message || e), 'danger'); }
+}
+
+async function bulkStatus(status) {
+  if (!SELECTED.size) return showToast('Select at least one account (checkboxes).', 'info');
+  const reason = prompt(`Reason for bulk-setting ${SELECTED.size} account(s) to "${status}" (audited):`, '');
+  if (!reason) return;
+  if (!confirm(`Apply "${status}" to ${SELECTED.size} account(s)? (Your own account is excluded automatically.)`)) return;
+  try {
+    const r = await App.sbRpc('admin_bulk_set_profile_status', { p_ids: [...SELECTED], p_status: status, p_reason: reason });
+    const updated = Array.isArray(r) ? r[0] : r;
+    showToast(`Updated ${updated?.updated ?? '?'} account(s) ✓`, 'success');
+    SELECTED.clear();
+    loadProfiles();
+  } catch (e) { showToast('Bulk update failed: ' + (e.message || e), 'danger'); }
+}
+
+async function approveAllPending() {
+  const pending = PROFILES.filter(p => p.status === 'pending');
+  if (!pending.length) return;
+  if (!confirm(`Approve all ${pending.length} pending account(s)?`)) return;
+  try {
+    await App.sbRpc('admin_bulk_set_profile_status', { p_ids: pending.map(p => p.id), p_status: 'active', p_reason: 'bulk approval from access queue' });
+    showToast('All pending accounts approved ✓', 'success');
+    loadProfiles();
+  } catch (e) { showToast('Bulk approval failed: ' + (e.message || e), 'danger'); }
+}
+
+/* ── Detail modal: exam count + recent audit trail for this user ── */
+async function openDetail(id) {
+  const p = PROFILES.find(x => x.id === id);
+  if (!p) return;
+  document.getElementById('detail-body').innerHTML = '<h2>🔍 Account details</h2><p>Loading activity…</p>';
+  document.getElementById('detail-modal').style.display = 'flex';
+  let examCount = '—', resultCount = '—', recent = [];
+  try {
+    const exams = await App.sbFetch(`/rest/v1/exams?teacher_id=eq.${id}&select=id`);
+    examCount = exams.length;
+    const examIds = exams.map(e => e.id);
+    if (examIds.length) {
+      resultCount = 0;
+      for (const eid of examIds.slice(0, 20)) {
+        const rs = await App.sbFetch(`/rest/v1/results?exam_id=eq.${eid}&select=id`).catch(() => []);
+        resultCount += rs.length;
+      }
+    }
+  } catch (_) {}
+  try {
+    const logs = await App.sbRpc('admin_get_audit_logs', { p_limit: 200 });
+    recent = logs.filter(l => l.actor_email === p.email).slice(0, 8);
+  } catch (_) {}
+
+  document.getElementById('detail-body').innerHTML = `
+    <div class="flex-between"><h2 style="margin:0;">🔍 ${escapeHtml(p.full_name || p.email)}</h2><button class="btn btn-sm btn-outline" onclick="closeDetail()">✕</button></div>
+    <table style="width:100%;font-size:13px;border-collapse:collapse;margin:12px 0;">
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Email</td><td>${escapeHtml(p.email)}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Role</td><td><span class="badge-role ${ROLE_BADGE[p.role] || 'r-teacher'}">${escapeHtml(p.role)}</span></td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Status</td><td class="s-${escapeHtml(p.status)}">${escapeHtml(p.status)}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Phone</td><td>${escapeHtml(p.phone || '—')}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Joined</td><td>${new Date(p.created_at).toLocaleString()}</td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Exams created</td><td><strong>${examCount}</strong></td></tr>
+      <tr><td style="padding:4px 0;color:var(--text-muted);">Candidate submissions</td><td><strong>${resultCount}</strong></td></tr>
+    </table>
+    <h3>Recent activity (audit trail)</h3>
+    ${recent.length ? recent.map(l => `<div style="font-size:12px;padding:5px 0;border-bottom:1px solid var(--border);">${new Date(l.created_at).toLocaleString()} · <strong>${escapeHtml(l.action)}</strong> ${l.entity_type ? '· ' + escapeHtml(l.entity_type) : ''}</div>`).join('') : '<em style="color:var(--text-muted);">No audited activity yet.</em>'}
+    ${p.email !== meEmail ? `<div class="flex-gap" style="margin-top:14px;">
+      <button class="btn btn-sm btn-danger" onclick="deleteProfile('${p.id}')">🗑 Delete Account</button>
+    </div>` : ''}
+  `;
+}
+function closeDetail() { document.getElementById('detail-modal').style.display = 'none'; }
+
+async function deleteProfile(id) {
+  const p = PROFILES.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`PERMANENTLY delete ${p.email}'s profile and all their exams/results (auth account remains in Supabase)?`)) return;
+  if (prompt('Type DELETE to confirm:') !== 'DELETE') return;
+  try {
+    await App.sbRpc('admin_delete_profile', { p_id: id });
+    showToast('Account deleted ✓', 'success');
+    closeDetail();
+    loadProfiles();
+  } catch (e) { showToast('Delete failed: ' + (e.message || e), 'danger'); }
+}
+
+/* ── Invite modal ── */
+function openInvite() {
+  const origin = window.location.origin + window.location.pathname.replace(/[^/]*$/, '');
+  document.getElementById('invite-text').value =
+`📚 ${App.institutionName || 'Our school'} — CBT Platform Onboarding
+
+You are invited to use our Computer-Based Testing platform.
+
+1. Open: ${origin}index.html
+2. Click "Create account" (or "Sign up")
+3. Register with your ${'[school email]' } — choose a password you will remember
+4. Wait for approval (an administrator approves new accounts from the Access Queue)
+5. Once approved, sign in and you will land on the Teacher Hub
+
+Need help? Reply to this message and we will assist you.`;
+  document.getElementById('invite-modal').style.display = 'flex';
+}
+function closeInvite() { document.getElementById('invite-modal').style.display = 'none'; }
+
+document.addEventListener('DOMContentLoaded', loadProfiles);
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

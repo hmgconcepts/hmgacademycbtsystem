@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Validate exam links, 6-character access codes and exam readiness before students sit a HMG Academy CBT Pro test.">>
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#10b981">
+<title>Exam Link Checker — HMG Academy CBT Pro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="hmg-icon.svg" type="image/svg+xml">
+<style>
+  :root{
+    --bg:#09090b;--surface:#18181b;--surface-2:#27272a;--border:#3f3f46;
+    --text:#fafafa;--text-muted:#a1a1aa;--primary:#10b981;--primary-dark:#059669;
+    --danger:#ef4444;--warn:#f59e0b;--ok:#22c55e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding:24px 16px;line-height:1.6;}
+  .wrap{max-width:680px;margin:0 auto;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:24px;margin-bottom:18px;}
+  h1{font-size:22px;font-weight:900;margin-bottom:6px;}
+  .sub{color:var(--text-muted);font-size:14px;margin-bottom:20px;}
+  label{display:block;font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-muted);}
+  input{width:100%;padding:14px;background:var(--bg);border:1px solid var(--border);border-radius:10px;color:var(--text);font-size:15px;font-family:monospace;}
+  input:focus{outline:none;border-color:var(--primary);}
+  button{width:100%;margin-top:14px;padding:14px;background:var(--primary);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:700;cursor:pointer;transition:.15s;}
+  button:hover{background:var(--primary-dark);}
+  button:disabled{opacity:.6;cursor:not-allowed;}
+  .check{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border-radius:10px;background:var(--surface-2);margin-bottom:10px;font-size:14px;}
+  .check .ico{font-size:18px;flex-shrink:0;}
+  .check.ok{border-left:3px solid var(--ok);}
+  .check.err{border-left:3px solid var(--danger);}
+  .check.warn{border-left:3px solid var(--warn);}
+  .check .title{font-weight:700;}
+  .check .detail{color:var(--text-muted);font-size:13px;}
+  .hidden{display:none;}
+  .resolved-code{font-family:monospace;font-size:20px;font-weight:900;color:var(--primary);letter-spacing:2px;}
+  .open-link{display:inline-block;margin-top:10px;color:var(--primary);text-decoration:none;font-weight:700;font-size:14px;}
+  .open-link:hover{text-decoration:underline;}
+  .foot{text-align:center;color:var(--text-muted);font-size:12px;margin-top:18px;}
+  a.back{color:var(--text-muted);font-size:13px;text-decoration:none;}
+</style>
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← Back to Home</a>
+  <div class="card" style="margin-top:14px;">
+    <h1>🔗 Exam Link &amp; Code Health Checker</h1>
+    <p class="sub">Paste a teacher's exam <strong>link</strong> or type a 6-character <strong>access code</strong>. This free tool confirms the code is readable, reaches the database, and that the exam is open — <em>before</em> students sit the exam. No login needed.</p>
+    <label for="code-input">Exam link or access code</label>
+    <input type="text" id="code-input" placeholder="e.g. https://your-site/student.html?code=ABC123  or  ABC123" autocomplete="off" onkeydown="if(event.key==='Enter')runCheck()">
+    <button id="run-btn" onclick="runCheck()">Run Health Check →</button>
+  </div>
+
+  <div id="results" class="card hidden">
+    <div id="results-body"></div>
+  </div>
+
+  <div class="foot">HMG Academy CBT · Free diagnostics tool · No paid AI API used</div>
+</div>
+
+<script>
+// Same Supabase project the platform uses (anon key — read-only public access).
+const SB_URL='https://pstnsaqjshmtintjrnas.supabase.co';
+const SB_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzdG5zYXFqc2htdGludGpybmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MDEzODUsImV4cCI6MjA5MTI3NzM4NX0.KNVgpVN0xp1njin1HL3udntc7psfzjnz7mqzpEN_Z6w';
+
+// EXACT corrected parser used by student.html — kept in sync so the checker reflects reality.
+function extractExamCode(raw){
+  if(!raw)return '';
+  let text=String(raw).trim();
+  if(!text)return '';
+  try{
+    const url=new URL(text, window.location.href);
+    const fromQuery=url.searchParams.get('code')||url.searchParams.get('exam')||url.searchParams.get('c');
+    if(fromQuery)return fromQuery.trim().toUpperCase();
+    if(url.hash){
+      const hash=url.hash.replace(/^#/,'').trim();
+      const hm=hash.match(/[A-Za-z0-9]{4,12}/);
+      if(hm)return hm[0].toUpperCase();
+    }
+  }catch(e){}
+  const queryMatch=text.match(/[?&](?:code|exam|c)=([A-Za-z0-9_-]{4,20})/i);
+  if(queryMatch)return queryMatch[1].toUpperCase();
+  const codeMatch=text.toUpperCase().match(/\b[A-Z0-9]{4,12}\b/);
+  return codeMatch?codeMatch[0].toUpperCase():'';
+}
+
+function parseQuestionData(raw){
+  if(Array.isArray(raw))return raw;
+  if(!raw)return [];
+  try{
+    let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+    if(typeof parsed==='string')parsed=JSON.parse(parsed);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
+}
+
+async function sbRpc(name, body){
+  const res=await fetch(`${SB_URL}/rest/v1/rpc/${name}`,{
+    method:'POST',
+    headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`,'Content-Type':'application/json'},
+    body:JSON.stringify(body||{})
+  });
+  const text=await res.text();
+  let data=null;try{data=text?JSON.parse(text):null;}catch(e){data=text;}
+  if(!res.ok){const msg=(data&&(data.message||data.error||data.hint))||`HTTP ${res.status}`;throw new Error(msg);}
+  return data;
+}
+
+async function fetchExamForCheck(code){
+  try{return await sbRpc('get_public_exam_by_code',{p_code:code});}
+  catch(rpcErr){
+    console.warn('[CBT] RPC checker fallback:',rpcErr.message);
+    const res=await fetch(`${SB_URL}/rest/v1/exams?code=eq.${encodeURIComponent(code)}&select=code,is_open,start_at,close_at,duration,subject,csv_data,exam_mode`,{headers:{'apikey':SB_KEY,'Authorization':`Bearer ${SB_KEY}`}});
+    if(!res.ok)throw rpcErr;
+    return await res.json();
+  }
+}
+
+function row(state,title,detail){
+  const ico={ok:'✅',err:'❌',warn:'⚠️'}[state]||'•';
+  return `<div class="check ${state}"><div class="ico">${ico}</div><div><div class="title">${title}</div><div class="detail">${detail||''}</div></div></div>`;
+}
+
+async function runCheck(){
+  const raw=document.getElementById('code-input').value||'';
+  const btn=document.getElementById('run-btn');
+  const box=document.getElementById('results');
+  const body=document.getElementById('results-body');
+  box.classList.remove('hidden');
+  body.innerHTML='';
+  btn.disabled=true;btn.innerText='Checking…';
+
+  let html='';
+
+  // STEP 1 — parse the code
+  const code=extractExamCode(raw);
+  if(!code){
+    html+=row('err','Could not read a valid code','Make sure you pasted the full link (containing <code>?code=</code>) or a 4–12 character code with only letters and numbers.');
+    body.innerHTML=html;
+    btn.disabled=false;btn.innerText='Run Health Check →';
+    return;
+  }
+  html+=row('ok','Code read successfully','Resolved code: <span class="resolved-code">'+code+'</span>');
+  body.innerHTML=html;
+
+  // STEP 2 — reach the database
+  try{
+    const data=await fetchExamForCheck(code);
+    html+=row('ok','Database reachable','Connected to the exam server successfully through the secure public exam endpoint.');
+
+    // STEP 3 — exam exists
+    if(!data.length){
+      html+=row('err','No exam found for this code','The code is readable but no exam matches it. Ask the teacher to confirm the exam is published and the code is correct.');
+      body.innerHTML=html;btn.disabled=false;btn.innerText='Run Health Check →';return;
+    }
+    const exam=data[0];
+    const subject=(exam.subject||'').split('|')[0]||'Exam';
+    html+=row('ok','Exam found','Subject: <strong>'+subject+'</strong> · Duration: '+(exam.duration||'?')+' min · Mode: '+(exam.exam_mode||'open'));
+
+    // STEP 4 — open status
+    if(!exam.is_open){
+      html+=row('warn','Exam is currently CLOSED','Students cannot enter until the teacher re-opens this exam from the dashboard.');
+    }else{
+      html+=row('ok','Exam is OPEN','Students can enter right now.');
+    }
+
+    // STEP 5 — schedule
+    if(exam.start_at){
+      const st=new Date(exam.start_at).getTime();
+      if(st>Date.now()) html+=row('warn','Exam is scheduled for later','Starts at '+new Date(exam.start_at).toLocaleString()+'. Question data remains hidden until then.');
+      else html+=row('ok','Start time reached','Started at '+new Date(exam.start_at).toLocaleString()+'.');
+    }
+    if(exam.close_at){
+      const t=new Date(exam.close_at).getTime();
+      if(t<=Date.now()){
+        html+=row('warn','Scheduled close time has passed','The exam auto-closed at '+new Date(exam.close_at).toLocaleString()+'. Re-open or extend it before students join.');
+      }else{
+        html+=row('ok','Scheduled to close later','Closes at '+new Date(exam.close_at).toLocaleString()+'.');
+      }
+    }
+
+    // STEP 6 — question data
+    let qCount=0,parseOk=true;
+    try{ const q=parseQuestionData(exam.csv_data); qCount=Array.isArray(q)?q.length:0; }catch(e){ parseOk=false; }
+    if(!parseOk){
+      html+=row('err','Question data is corrupted','The exam exists but its questions cannot be read. Ask the teacher to re-publish it.');
+    }else if(qCount===0){
+      if(exam.start_at && new Date(exam.start_at).getTime()>Date.now()){
+        html+=row('warn','Questions hidden until start time','This is expected for scheduled exams in v3.1. Re-run the check after the start time to verify question count.');
+      }else{
+        html+=row('warn','Exam has no questions','Add questions before sharing the link with students.');
+      }
+    }else{
+      html+=row('ok','Questions ready',qCount+' question'+(qCount>1?'s':'')+' loaded.');
+    }
+
+    // Final verdict + direct link
+    const ready = exam.is_open && parseOk && qCount>0 && !(exam.start_at && new Date(exam.start_at).getTime()>Date.now()) && !(exam.close_at && new Date(exam.close_at).getTime()<=Date.now());
+    if(ready){
+      const link='student.html?code='+code;
+      html+=row('ok','READY FOR STUDENTS','This link/code is working. Students can begin.')
+          +'<a class="open-link" href="'+link+'" target="_blank">▶ Open the student exam page for this code</a>';
+    }else{
+      html+=row('warn','Not fully ready','Resolve the items above, then run the check again.');
+    }
+  }catch(e){
+    html+=row('err','Network error','Could not reach the database. Check your internet connection and try again.');
+  }
+
+  body.innerHTML=html;
+  btn.disabled=false;btn.innerText='Run Health Check →';
+}
+
+// Pre-fill from ?code= so teachers can bookmark a one-click check link.
+(function(){
+  const p=new URLSearchParams(location.search);
+  const c=p.get('code')||p.get('exam')||p.get('c');
+  if(c){document.getElementById('code-input').value=c;runCheck();}
+})();
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

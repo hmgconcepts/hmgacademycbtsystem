@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Question Type Reference — 20 Types — HMG Academy CBT Pro</title>
+  <meta name="description" content="Full reference for all 20 HMG Academy CBT Pro question types — options, theory, fill-blank, matching, ordering, diagram labelling and more — with samples and grading rules.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .type-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(330px,1fr));gap:14px;}
+  .type-card{border:1px solid var(--border);border-radius:14px;padding:16px 18px;background:var(--surface-2);break-inside:avoid;}
+  .type-chip{display:inline-block;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;font-weight:700;padding:4px 11px;border-radius:14px;text-decoration:none;margin:2.5px;transition:.15s;}
+  .type-chip:hover{transform:translateY(-1px);filter:brightness(.92);}
+  .cols-table{width:100%;border-collapse:collapse;font-size:12.2px;}
+  .cols-table th,.cols-table td{border:1px solid var(--border);padding:7px 10px;text-align:left;vertical-align:top;}
+  .cols-table th{background:var(--surface-2);font-size:11px;text-transform:uppercase;letter-spacing:.5px;}
+  .cols-table tr:nth-child(even) td{background:rgba(0,0,0,.015);}
+  html{scroll-behavior:smooth;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Question Type Reference</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+
+  <div class="card-title-row">
+    <div>
+      <h1>📖 Question Type Reference</h1>
+      <p>Every question type this platform understands — <b>20 types</b>, what each column means, a ready-to-copy CSV example for each, and exactly how it is scored. <b>All marking is rule-based and free — no AI API is ever called.</b></p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <a href="teacher.html" class="btn-sm btn-primary" style="text-decoration:none;padding:9px 16px;font-size:12.5px;">➕ Create Assessment</a>
+      <a href="cbt-prompts.html" class="btn-sm btn-outline" style="text-decoration:none;padding:9px 16px;font-size:12.5px;">🤖 AI Prompts Studio</a>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>⚡ Jump to a type</h2>
+    <div><a href="#type-mcq" class="type-chip" style="background:#3b82f618;color:#3b82f6;border:1px solid #3b82f650;">mcq</a> <a href="#type-tf" class="type-chip" style="background:#f59e0b18;color:#f59e0b;border:1px solid #f59e0b50;">tf</a> <a href="#type-mrq" class="type-chip" style="background:#a78bfa18;color:#a78bfa;border:1px solid #a78bfa50;">mrq</a> <a href="#type-short" class="type-chip" style="background:#10b98118;color:#10b981;border:1px solid #10b98150;">short</a> <a href="#type-numeric" class="type-chip" style="background:#ef444418;color:#ef4444;border:1px solid #ef444450;">numeric</a> <a href="#type-range" class="type-chip" style="background:#6366f118;color:#6366f1;border:1px solid #6366f150;">range</a> <a href="#type-matching" class="type-chip" style="background:#14b8a618;color:#14b8a6;border:1px solid #14b8a650;">matching</a> <a href="#type-ordering" class="type-chip" style="background:#a855f718;color:#a855f7;border:1px solid #a855f750;">ordering</a> <a href="#type-cloze" class="type-chip" style="background:#ec489918;color:#ec4899;border:1px solid #ec489950;">cloze</a> <a href="#type-categorization" class="type-chip" style="background:#22c55e18;color:#22c55e;border:1px solid #22c55e50;">categorization</a> <a href="#type-multi_numeric" class="type-chip" style="background:#0ea5e918;color:#0ea5e9;border:1px solid #0ea5e950;">multi_numeric</a> <a href="#type-matrix" class="type-chip" style="background:#eab30818;color:#eab308;border:1px solid #eab30850;">matrix</a> <a href="#type-assertion_reason" class="type-chip" style="background:#f9731618;color:#f97316;border:1px solid #f9731650;">assertion_reason</a> <a href="#type-case_study" class="type-chip" style="background:#84cc1618;color:#84cc16;border:1px solid #84cc1650;">case_study</a> <a href="#type-image_mcq" class="type-chip" style="background:#06b6d418;color:#06b6d4;border:1px solid #06b6d450;">image_mcq</a> <a href="#type-essay" class="type-chip" style="background:#fb923c18;color:#fb923c;border:1px solid #fb923c50;">essay</a> <a href="#type-code" class="type-chip" style="background:#8b5cf618;color:#8b5cf6;border:1px solid #8b5cf650;">code</a> <a href="#type-hot_text" class="type-chip" style="background:#f43f5e18;color:#f43f5e;border:1px solid #f43f5e50;">hot_text</a> <a href="#type-hotspot" class="type-chip" style="background:#d9770618;color:#d97706;border:1px solid #d9770650;">hotspot</a> <a href="#type-evidence_mcq" class="type-chip" style="background:#0891b218;color:#0891b2;border:1px solid #0891b250;">evidence_mcq</a></div>
+    <p style="font-size:12px;color:var(--text-muted);margin:10px 0 0;">Every type below also works in the <a href="cbt-prompts.html" style="color:var(--primary);font-weight:700;">AI Prompts Studio</a> packs and imports cross-platform (see the compatibility card at the end).</p>
+  </div>
+
+  <div class="card">
+    <h2>🧾 The CSV contract (14 columns)</h2>
+    <p style="color:var(--text-muted);font-size:12.5px;margin:0 0 12px;">Row 1 is the header; data starts at row 2. Columns 1–7 are the classic base format that works with older banks. Columns 8–14 are optional extensions — leave them blank for simple MCQ. Wrap any cell containing commas in double quotes.</p>
+    <div style="overflow-x:auto;">
+      <table class="cols-table">
+        <thead><tr><th>Column</th><th>Name</th><th>Used by</th><th>What goes in it</th></tr></thead>
+        <tbody>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col1</td><td style="font-weight:700;">Question</td><td style="color:var(--text-muted);">Yes</td><td>The question text / instructions. Use <code>___</code> for cloze blanks.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col2–5</td><td style="font-weight:700;">Options A–D</td><td style="color:var(--text-muted);">Most types</td><td>Choices for mcq/mrq/tf; the right-side pool or categories for matching/categorization.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col6</td><td style="font-weight:700;">CorrectAnswer</td><td style="color:var(--text-muted);">Yes (type-dependent)</td><td>Key letter, exact text, number, <code>min-max</code> range, or comma letters for mrq.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col7</td><td style="font-weight:700;">Explanation</td><td style="color:var(--text-muted);">No</td><td>Shown to the student in review mode after submission.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col8</td><td style="font-weight:700;">Type</td><td style="color:var(--text-muted);">Yes</td><td>One of the 20 type names above — see the type cards.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col9</td><td style="font-weight:700;">Tolerance</td><td style="color:var(--text-muted);">numeric</td><td>± tolerance for numeric answers.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col10</td><td style="font-weight:700;">Unit</td><td style="color:var(--text-muted);">numeric / code</td><td>Unit label (kg, cm) or programming language for code.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col11</td><td style="font-weight:700;">Accept</td><td style="color:var(--text-muted);">short / image_mcq / matrix / code / essay</td><td>Extra accepted answers (pipe-separated), image path, matrix choices, keywords.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col12</td><td style="font-weight:700;">MRQ_AON</td><td style="color:var(--text-muted);">mrq</td><td><code>1</code> (default) = all-or-nothing, <code>0</code> = partial credit.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col13</td><td style="font-weight:700;">Pairs</td><td style="color:var(--text-muted);">matching</td><td>JSON pair array <code>[{"l":"…","r":"…"}]</code> plus optional <code>DISTRACTOR</code> rows.</td></tr>
+        <tr><td style="white-space:nowrap;font-weight:700;color:var(--primary);">Col14</td><td style="font-weight:700;">Items</td><td style="color:var(--text-muted);">JSON types</td><td>Structured payload: pairs, rows, parts, regions, passage, tests…</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <div class="card">
+      <h2 style="margin-bottom:2px;">Core — Everyday fundamentals</h2>
+      <p style="color:var(--text-muted);font-size:12.5px;margin:0 0 16px;">The six types that cover most classroom tests — start here.</p>
+      <div class="type-grid">
+      <div class="type-card" id="type-mcq">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#3b82f622;color:#3b82f6;border:1px solid #3b82f655;">mcq</span>
+          <strong style="font-size:14.5px;color:var(--text);">Multiple Choice</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">One best answer out of up to four options. The workhorse of every CBT.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col1 question · Col2–Col5 options A–D · Col6 key letter (A/B/C/D)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Exact key match → full mark. No partial credit.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;What is 7 × 8?&#34;,&#34;49&#34;,&#34;54&#34;,&#34;56&#34;,&#34;63&#34;,&#34;C&#34;,&#34;&#34;,&#34;mcq&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Option buttons A–D; one tap selects, tapping another switches.</p>
+      </div>
+      <div class="type-card" id="type-tf">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#f59e0b22;color:#f59e0b;border:1px solid #f59e0b55;">tf</span>
+          <strong style="font-size:14.5px;color:var(--text);">True / False</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Binary statement judgement — fast to write, fast to answer.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col1 statement · Col2 = True text · Col3 = False text · Col6 = A (True) or B (False)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Exact match on A/B → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;The Niger River flows into the Atlantic Ocean.&#34;,&#34;True&#34;,&#34;False&#34;,&#34;&#34;,&#34;&#34;,&#34;A&#34;,&#34;&#34;,&#34;tf&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Two large option cards (True / False).</p>
+      </div>
+      <div class="type-card" id="type-mrq">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#a78bfa22;color:#a78bfa;border:1px solid #a78bfa55;">mrq</span>
+          <strong style="font-size:14.5px;color:var(--text);">Multiple Response</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Select ALL correct answers — great for "which of the following" items.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 = sorted letters e.g. <code>A,C</code> · Col12 MRQ_AON controls marking</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>All-or-nothing (MRQ_AON=1, default) or partial credit per correct/incorrect selection (MRQ_AON=0).</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Select prime numbers&#34;,&#34;2&#34;,&#34;9&#34;,&#34;11&#34;,&#34;15&#34;,&#34;A,C&#34;,&#34;&#34;,&#34;mrq&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;0&#34;,&#34;&#34;,&#34;&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Checkbox-style multi-select; tap toggles each option.</p>
+      </div>
+      <div class="type-card" id="type-short">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#10b98122;color:#10b981;border:1px solid #10b98155;">short</span>
+          <strong style="font-size:14.5px;color:var(--text);">Short Answer</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Type a word or phrase — spelling-aware but case-insensitive.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 primary answer · Col11 extra accepted answers separated by <code>|</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Case-insensitive exact match against the primary + accepted list.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Chemical symbol for gold?&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;Au&#34;,&#34;&#34;,&#34;short&#34;,&#34;&#34;,&#34;&#34;,&#34;Au|gold|AU&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Single-line text input.</p>
+      </div>
+      <div class="type-card" id="type-numeric">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#ef444422;color:#ef4444;border:1px solid #ef444455;">numeric</span>
+          <strong style="font-size:14.5px;color:var(--text);">Numeric</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Precise number entry with tolerance — built for maths and science.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 value · Col9 tolerance (±) · Col10 unit label</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>|student − key| ≤ tolerance → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Mass of 1 litre of water (kg)?&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;1&#34;,&#34;&#34;,&#34;numeric&#34;,&#34;0.05&#34;,&#34;kg&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Number pad input with unit hint beside it.</p>
+      </div>
+      <div class="type-card" id="type-range">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#6366f122;color:#6366f1;border:1px solid #6366f155;">range</span>
+          <strong style="font-size:14.5px;color:var(--text);">Range / Estimation</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Any value inside an accepted interval earns the mark — ideal for estimation.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 = <code>min-max</code> (e.g. 15-25) · or Col14 = <code>{"min":15,"max":25}</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Value within [min, max] inclusive → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Estimate Nigeria&#x27;s population (millions)&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;180-220&#34;,&#34;&#34;,&#34;range&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Number input labelled with the accepted range.</p>
+      </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:2px;">Pairing & Ordering — Structure & relationships</h2>
+      <p style="color:var(--text-muted);font-size:12.5px;margin:0 0 16px;">Match, order, sort and multi-part formats powered by the Items (Col14) JSON column.</p>
+      <div class="type-grid">
+      <div class="type-card" id="type-matching">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#14b8a622;color:#14b8a6;border:1px solid #14b8a655;">matching</span>
+          <strong style="font-size:14.5px;color:var(--text);">Matching</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Match left items to right options; extra DISTRACTOR rows make it harder.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col1 instructions · Col2–Col5 = right-side options · Col13 = <code>[{"l":"…","r":"…"}]</code> pairs (+ optional <code>DISTRACTOR</code> rows)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per correctly matched pair.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Match country to capital&#34;,&#34;Abuja&#34;,&#34;Accra&#34;,&#34;Nairobi&#34;,&#34;&#34;,&#34;&#34;,&#34;B&#34;,&#34;&#34;,&#34;matching&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[{&#34;&#34;l&#34;&#34;:&#34;&#34;Nigeria&#34;&#34;,&#34;&#34;r&#34;&#34;:&#34;&#34;Abuja&#34;&#34;},{&#34;&#34;l&#34;&#34;:&#34;&#34;Kenya&#34;&#34;,&#34;&#34;r&#34;&#34;:&#34;&#34;Nairobi&#34;&#34;},{&#34;&#34;l&#34;&#34;:&#34;&#34;Ghana&#34;&#34;,&#34;&#34;r&#34;&#34;:&#34;&#34;Accra&#34;&#34;}]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Each left item has a dropdown of the right options.</p>
+      </div>
+      <div class="type-card" id="type-ordering">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#a855f722;color:#a855f7;border:1px solid #a855f755;">ordering</span>
+          <strong style="font-size:14.5px;color:var(--text);">Ordering / Sequencing</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Arrange steps or events into the correct sequence.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col14 = <code>["first","second",…]</code> in correct order</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per item in the correct position.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Order these from smallest to largest&#34;,&#34;Dust&#34;,&#34;Sand&#34;,&#34;Gravel&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;ordering&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[&#34;&#34;Dust&#34;&#34;,&#34;&#34;Sand&#34;&#34;,&#34;&#34;Gravel&#34;&#34;]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Dropdown picks 1st, 2nd, 3rd… for each row.</p>
+      </div>
+      <div class="type-card" id="type-cloze">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#ec489922;color:#ec4899;border:1px solid #ec489955;">cloze</span>
+          <strong style="font-size:14.5px;color:var(--text);">Cloze / Fill-in-the-Blanks</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Multiple blanks inside one passage, each blank typed by the student.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col1 text with <code>___</code> markers · Col14 = <code>["ans1","ans2",…]</code> (one per blank)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per correctly filled blank (case-insensitive).</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;The ___ rises in the east and sets in the ___.&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;cloze&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[&#34;&#34;sun&#34;&#34;,&#34;&#34;west&#34;&#34;]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Inline text boxes where the blanks appear.</p>
+      </div>
+      <div class="type-card" id="type-categorization">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#22c55e22;color:#22c55e;border:1px solid #22c55e55;">categorization</span>
+          <strong style="font-size:14.5px;color:var(--text);">Categorization</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Assign each item to its category — classic sorting exercise.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col2–Col5 categories · Col14 = <code>[{"item":"…","category":"…"}]</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per item placed in the right category.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Sort into metals / non-metals&#34;,&#34;Metal&#34;,&#34;Non-metal&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;categorization&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[{&#34;&#34;item&#34;&#34;:&#34;&#34;Sodium&#34;&#34;,&#34;&#34;category&#34;&#34;:&#34;&#34;Metal&#34;&#34;},{&#34;&#34;item&#34;&#34;:&#34;&#34;Chlorine&#34;&#34;,&#34;&#34;category&#34;&#34;:&#34;&#34;Non-metal&#34;&#34;}]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Each item has a dropdown of the categories.</p>
+      </div>
+      <div class="type-card" id="type-multi_numeric">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#0ea5e922;color:#0ea5e9;border:1px solid #0ea5e955;">multi_numeric</span>
+          <strong style="font-size:14.5px;color:var(--text);">Multi-Part Numeric</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Several labelled numeric answers in one question (labs, multi-step maths).</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col14 = <code>[{"label":"a)","answer":3,"tolerance":0},…]</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per part within its own tolerance.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;From the graph: read x and y&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;multi_numeric&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[{&#34;&#34;label&#34;&#34;:&#34;&#34;x (cm)&#34;&#34;,&#34;&#34;answer&#34;&#34;:3,&#34;&#34;tolerance&#34;&#34;:0.2},{&#34;&#34;label&#34;&#34;:&#34;&#34;y (cm)&#34;&#34;,&#34;&#34;answer&#34;&#34;:5,&#34;&#34;tolerance&#34;&#34;:0.2}]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> One number input per labelled part.</p>
+      </div>
+      <div class="type-card" id="type-matrix">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#eab30822;color:#eab308;border:1px solid #eab30855;">matrix</span>
+          <strong style="font-size:14.5px;color:var(--text);">Matrix / Grid</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Rows share the same set of choices (e.g. True/False per statement).</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col11 = choices like <code>True|False</code> · Col14 = <code>[{"row":"…","answer":"True"},…]</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per correctly answered row.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Decide each statement&#34;,&#34;Earth orbits the Sun&#34;,&#34;Light is sound&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;matrix&#34;,&#34;&#34;,&#34;&#34;,&#34;True|False&#34;,&#34;&#34;,&#34;&#34;,&#34;[{&#34;&#34;row&#34;&#34;:&#34;&#34;Earth orbits the Sun&#34;&#34;,&#34;&#34;answer&#34;&#34;:&#34;&#34;True&#34;&#34;},{&#34;&#34;row&#34;&#34;:&#34;&#34;Light is sound&#34;&#34;,&#34;&#34;answer&#34;&#34;:&#34;&#34;False&#34;&#34;}]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Grid of rows, each with the same choice buttons.</p>
+      </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:2px;">Higher-Order — Bloom's upper levels</h2>
+      <p style="color:var(--text-muted);font-size:12.5px;margin:0 0 16px;">Analysis, evaluation and extended writing — including AI-free auto-marked essays and code.</p>
+      <div class="type-grid">
+      <div class="type-card" id="type-assertion_reason">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#f9731622;color:#f97316;border:1px solid #f9731655;">assertion_reason</span>
+          <strong style="font-size:14.5px;color:var(--text);">Assertion–Reason</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">WAEC/JAMB-style A–E logic combining an assertion and a reason.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 = A/B/C/D/E · Col14 = <code>{"assertion":"…","reason":"…"}</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Exact letter match → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;A: Copper conducts. R: It is a metal.&#34;,&#34;A both true, R explains A&#34;,&#34;B both true, R does not explain A&#34;,&#34;C A true, R false&#34;,&#34;D A false, R true&#34;,&#34;E both false&#34;,&#34;A&#34;,&#34;assertion_reason&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;{&#34;&#34;assertion&#34;&#34;:&#34;&#34;Copper conducts electricity.&#34;&#34;,&#34;&#34;reason&#34;&#34;:&#34;&#34;Copper is a metal with free electrons.&#34;&#34;}&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Statement pair shown together, then A–E option cards.</p>
+      </div>
+      <div class="type-card" id="type-case_study">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#84cc1622;color:#84cc16;border:1px solid #84cc1655;">case_study</span>
+          <strong style="font-size:14.5px;color:var(--text);">Case Study / Comprehension</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">A shared passage or dataset followed by one or more MCQs on it.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col14 = <code>{"passage":"…"}</code> · normal MCQ columns for options/key</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Exact key match → full mark. Passage auto-pins above its questions.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;According to the passage, the main cause is…&#34;,&#34;Drought&#34;,&#34;Flood&#34;,&#34;War&#34;,&#34;Famine&#34;,&#34;A&#34;,&#34;&#34;,&#34;case_study&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;{&#34;&#34;passage&#34;&#34;:&#34;&#34;The Sahel region has faced recurring drought since the 1970s…&#34;&#34;}&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Sticky passage pane above the question cards.</p>
+      </div>
+      <div class="type-card" id="type-image_mcq">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#06b6d422;color:#06b6d4;border:1px solid #06b6d455;">image_mcq</span>
+          <strong style="font-size:14.5px;color:var(--text);">Image / Diagram MCQ</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">MCQ built around a diagram, chart or photo.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col11 or Col14 = image URL / data URI · normal MCQ columns</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Exact key match → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Which angle is obtuse in the figure?&#34;,&#34;Angle P&#34;,&#34;Angle Q&#34;,&#34;Angle R&#34;,&#34;Angle S&#34;,&#34;C&#34;,&#34;&#34;,&#34;image_mcq&#34;,&#34;&#34;,&#34;&#34;,&#34;img/angles.png&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Image renders above the option cards; broken links degrade to a text warning.</p>
+      </div>
+      <div class="type-card" id="type-essay">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#fb923c22;color:#fb923c;border:1px solid #fb923c55;">essay</span>
+          <strong style="font-size:14.5px;color:var(--text);">Essay / Long Response</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Extended written answers, auto-checked by transparent word/keyword rules.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 = model points · Col11 = <code>keywords</code> · Col14 = <code>{"min_words":120,"keywords":["…"]}</code></div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Min-word gate + keyword coverage score; flagged for teacher review on high-stakes use.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Explain photosynthesis in your own words&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;light energy, chlorophyll, glucose&#34;,&#34;at least 120 words&#34;,&#34;essay&#34;,&#34;&#34;,&#34;&#34;,&#34;chlorophyll|glucose&#34;,&#34;&#34;,&#34;&#34;,&#34;{&#34;&#34;min_words&#34;&#34;:120}&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Large textarea with live word counter.</p>
+      </div>
+      <div class="type-card" id="type-code">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#8b5cf622;color:#8b5cf6;border:1px solid #8b5cf655;">code</span>
+          <strong style="font-size:14.5px;color:var(--text);">Code / SQL / Algorithm</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Write code in a monospace editor; keyword and rule-based checks.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col10 = language · Col11 = keywords separated by <code>|</code> · Col14 = optional tests JSON</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Keyword coverage + optional test rules; flagged for teacher review.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Write a SQL SELECT with WHERE&#34;,&#34;SELECT * FROM students WHERE age &gt; 10&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;SELECT, FROM, WHERE&#34;,&#34;must contain a WHERE clause&#34;,&#34;code&#34;,&#34;&#34;,&#34;sql&#34;,&#34;SELECT|FROM|WHERE&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Monospace editor with language label.</p>
+      </div>
+      <div class="type-card" id="type-hot_text">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#f43f5e22;color:#f43f5e;border:1px solid #f43f5e55;">hot_text</span>
+          <strong style="font-size:14.5px;color:var(--text);">Hot Text (select words)</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Tap the correct words or phrases directly inside a sentence.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col14 = <code>[{"t":"word","correct":true},…]</code> chunks</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Fraction per correct tap, minus wrong taps, floored at 0.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Tap the two verbs&#34;,&#34;The boy quickly ran home&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;hot_text&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;[{&#34;&#34;t&#34;&#34;:&#34;&#34;The &#34;&#34;,&#34;&#34;correct&#34;&#34;:false},{&#34;&#34;t&#34;&#34;:&#34;&#34;boy &#34;&#34;,&#34;&#34;correct&#34;&#34;:false},{&#34;&#34;t&#34;&#34;:&#34;&#34;quickly &#34;&#34;,&#34;&#34;correct&#34;&#34;:false},{&#34;&#34;t&#34;&#34;:&#34;&#34;ran &#34;&#34;,&#34;&#34;correct&#34;&#34;:true},{&#34;&#34;t&#34;&#34;:&#34;&#34;home&#34;&#34;,&#34;&#34;correct&#34;&#34;:false}]&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Words render as tappable chips inside the sentence.</p>
+      </div>
+      </div>
+    </div>
+    <div class="card">
+      <h2 style="margin-bottom:2px;">Visual & Evidence — New in this release</h2>
+      <p style="color:var(--text-muted);font-size:12.5px;margin:0 0 16px;">Tap-an-image and two-part evidence questions, matching the School Connect / GOSA Portal engine.</p>
+      <div class="type-grid">
+      <div class="type-card" id="type-hotspot">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#d9770622;color:#d97706;border:1px solid #d9770655;">hotspot</span>
+          <strong style="font-size:14.5px;color:var(--text);">Hotspot (tap the image)</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">Tap the correct region of a diagram, map or chart.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col6 = correct region label · Col14 = <code>{"image":"url","regions":[{"label":"A","x":20,"y":35},…]}</code> (x/y = % position)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Correct region label → full mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;Tap the equator on the map&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;Equator&#34;,&#34;&#34;,&#34;hotspot&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;{&#34;&#34;image&#34;&#34;:&#34;&#34;img/world-map.png&#34;&#34;,&#34;&#34;regions&#34;&#34;:[{&#34;&#34;label&#34;&#34;:&#34;&#34;Equator&#34;&#34;,&#34;&#34;x&#34;&#34;:50,&#34;&#34;y&#34;&#34;:48},{&#34;&#34;label&#34;&#34;:&#34;&#34;Tropic of Cancer&#34;&#34;,&#34;&#34;x&#34;&#34;:50,&#34;&#34;y&#34;&#34;:38},{&#34;&#34;label&#34;&#34;:&#34;&#34;Tropic of Capricorn&#34;&#34;,&#34;&#34;x&#34;&#34;:50,&#34;&#34;y&#34;&#34;:60}]}&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Numbered dots appear on the image; tapping one records that label. If the image cannot load, labelled buttons appear instead so the question is still answerable.</p>
+      </div>
+      <div class="type-card" id="type-evidence_mcq">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px;">
+          <span style="font-size:11px;font-weight:800;padding:2px 9px;border-radius:12px;background:#0891b222;color:#0891b2;border:1px solid #0891b255;">evidence_mcq</span>
+          <strong style="font-size:14.5px;color:var(--text);">Evidence-Based MCQ (2-part)</strong>
+        </div>
+        <p style="margin:0 0 10px;font-size:12.5px;color:var(--text-muted);line-height:1.6;">SAT/WAEC-style linked pair: choose the answer, then the sentence that best proves it.</p>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:8px;margin-bottom:10px;">
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Columns</b><br>Col14 = <code>{"part1":{"question":"…","options":[…],"answer":"…"},"part2":{…}}</code> (answer = exact option text)</div>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:9px;padding:8px 11px;font-size:12px;color:var(--text);line-height:1.55;"><b style="color:var(--primary);">Scoring</b><br>Both parts right → full mark; one part right → half mark.</div>
+        </div>
+        <div style="margin-bottom:8px;"><b style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;">CSV row example</b></div>
+        <div style="font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 12px;overflow-x:auto;white-space:nowrap;color:var(--primary);">&#34;(Part A) What is the theme? … (Part B) Which line proves it?&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;evidence_mcq&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;&#34;,&#34;{&#34;&#34;part1&#34;&#34;:{&#34;&#34;question&#34;&#34;:&#34;&#34;What is the main theme of the passage?&#34;&#34;,&#34;&#34;options&#34;&#34;:[&#34;&#34;Survival&#34;&#34;,&#34;&#34;Betrayal&#34;&#34;,&#34;&#34;Love&#34;&#34;,&#34;&#34;Justice&#34;&#34;],&#34;&#34;answer&#34;&#34;:&#34;&#34;Survival&#34;&#34;},&#34;&#34;part2&#34;&#34;:{&#34;&#34;question&#34;&#34;:&#34;&#34;Which line best supports your answer?&#34;&#34;,&#34;&#34;options&#34;&#34;:[&#34;&#34;He shared his last water&#34;&#34;,&#34;&#34;The sun was hot&#34;&#34;,&#34;&#34;She sang softly&#34;&#34;,&#34;&#34;They walked far&#34;&#34;],&#34;&#34;answer&#34;&#34;:&#34;&#34;He shared his last water&#34;&#34;}}&#34;</div>
+        <p style="margin:10px 0 0;font-size:12px;color:var(--text-muted);"><b style="color:var(--text);">Student sees:</b> Two stacked option-card groups (Part A then Part B), each independent until submitted.</p>
+      </div>
+      </div>
+    </div>
+
+  <div class="card">
+    <h2>⌨️ JSON escaping rule (Col13 / Col14)</h2>
+    <p style="color:var(--text-muted);font-size:12.5px;line-height:1.7;margin:0 0 10px;">Whenever a cell contains JSON, wrap the whole CSV cell in double quotes and write every inner double-quote as <b>two</b> double-quotes:</p>
+    <div style="font-family:ui-monospace,Consolas,monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:10px 14px;overflow-x:auto;white-space:nowrap;color:var(--primary);">"[{""item"":""Sodium"",""category"":""Metal""}]"</div>
+    <p style="color:var(--text-muted);font-size:12.5px;line-height:1.7;margin:10px 0 0;">The <a href="cbt-prompts.html" style="color:var(--primary);font-weight:700;">AI Prompts Studio</a> and <a href="PROMPT_TEMPLATE.md" target="_blank" rel="noopener" style="color:var(--primary);font-weight:700;">PROMPT_TEMPLATE.md</a> both generate correctly-escaped CSV automatically — and every example row on this page is copy-paste ready.</p>
+  </div>
+
+  <div class="card">
+    <h2>🔀 Cross-platform compatibility</h2>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;">
+      <div style="background:rgba(16,185,129,.07);border:1px solid rgba(16,185,129,.3);border-radius:11px;padding:12px 15px;font-size:12.5px;line-height:1.65;color:var(--text);">
+        <b>📥 Import from School Connect / GOSA Portal</b><br>
+        CSVs exported from either platform import here <b>without editing</b> — any column order, their headers (<code>question,type,a,b,c,d,answer,explanation,mark…</code>) and their type names (<code>true_false</code>, <code>multi_select</code>, <code>fill_blank</code>, <code>image_hotspot</code>, <code>evidence</code>…) are auto-detected and mapped.
+      </div>
+      <div style="background:rgba(59,130,246,.07);border:1px solid rgba(59,130,246,.3);border-radius:11px;padding:12px 15px;font-size:12.5px;line-height:1.65;color:var(--text);">
+        <b>📤 Export back out</b><br>
+        Any bank built here exports as a School Connect-compatible CSV from <b>Assessments → Bank → Export School Connect CSV</b>, so questions flow freely between all three platforms.
+      </div>
+      <div style="background:rgba(236,72,153,.07);border:1px solid rgba(236,72,153,.3);border-radius:11px;padding:12px 15px;font-size:12.5px;line-height:1.65;color:var(--text);">
+        <b>🤖 Free AI-assisted authoring</b><br>
+        No paid AI APIs anywhere. Copy a prompt from the studio, paste into any free AI chat, get a ready-to-upload CSV — then validate and load it. Essays and code are marked by transparent keyword / minimum-word / rule checks with teacher review recommended for high-stakes grading.
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<footer class="app-footer">
+  <div>© <span id="year"></span> HMG Academy — CBT Pro. Rule-based scoring only. No AI APIs.</div>
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script>document.getElementById('year').textContent=new Date().getFullYear();</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

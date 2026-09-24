@@ -1,0 +1,579 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Data & Drive Sync — HMG Academy CBT Pro</title>
+  <meta name="description" content="Import, export and migrate platform data — CSV and SQL backups, Google Drive sync V9.4 and full database portability for HMG Academy CBT Pro administrators.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .row-card{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .row-card:last-child{border-bottom:none;}
+  .table-chip{font-size:11px;padding:2px 8px;border-radius:10px;border:1px solid var(--border);}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Admin Data Portability & Sync</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>💾 Admin Data & Portability</h1>
+      <p>One-click full backups, Google Drive cloud sync with restore, dry-run envelope restores, per-table exports, demo data, a table browser and disaster-recovery migration — everything free-tier, everything portable.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="exportFullEnvelope()">📦 Export Full Archive</button>
+      <button class="btn btn-accent" onclick="DriveSync.checkAutoSync(DataPort.buildFullEnvelope)">☁️ Sync to Drive</button>
+    </div>
+  </div>
+
+  <div class="grid-2">
+    <!-- Google Drive Sync Card -->
+    <div class="card">
+      <h2>☁️ Google Drive Sync & Backups</h2>
+      <p style="font-size:.85rem;color:var(--text-muted);">Backups go to the institution's OWN Google Drive (<span class="code-chip">drive.file</span> scope — the platform sees only files it creates). The newest 15 are kept; older ones are trimmed automatically.</p>
+
+      <div style="background:var(--surface-2);border-radius:var(--radius-sm);padding:16px;margin-bottom:14px;border:1px solid var(--border);">
+        <div class="flex-between" style="margin-bottom:8px;">
+          <span style="font-size:13px;font-weight:700;">Drive Connection:</span>
+          <span class="badge" id="drive-badge">Checking…</span>
+        </div>
+        <div class="flex-between">
+          <span style="font-size:13px;color:var(--text-muted);">Last Cloud Backup:</span>
+          <strong id="drive-last-ts" style="font-size:13px;">—</strong>
+        </div>
+      </div>
+
+      <div class="flex-gap" style="flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="backupToDriveNow()">☁️ Backup Now</button>
+        <button class="btn btn-outline" onclick="loadDriveBackupsList()">📋 List Cloud Backups</button>
+        <a class="btn btn-sm btn-outline" href="settings.html">⚙️ Configure</a>
+      </div>
+
+      <div id="drive-file-list" style="max-height:240px;overflow-y:auto;font-size:12px;border:1px solid var(--border);border-radius:8px;padding:10px;background:var(--bg);display:none;margin-top:12px;"></div>
+
+      <h3 style="margin-top:18px;">🗂️ Backup history (this platform)</h3>
+      <div id="backup-history" style="max-height:220px;overflow-y:auto;font-size:12px;"></div>
+    </div>
+
+    <!-- Data Restore Card -->
+    <div class="card">
+      <h2>📥 Import & Restore Data Envelope</h2>
+      <p style="font-size:.85rem;color:var(--text-muted);">Restore question banks, candidate results and rosters from a portable JSON backup. Every restore starts with a <b>dry-run preview</b> — nothing is written until you approve the plan.</p>
+
+      <div style="border:2px dashed var(--border-light);border-radius:var(--radius-sm);padding:22px;text-align:center;background:var(--bg);margin-bottom:14px;">
+        <div style="font-size:30px;margin-bottom:6px;">📂</div>
+        <div style="font-size:14px;font-weight:700;margin-bottom:4px;">Select a Backup JSON Envelope</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Supports both the new v4 envelopes and legacy v10.0 archives</div>
+        <input type="file" id="restore-file-input" accept=".json,application/json" onchange="handleRestoreFile(this.files[0])" style="display:none;">
+        <button class="btn btn-outline" onclick="document.getElementById('restore-file-input').click()">Browse JSON File</button>
+      </div>
+
+      <div id="restore-preview" style="display:none;font-size:13px;padding:12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);margin-bottom:12px;"></div>
+    </div>
+  </div>
+
+  <!-- 🎬 DEMO SAMPLE DATA -->
+  <div class="card">
+    <h2>🎬 One-Click Demo Sample Data</h2>
+    <div class="flex-between" style="gap:14px;flex-wrap:wrap;">
+      <p style="margin:0;font-size:.85rem;color:var(--text-muted);max-width:640px;">Populates a ready-made DEMO101 exam (real questions, exam code <span class="code-chip">DEMO101</span>), a three-student demo roster and two demo results — so every screen has something to show the moment a platform is deployed. Safe to re-run; it updates rather than duplicates.</p>
+      <button class="btn btn-primary" onclick="seedDemoData()">🎬 Seed Demo Data</button>
+    </div>
+  </div>
+
+  <!-- ♻️ TABLE BROWSER -->
+  <div class="card">
+    <h2>🔎 Browse & Delete Table Rows</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Page through any platform table, inspect rows as JSON, and (super_admin only) delete selected rows. Deletes are capped at 1,000 rows per batch and audit-logged server-side.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
+      <select id="browse-table">
+        <option value="exams">exams</option><option value="results">results</option>
+        <option value="students">students</option><option value="profiles">profiles</option>
+        <option value="audit_logs">audit_logs</option><option value="system_backups">system_backups</option>
+        <option value="institutions">institutions</option>
+      </select>
+      <select id="browse-limit"><option>25</option><option selected>50</option><option>100</option><option>200</option></select>
+      <button class="btn btn-sm btn-primary" onclick="browseOffset=0;browseTable()">🔎 Browse</button>
+      <span id="browse-pager" style="font-size:12px;color:var(--text-muted);"></span>
+    </div>
+    <div id="browse-out" style="margin-top:12px;max-height:420px;overflow:auto;font-size:11.5px;"></div>
+  </div>
+
+  <!-- ♻️ PORTABLE ARCHIVE CENTER -->
+  <div class="card">
+    <h2>♻️ Portable Data Archive Center</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Export any single table as a self-describing JSON archive (rows + metadata) — perfect for term-end filing, audits, or feeding external tools. CSV exports of the same tables are in the Batch Exporters below.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('exams')">📦 Exams</button>
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('results')">📦 Results</button>
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('students')">📦 Students</button>
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('profiles')">📦 Profiles</button>
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('audit_logs')">📦 Audit Logs</button>
+      <button class="btn btn-sm btn-outline" onclick="archiveTable('system_backups')">📦 Backup History</button>
+    </div>
+  </div>
+
+  <!-- DISASTER RECOVERY & PROJECT MIGRATION -->
+  <div class="card" style="border:2px solid var(--primary);background:radial-gradient(circle at top right, rgba(16,185,129,0.06), transparent 70%), var(--surface);">
+    <div class="flex-between" style="margin-bottom:12px;">
+      <div>
+        <h2 style="color:var(--primary);margin-bottom:4px;">🚨 Disaster Recovery & Migration to Fresh Supabase Project</h2>
+        <p style="margin-bottom:0;">If a Supabase project became paused or permanently inactive, connect a <strong>brand-new blank Supabase project</strong> (with database/complete-schema.sql already run) and re-hydrate all historical exams, rosters and results from a Google Drive backup.</p>
+      </div>
+      <span class="badge badge-primary">Zero Data Loss Guard</span>
+    </div>
+
+    <div class="grid-2" style="margin-top:16px;">
+      <div style="background:var(--surface-2);padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+        <strong style="font-size:13px;display:block;margin-bottom:8px;">Step 1: Enter New Supabase Project Credentials</strong>
+        <label>New Supabase URL</label>
+        <input type="text" id="dr-sb-url" placeholder="https://new-project.supabase.co" style="margin-bottom:8px;">
+        <label>New Supabase Anon Key</label>
+        <input type="text" id="dr-sb-key" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6..." style="margin-bottom:8px;">
+        <button class="btn btn-sm btn-outline" onclick="testNewSupabaseConnection()">⚡ Verify New Database</button>
+        <span id="dr-verify-status" style="font-size:12px;margin-left:8px;"></span>
+      </div>
+
+      <div style="background:var(--surface-2);padding:16px;border-radius:var(--radius-sm);border:1px solid var(--border);">
+        <strong style="font-size:13px;display:block;margin-bottom:8px;">Step 2: Fetch Cloud Archive from Google Drive</strong>
+        <p style="font-size:12px;margin-bottom:12px;">Connect to the school's Google Drive account where backups are stored, pick the archive, then re-hydrate.</p>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-accent" onclick="authAndListDriveForRecovery()">🔑 Connect Google Drive</button>
+          <button class="btn btn-sm btn-primary" id="dr-start-btn" onclick="executeDisasterRecoveryMigration()" disabled>🚀 Re-hydrate New Project</button>
+        </div>
+        <select id="dr-backup-select" style="margin-top:10px;margin-bottom:0;display:none;font-size:12px;"></select>
+      </div>
+    </div>
+
+    <div id="dr-progress-box" style="display:none;margin-top:16px;background:var(--bg);padding:14px;border-radius:var(--radius-sm);border:1px solid var(--primary);font-size:13px;"></div>
+
+    <!-- PHASE 12I — the full 8-step Disaster Recovery Wizard runbook -->
+    <details style="margin-top:16px;border:1px dashed var(--border);border-radius:var(--radius-sm);padding:12px 16px;">
+      <summary style="cursor:pointer;font-weight:800;font-size:1.02rem;">🚑 Disaster Recovery Wizard — restore a school onto a FRESH database from Google Drive (click to open)</summary>
+      <p style="color:var(--text-muted);margin-top:10px;"><b>When to use this:</b> the old Supabase project was paused too long / deleted / permanently lost, but backups exist in the school's Google Drive. This wizard rebuilds everything on a brand-new database in ~30–45 minutes with free tools. (If the old project is merely <i>paused</i>, do NOT use this — just restore it at supabase.com and press the 💓 heartbeat on the Platform Health console.)</p>
+      <ol style="line-height:2;font-size:.92rem;padding-left:20px;">
+        <li><b>Create the fresh database:</b> <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a> → New project → copy the new <b>Project URL</b> and <b>anon public key</b> (Project Settings → API).</li>
+        <li><b>Install the schema:</b> new project → SQL Editor → paste the ENTIRE <code>database/complete-schema.sql</code> from the site files → Run. (This auto-installs keep-alive, the archive vault, Drive-sync and security settings — verify on the Platform Health → Schema Doctor card.)</li>
+        <li><b>Reconnect this website (two routes):</b>
+          <br>• <b>Live migration (preferred):</b> use the <i>Step 1 + Step 2</i> boxes above — enter the new URL/key, verify, then re-hydrate. This session restores straight into the new project.
+          <br>• <b>Permanent switch:</b> edit <code>assets/js/app.js</code> — replace <code>SB_URL</code> and <code>SB_KEY</code> with the new values — push to GitHub; the host redeploys the SAME site onto the fresh database.</li>
+        <li><b>Recreate the first admin:</b> Admin Panel → sign up; then in Supabase → Table Editor → <code>profiles</code> → set that row to <code>role = admin</code> (and approve pending teachers from the Admin Panel).</li>
+        <li><b>Reconnect Google Drive:</b> sign in here as that admin → Google Drive card → ⚙️ Configure → paste the school's existing OAuth <b>Client ID</b> (it is tied to the site URL, not the database, so the SAME one still works) → Save.</li>
+        <li><b>One-click restore:</b> click <b>📋 List Cloud Backups</b> → on the NEWEST backup click <b>🚑 Recover to new project</b> (not plain Restore). Recovery mode verifies the SHA-256 seal first, then re-creates every exam, roster and result with safe upserts, retries failed rows once each, and skips dead login references with a per-table report. Nothing is deleted.</li>
+        <li><b>Re-onboard people:</b> teachers sign up again (send one platform announcement); approve them in the Admin Panel — restored rosters re-link by exam code and student ID.</li>
+        <li><b>Re-arm ALL safeguards:</b> open the <a href="platform-health.html">🛡️ Platform Health console</a> → press <b>💓 heartbeat</b>, re-add the GitHub Action secrets with the NEW url/key, repoint UptimeRobot at the new project, switch Drive <b>auto-sync back ON</b> and run one fresh backup. Every tile must be green.</li>
+      </ol>
+      <p style="font-size:.85rem;color:var(--text-muted);">Full printable runbook with a “what survives / what doesn’t” table: <code>DISASTER-RECOVERY-RUNBOOK.md</code> (included in this package). Prevention: keep auto-sync ON and glance at the Health console weekly — then this wizard is never needed.</p>
+    </details>
+  </div>
+
+  <!-- Batch Exporters -->
+  <div class="card">
+    <h2>📊 Batch Data Exporters</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Download individual platform tables as CSV (spreadsheet-ready) or JSON (machine-ready).</p>
+    <div class="grid-4" id="exporter-grid"></div>
+  </div>
+
+  <!-- Danger Zone -->
+  <div class="card" style="border-color:rgba(239,68,68,0.4);">
+    <h2 style="color:var(--danger);">⚠️ Danger Zone</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Destructive operations, all owner-only and audit-logged. Archive or export first!</p>
+
+    <div class="row-card">
+      <div>
+        <strong style="font-size:14px;">Purge a practice exam's submissions</strong>
+        <div style="font-size:12px;color:var(--text-muted);">Deletes candidate results for ONE exam (by its exam code) without touching the question bank. <i>(Fix: the old button called the purge RPC without an exam id — it could never succeed.)</i></div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="purgeTestResults()">🗑 Purge by Exam Code</button>
+    </div>
+    <div class="row-card">
+      <div>
+        <strong style="font-size:14px;">Cold-storage & purge of old results</strong>
+        <div style="font-size:12px;color:var(--text-muted);">Archive old rows into the file-storage vault, then purge them from the database — done on the Storage Manager page.</div>
+      </div>
+      <a class="btn btn-outline btn-sm" href="storage.html">📦 Open Storage Manager</a>
+    </div>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script>
+/* ═══════════ FULL ENVELOPE (new engine, legacy-compatible) ═══════════ */
+async function exportFullEnvelope() {
+  try {
+    showToast('Compiling complete platform envelope…', 'info');
+    const { name } = await DataPort.exportFullEnvelope();
+    showToast('Full archive downloaded: ' + name, 'success', 5000);
+  } catch (e) {
+    showToast('Export failed: ' + (e.message || e), 'danger');
+  }
+}
+
+async function backupToDriveNow() {
+  try {
+    showToast('Uploading cloud backup to Google Drive…', 'info');
+    const env = await DataPort.buildFullEnvelope();
+    window.__driveManualBackup = true;
+    const f = await DriveSync.uploadBackup(env);
+    window.__driveManualBackup = false;
+    showToast('Backup saved to Google Drive ✓ (' + f.name + ')', 'success', 5000);
+    loadDriveStatus(); loadBackupHistory();
+  } catch (e) {
+    window.__driveManualBackup = false;
+    showToast('Drive backup failed: ' + (e.message || e), 'danger', 6000);
+  }
+}
+
+async function loadDriveStatus() {
+  const cfg = await DriveSync.loadCfg();
+  const badge = document.getElementById('drive-badge');
+  badge.textContent = DriveSync.isConfigured() ? 'Configured' : 'Setup Required';
+  badge.className = 'badge ' + (DriveSync.isConfigured() ? 'badge-primary' : 'badge-warning');
+  document.getElementById('drive-last-ts').textContent = cfg.lastBackup ? new Date(cfg.lastBackup).toLocaleString() : 'No backups yet';
+}
+
+async function loadDriveBackupsList() {
+  const el = document.getElementById('drive-file-list');
+  el.style.display = 'block';
+  el.innerHTML = '⏳ Loading backups from Google Drive…';
+  try {
+    const files = await DriveSync.listBackups();
+    if (!files.length) { el.innerHTML = 'No backup files found in the Google Drive folder yet.'; return; }
+    el.innerHTML = files.map(f => `
+      <div class="row-card">
+        <div>
+          <strong>${escapeHtml(f.name)}</strong> <span title="SHA-256 sealed archive — verified before any import">🔒</span><br>
+          <span style="color:var(--text-muted);">${new Date(f.createdTime).toLocaleString()} · ${(Number(f.size || 0) / 1024).toFixed(1)} KB</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-sm btn-outline" onclick="restoreFromDriveFile('${f.id}')">↩ Restore</button>
+          <button class="btn btn-sm btn-accent" title="Disaster-recovery import onto a FRESH project: same safe upsert, plus row-by-row retries and dead-reference skips" onclick="recoverToNewProject('${f.id}')">🚑 Recover to new project</button>
+        </div>
+      </div>`).join('');
+  } catch (e) {
+    el.innerHTML = '❌ ' + escapeHtml(e.message || 'Error listing files') + ' <br><small>Tip: click Configure to authorize Drive first.</small>';
+  }
+}
+
+async function restoreFromDriveFile(fileId) {
+  if (!confirm('Restore platform data from this Google Drive backup? A dry-run preview will be shown first — nothing is written until you approve.')) return;
+  try {
+    showToast('Downloading backup from Drive…', 'info');
+    const data = await DriveSync.downloadBackup(fileId);
+    showRestorePreview(data);
+  } catch (e) {
+    showToast('Drive restore error: ' + (e.message || e), 'danger');
+  }
+}
+
+/* PHASE 12I — disaster-recovery import straight from a Drive backup:
+   SHA-256 seal verified first, then a recovery-mode restore (safe upsert,
+   row-by-row retry, dead references skipped with reasons, per-table report). */
+async function recoverToNewProject(fileId) {
+  if (!confirm('🚑 RECOVERY import — use this after migrating to a FRESH database.\n\nThe archive seal is verified, then every record is re-created with safe upsert semantics (nothing is deleted). Rows that cannot be restored are skipped and listed.\n\nContinue?')) return;
+  try {
+    showToast('Verifying archive seal and re-hydrating…', 'info');
+    const plan = await DriveSync.restoreFrom(fileId, 'recovery');
+    const okCount = (plan.actions || []).length, skipCount = (plan.skipped || []).length, warnCount = (plan.warnings || []).length;
+    showToast(`🚑 Recovery complete — ${okCount} table group(s) processed · ${skipCount} skipped · ${warnCount} warning(s). See the report below.`, skipCount ? 'warning' : 'success', 9000);
+    const box = document.getElementById('drive-file-list');
+    if (box) box.insertAdjacentHTML('beforeend',
+      '<div style="margin-top:10px;padding:12px;border:1px solid var(--border);border-radius:8px;background:var(--surface-2);font-size:12px;">' +
+      '<b>🚑 Recovery report</b><br>' +
+      (plan.actions || []).map(a => '✅ ' + a.table + ': ' + (a.op || '') + (a.inserted !== undefined ? ' (+' + a.inserted + ' new / ' + (a.updated || 0) + ' updated)' : '')).join('<br>') +
+      ((plan.skipped || []).length ? '<br>' + plan.skipped.map(x => '⏭️ ' + (x.table || '') + (x.id || x.why ? ' — ' + (x.id || '') + ' ' + (x.why || x.count !== undefined ? (x.why || x.count + ' row(s)') : '') : '')).join('<br>') : '') +
+      ((plan.warnings || []).length ? '<br>' + plan.warnings.slice(0, 10).map(w => '⚠️ ' + w).join('<br>') : '') +
+      '</div>');
+  } catch (e) {
+    showToast('Recovery failed: ' + (e.message || e), 'danger', 9000);
+  }
+}
+
+/* ═══════════ RESTORE (dry-run first) ═══════════ */
+function normalizeEnvelope(data) {
+  if (!data) return null;
+  if (data.meta && data.data) return data;                       // v4 envelope
+  if (data.data) {                                               // legacy v10.0
+    return {
+      meta: { schema_version: 1, exported_at: data.exportedAt || '', platform: data.platform || 'legacy archive' },
+      summary: { total_records: 0, counts: data.counts || {} },
+      data: data.data
+    };
+  }
+  return null;
+}
+
+function handleRestoreFile(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      showRestorePreview(data);
+    } catch (err) {
+      showToast('Invalid JSON backup file', 'danger');
+    }
+  };
+  reader.readAsText(file);
+}
+
+async function showRestorePreview(raw) {
+  const env = normalizeEnvelope(raw);
+  if (!env) return showToast('Not a recognized backup envelope.', 'danger');
+  const prev = document.getElementById('restore-preview');
+  prev.style.display = 'block';
+  prev.innerHTML = '⏳ Running dry-run (nothing is written)…';
+  try {
+    const plan = await DataPort.restoreEnvelope(env, { dryRun: true });
+    const c = env.summary.counts || {};
+    prev.innerHTML = `
+      <strong>Envelope:</strong> ${escapeHtml(env.meta.platform || 'CBT Archive')} · exported ${env.meta.exported_at ? new Date(env.meta.exported_at).toLocaleString() : 'unknown'}<br>
+      <span style="color:var(--text-muted);">Contains: ${(c.exams != null ? c.exams : (env.data.exams || []).length)} exams, ${(c.results != null ? c.results : (env.data.results || []).length)} results, ${(c.students != null ? c.students : (env.data.students || []).length)} students</span>
+      <div style="margin-top:8px;padding:10px;border-radius:8px;background:var(--bg);border:1px solid var(--border);">
+        <strong>Dry-run plan:</strong>
+        <ul style="margin:6px 0 0 18px;font-size:12px;">
+          ${plan.actions.map(a => `<li>${escapeHtml(a.table)}: ${escapeHtml(a.op)}${a.count != null ? ' — ' + a.count + ' row(s)' : ''}${a.inserted != null ? ` — ${a.inserted} new, ${a.updated} updated` : ''}</li>`).join('') || '<li>Nothing to change.</li>'}
+        </ul>
+        ${plan.skipped.length ? `<div style="font-size:12px;color:var(--warning);margin-top:6px;">Skipped: ${plan.skipped.map(s => `${s.table} (${s.count})`).join(', ')}</div>` : ''}
+        ${plan.warnings.length ? `<div style="font-size:12px;color:var(--warning);margin-top:6px;">${plan.warnings.length} warning(s) will apply</div>` : ''}
+      </div>
+      <button class="btn btn-sm btn-primary" style="margin-top:10px;" onclick='applyRestore(${JSON.stringify(JSON.stringify(env))})'>✅ Apply Restore for Real</button>
+    `;
+  } catch (e) {
+    prev.innerHTML = '❌ Dry-run failed: ' + escapeHtml(e.message || e);
+  }
+}
+
+async function applyRestore(envJson) {
+  const env = typeof envJson === 'string' ? JSON.parse(envJson) : envJson;
+  if (!confirm('Apply this restore now? Exams upsert by code, rosters upsert by ID, results are re-inserted matched by exam code.')) return;
+  showToast('Restoring records into Supabase…', 'info');
+  try {
+    const plan = await DataPort.restoreEnvelope(env, { dryRun: false });
+    showToast('Restore complete ✓ ' + plan.actions.length + ' action(s)', 'success', 6000);
+    document.getElementById('restore-preview').innerHTML = '<strong style="color:var(--primary);">✅ Restore applied.</strong><br><pre style="font-size:11px;white-space:pre-wrap;">' + escapeHtml(JSON.stringify(plan.actions, null, 1)) + '</pre>';
+  } catch (e) {
+    showToast('Restore failed: ' + (e.message || e), 'danger');
+  }
+}
+
+/* ═══════════ DEMO DATA ═══════════ */
+async function seedDemoData() {
+  if (!confirm('Create/refresh the DEMO101 sample exam, demo roster and two demo results?')) return;
+  try {
+    const r = await DataPort.seedDemoData();
+    const row = Array.isArray(r) ? r[0] : r;
+    showToast(`Demo data ready ✓ Exam code DEMO101 · ${row?.students_added ?? '?'} students · ${row?.results_added ?? 0} results`, 'success', 6000);
+  } catch (e) {
+    showToast('Demo seed failed: ' + (e.message || e) + ' (admin session required)', 'danger');
+  }
+}
+
+/* ═══════════ TABLE BROWSER ═══════════ */
+let browseOffset = 0;
+async function browseTable() {
+  const table = document.getElementById('browse-table').value;
+  const limit = +document.getElementById('browse-limit').value;
+  const out = document.getElementById('browse-out');
+  out.innerHTML = '⏳ Loading…';
+  try {
+    const rows = await DataPort.browseTable(table, limit, browseOffset);
+    document.getElementById('browse-pager').textContent = `rows ${browseOffset + 1}–${browseOffset + rows.length}`;
+    if (!rows.length) { out.innerHTML = '<em style="color:var(--text-muted);">No rows (or empty result).</em>'; return; }
+    out.innerHTML = `
+      <div class="flex-between" style="margin-bottom:6px;">
+        <span style="font-size:11px;color:var(--text-muted);">Showing ${rows.length} row(s) — click a row to expand the full JSON</span>
+        <div class="flex-gap">
+          <button class="btn btn-sm btn-outline" onclick="browseOffset=Math.max(0,browseOffset-${limit});browseTable()">◀ Prev</button>
+          <button class="btn btn-sm btn-outline" onclick="browseOffset+=${limit};browseTable()">Next ▶</button>
+        </div>
+      </div>
+      ` + rows.map((r, i) => `
+      <details style="border:1px solid var(--border);border-radius:8px;padding:6px 10px;margin:4px 0;background:var(--surface-2);">
+        <summary style="cursor:pointer;font-size:11.5px;">
+          <span class="table-chip">${escapeHtml(table)}</span>
+          ${escapeHtml(String(r.code || r.student_name || r.full_name || r.email || r.backup_name || r.action || r.id).slice(0, 60))}
+          <span style="color:var(--text-muted);">${r.created_at ? ' · ' + new Date(r.created_at).toLocaleDateString() : ''}</span>
+        </summary>
+        <pre style="font-size:10.5px;white-space:pre-wrap;max-height:260px;overflow:auto;margin:8px 0 0;">${escapeHtml(JSON.stringify(r, null, 1))}</pre>
+        <button class="btn btn-sm btn-danger" style="margin:6px 0;" onclick="deleteRow('${table}','${r.id}')">🗑 Delete this row (owner)</button>
+      </details>`).join('');
+  } catch (e) {
+    out.innerHTML = '❌ ' + escapeHtml(e.message || e);
+  }
+}
+
+async function deleteRow(table, id) {
+  if (!confirm(`Delete this ${table} row permanently? This is owner-only, capped and audit-logged.`)) return;
+  try {
+    const r = await DataPort.deleteRows(table, [id]);
+    showToast('Deleted ' + (Array.isArray(r) ? r[0] : r) + ' row(s) ✓', 'success');
+    browseTable();
+  } catch (e) {
+    showToast('Delete failed: ' + (e.message || e), 'danger');
+  }
+}
+
+/* ═══════════ ARCHIVE CENTER + EXPORTERS ═══════════ */
+async function archiveTable(name) {
+  try {
+    showToast('Exporting ' + name + '…', 'info');
+    const n = await DataPort.exportTableJSON(name);
+    showToast(`${name} archived ✓ (${n} rows)`, 'success');
+  } catch (e) { showToast('Archive failed: ' + (e.message || e), 'danger'); }
+}
+
+const EXPORTERS = [['exams', 'Assessments'], ['results', 'Candidate Results'], ['students', 'Student Rosters'], ['audit_logs', 'Audit Log Events']];
+document.getElementById('exporter-grid').innerHTML = EXPORTERS.map(([t, label]) => `
+  <div class="stat-box">
+    <div class="stat-lbl">${label}</div>
+    <div style="margin:12px 0;display:flex;gap:8px;justify-content:center;">
+      <button class="btn btn-sm btn-outline" onclick="exportTableData('${t}', 'csv')">CSV</button>
+      <button class="btn btn-sm btn-outline" onclick="exportTableData('${t}', 'json')">JSON</button>
+    </div>
+  </div>`).join('');
+
+async function exportTableData(table, format) {
+  try {
+    showToast('Exporting ' + table + ' as ' + format.toUpperCase() + '…', 'info');
+    const n = format === 'csv' ? await DataPort.exportTableCSV(table) : await DataPort.exportTableJSON(table);
+    if (!n) return showToast('Table is currently empty.', 'info');
+    showToast(`${table}: ${n} rows exported ✓`, 'success');
+  } catch (e) {
+    showToast('Export failed: ' + (e.message || e), 'danger');
+  }
+}
+
+/* ═══════════ BACKUP HISTORY (system_backups) ═══════════ */
+async function loadBackupHistory() {
+  const el = document.getElementById('backup-history');
+  el.innerHTML = '<em style="color:var(--text-muted);">Loading…</em>';
+  try {
+    const rows = await DataPort.fetchTable('system_backups');
+    if (!rows.length) { el.innerHTML = '<em style="color:var(--text-muted);">No backups recorded yet.</em>'; return; }
+    el.innerHTML = rows.map(b => `
+      <div class="row-card">
+        <div>
+          <strong>${escapeHtml(b.backup_name)}</strong> <span class="badge badge-info">${escapeHtml(b.provider || '')}</span><br>
+          <span style="color:var(--text-muted);">${new Date(b.created_at).toLocaleString()} · ${b.total_records ?? 0} records · ${(Number(b.file_size_bytes || 0) / 1024).toFixed(1)} KB</span>
+        </div>
+        ${b.drive_file_url ? `<a class="btn btn-sm btn-outline" href="${escapeHtml(b.drive_file_url)}" target="_blank" rel="noopener">Open</a>` : ''}
+      </div>`).join('');
+  } catch (_) {
+    el.innerHTML = '<em style="color:var(--text-muted);">History unavailable (admin session required).</em>';
+  }
+}
+
+/* ═══════════ DISASTER RECOVERY ═══════════ */
+async function testNewSupabaseConnection() {
+  const url = document.getElementById('dr-sb-url').value.trim();
+  const key = document.getElementById('dr-sb-key').value.trim();
+  const stat = document.getElementById('dr-verify-status');
+  if (!url || !key) return alert('Please enter both Supabase URL and Anon Key.');
+
+  stat.innerHTML = '⏳ Testing connection…';
+  try {
+    const res = await fetch(`${url}/rest/v1/institutions?select=id&limit=1`, { headers: { 'apikey': key, 'Authorization': `Bearer ${key}` } });
+    if (res.ok) { stat.innerHTML = '✅ Connection verified!'; stat.style.color = 'var(--primary)'; }
+    else { stat.innerHTML = `⚠️ HTTP ${res.status} (run database/complete-schema.sql on the new project first)`; stat.style.color = 'var(--warning)'; }
+  } catch (e) {
+    stat.innerHTML = '❌ Connection failed: ' + (e.message || e); stat.style.color = 'var(--danger)';
+  }
+}
+
+async function authAndListDriveForRecovery() {
+  try {
+    showToast('Authorizing Google Drive…', 'info');
+    await DriveSync.getToken(true);
+    const files = await DriveSync.listBackups();
+    const sel = document.getElementById('dr-backup-select');
+    if (!files.length) { alert('No backup files found in your Google Drive HMG_CBT_Backups folder.'); return; }
+    sel.style.display = 'block';
+    sel.innerHTML = files.map(f => `<option value="${f.id}">${escapeHtml(f.name)} (${new Date(f.createdTime).toLocaleDateString()})</option>`).join('');
+    document.getElementById('dr-start-btn').disabled = false;
+    showToast(`Found ${files.length} cloud backup(s) on Google Drive ✓`, 'success');
+  } catch (e) {
+    showToast('Google Drive error: ' + (e.message || e), 'danger');
+  }
+}
+
+async function executeDisasterRecoveryMigration() {
+  const fileId = document.getElementById('dr-backup-select').value;
+  const newUrl = document.getElementById('dr-sb-url').value.trim();
+  const newKey = document.getElementById('dr-sb-key').value.trim();
+  const pBox = document.getElementById('dr-progress-box');
+
+  if (!fileId) return alert('Please select a backup file from Google Drive.');
+  if (!newUrl || !newKey) return alert('Enter the NEW project credentials first (Step 1).');
+  if (!confirm('Re-hydrate the new Supabase project with the selected Google Drive backup? Exams, results and rosters will be restored.')) return;
+
+  pBox.style.display = 'block';
+  pBox.innerHTML = '⏳ <strong>Phase 1/3:</strong> Downloading cloud archive from Google Drive…';
+  try {
+    const raw = await DriveSync.downloadBackup(fileId);
+    const env = normalizeEnvelope(raw);
+    if (!env) throw new Error('The selected file is not a recognized backup envelope.');
+
+    pBox.innerHTML = `⏳ <strong>Phase 2/3:</strong> Switching to the new project & validating…`;
+    App.SB_URL = newUrl;
+    App.SB_KEY = newKey;
+
+    pBox.innerHTML = '⏳ <strong>Phase 3/3:</strong> Restoring records into the new project…';
+    const plan = await DataPort.restoreEnvelope(env, { dryRun: false });
+    const restored = plan.actions.map(a => `${a.table}:${a.count ?? a.inserted ?? 0}`).join(', ');
+
+    pBox.innerHTML = `
+      <strong style="color:var(--primary);font-size:15px;">🎉 Disaster Recovery & Migration Complete!</strong><br>
+      Restored into the fresh project: <strong>${escapeHtml(restored || 'nothing to restore')}</strong>.<br>
+      <span style="font-size:12px;color:var(--text-muted);">Final step: update the platform to point at the new project permanently — edit <span class="code-chip">SB_URL</span>/<span class="code-chip">SB_KEY</span> in assets/js/app.js (or regenerate with the Generator), then redeploy.</span>
+    `;
+    showToast('Full disaster-recovery migration successful ✓', 'success', 6000);
+  } catch (err) {
+    pBox.innerHTML = `<strong style="color:var(--danger);">❌ Migration Error:</strong> ${escapeHtml(err.message || err)}`;
+    showToast('Migration failed: ' + (err.message || err), 'danger');
+  }
+}
+
+/* ═══════════ DANGER ZONE ═══════════ */
+async function purgeTestResults() {
+  const code = prompt('Enter the EXAM CODE whose candidate submissions should be purged (e.g. DEMO101). Type it exactly:');
+  if (!code) return;
+  if (!confirm(`Delete ALL candidate results for exam "${code}"? The question bank is untouched.`)) return;
+  try {
+    const ex = await App.sbFetch(`/rest/v1/exams?code=eq.${encodeURIComponent(code.trim())}&select=id,subject`);
+    if (!ex.length) return showToast('No exam with that code.', 'warning');
+    const r = await App.sbRpc('admin_purge_test_results', { p_exam_id: ex[0].id });
+    showToast(`Purged ${r} submission(s) for ${code} ✓`, 'success');
+  } catch (e) {
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => { loadDriveStatus(); loadBackupHistory(); });
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

@@ -1,0 +1,2434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Governance console for HMG Academy CBT Pro: approve teachers, manage roles and permissions, oversee platform exams, review the audit trail and monitor security.">>
+<meta name="robots" content="index, follow">
+<meta name="theme-color" content="#10b981">
+<title>Admin Panel — Platform Governance — HMG Academy CBT Pro</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" href="assets/hmg-academy-logo.png">
+<link rel="apple-touch-icon" href="assets/hmg-academy-logo.png">
+<meta name="theme-color" content="#10b981">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#09090b;--surface:#18181b;--surface-2:#1f1f22;--surface-hover:#27272a;
+  --primary:#10b981;--primary-hover:#059669;--primary-dim:rgba(16,185,129,0.1);
+  --border:#27272a;--text:#f4f4f5;--text-muted:#a1a1aa;
+  --danger:#ef4444;--danger-dim:rgba(239,68,68,0.1);
+  --warning:#f59e0b;--warning-dim:rgba(245,158,11,0.1);
+  --info:#3b82f6;--info-dim:rgba(59,130,246,0.1);
+  --purple:#8b5cf6;--purple-dim:rgba(139,92,246,0.1);
+  --gold:#f59e0b;--sidebar:230px;--radius:14px;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Plus Jakarta Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+#app{display:flex;min-height:100vh;}
+#sidebar{width:var(--sidebar);background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:100;transition:transform 0.3s ease;}
+#main-content{margin-left:var(--sidebar);flex:1;min-height:100vh;}
+.page-wrap{max-width:1100px;margin:0 auto;padding:32px 28px;}
+.sidebar-logo{padding:22px 20px 18px;border-bottom:1px solid var(--border);}
+.hmg-logo-mini{width:42px;height:42px;border-radius:12px;object-fit:cover;border:1px solid rgba(139,92,246,.45);box-shadow:0 0 24px rgba(139,92,246,.22);background:#05050a;}
+.sidebar-brand-row{display:flex;align-items:center;gap:10px;}
+.feature-chip{display:inline-block;padding:4px 9px;border-radius:999px;background:rgba(16,185,129,.08);border:1px solid rgba(16,185,129,.22);color:var(--primary);font-size:10px;font-weight:900;text-transform:uppercase;letter-spacing:.45px;margin:2px;}
+.security-pass{color:var(--primary);} .security-warn{color:var(--warning);} .security-fail{color:var(--danger);}
+.sidebar-logo-title{font-size:17px;font-weight:800;color:var(--text);}
+.sidebar-logo-sub{font-size:10px;color:var(--warning);margin-top:2px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px;}
+.sidebar-admin{padding:14px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.admin-avatar{width:34px;height:34px;border-radius:50%;background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--gold);flex-shrink:0;}
+nav{flex:1;padding:10px;overflow-y:auto;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;cursor:pointer;transition:background 0.15s;color:var(--text-muted);font-size:13px;font-weight:600;border:none;background:none;width:100%;text-align:left;font-family:inherit;position:relative;}
+.nav-item:hover{background:var(--surface-hover);color:var(--text);}
+.nav-item.active{background:rgba(245,158,11,0.1);color:var(--gold);}
+.nav-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0;}
+.nav-badge{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:var(--danger);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;}
+.nav-section-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-muted);padding:14px 12px 5px;opacity:0.6;}
+.sidebar-bottom{padding:10px;border-top:1px solid var(--border);}
+#topbar{height:60px;background:var(--surface);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 28px;gap:16px;position:sticky;top:0;z-index:50;}
+#hamburger{display:none;background:none;border:none;cursor:pointer;padding:6px;border-radius:8px;color:var(--text);font-size:20px;width:auto;}
+#hamburger:hover{background:var(--surface-hover);transform:none;}
+.topbar-title{font-size:16px;font-weight:700;flex:1;}
+.admin-badge-top{background:rgba(245,158,11,0.15);border:1px solid rgba(245,158,11,0.4);color:var(--gold);padding:4px 10px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:0.5px;}
+.card{background:var(--surface);border:1px solid var(--border);padding:24px;border-radius:var(--radius);margin-bottom:20px;box-shadow:0 2px 12px rgba(0,0,0,0.2);}
+h2{font-size:18px;font-weight:700;margin-bottom:14px;}
+h3{font-size:14px;font-weight:700;margin-bottom:8px;}
+p{color:var(--text-muted);line-height:1.6;margin-bottom:12px;}
+label{display:block;font-size:11px;font-weight:700;color:var(--text-muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.6px;}
+input,select{width:100%;padding:11px 13px;margin-bottom:14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:13px;transition:border-color 0.2s;}
+input:focus,select:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(16,185,129,0.12);}
+button{width:100%;padding:12px;border-radius:10px;border:none;background:var(--primary);color:#000;font-size:14px;font-weight:700;cursor:pointer;transition:0.2s;font-family:inherit;}
+button:hover{background:var(--primary-hover);transform:translateY(-1px);}
+button:active{transform:translateY(0);}
+.btn-sm{width:auto;padding:6px 12px;font-size:12px;border-radius:8px;font-weight:700;}
+.btn-outline{background:transparent;color:var(--primary);border:1px solid var(--primary);}
+.btn-outline:hover{background:var(--primary-dim);transform:none;}
+.btn-danger{background:var(--danger-dim);color:var(--danger);border:1px solid rgba(239,68,68,0.35);}
+.btn-danger:hover{background:var(--danger);color:#fff;transform:none;}
+.btn-warning{background:var(--warning-dim);color:var(--warning);border:1px solid rgba(245,158,11,0.35);}
+.btn-warning:hover{background:var(--warning);color:#000;transform:none;}
+.btn-ghost{background:var(--surface-hover);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface-2);transform:none;}
+.btn-gold{background:rgba(245,158,11,0.15);color:var(--gold);border:1px solid rgba(245,158,11,0.4);}
+.btn-gold:hover{background:var(--warning);color:#000;transform:none;}
+.btn-info{background:var(--info-dim);color:var(--info);border:1px solid rgba(59,130,246,0.35);}
+.btn-info:hover{background:var(--info);color:#fff;transform:none;}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px;}
+.flex-between{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+.flex-gap{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+.stat-box{background:var(--bg);border:1px solid var(--border);padding:16px;border-radius:12px;text-align:center;}
+.stat-num{font-size:26px;font-weight:800;color:var(--primary);line-height:1;margin-bottom:4px;}
+.stat-label{color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;}
+.badge{display:inline-block;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap;}
+.badge-active{background:rgba(16,185,129,0.15);color:var(--primary);}
+.badge-pending{background:rgba(245,158,11,0.15);color:var(--warning);}
+.badge-inactive{background:var(--danger-dim);color:var(--danger);}
+.badge-admin{background:rgba(245,158,11,0.2);color:var(--gold);border:1px solid rgba(245,158,11,0.4);}
+.badge-teacher{background:var(--info-dim);color:var(--info);}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th{text-align:left;padding:10px 12px;border-bottom:2px solid var(--border);color:var(--text-muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;white-space:nowrap;}
+td{padding:12px 12px;border-bottom:1px solid var(--border);vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+tbody tr:hover td{background:var(--surface-hover);}
+.empty{text-align:center;padding:40px 20px;color:var(--text-muted);}
+.empty-icon{font-size:32px;margin-bottom:8px;}
+.hidden{display:none!important;}
+.divider{border:none;border-top:1px solid var(--border);margin:18px 0;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.88);backdrop-filter:blur(6px);z-index:500;display:flex;justify-content:center;align-items:center;padding:20px;}
+.modal-box{background:var(--surface);width:100%;max-width:860px;max-height:90vh;overflow-y:auto;padding:26px;border-radius:var(--radius);border:1px solid var(--border);}
+.modal-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);position:sticky;top:-26px;background:var(--surface);padding-top:26px;margin-top:-26px;z-index:1;}
+#toast{position:fixed;bottom:-80px;right:20px;background:var(--surface);color:var(--text);border:1px solid var(--border);padding:12px 18px;border-radius:10px;font-weight:600;font-size:13px;box-shadow:0 8px 24px rgba(0,0,0,0.4);transition:bottom 0.3s ease;z-index:9999;max-width:300px;}
+#toast.show{bottom:20px;}
+#sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:90;}
+.score-pill{display:inline-block;padding:3px 9px;border-radius:20px;font-size:12px;font-weight:700;}
+.pill-green{background:rgba(16,185,129,0.15);color:var(--primary);}
+.pill-amber{background:rgba(245,158,11,0.15);color:var(--warning);}
+.pill-red{background:var(--danger-dim);color:var(--danger);}
+.teacher-card{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:12px;transition:border-color 0.2s;}
+.teacher-card:hover{border-color:var(--primary);}
+.teacher-card.pending{border-left:4px solid var(--warning);}
+.teacher-card.inactive{border-left:4px solid var(--danger);opacity:0.8;}
+.teacher-card.admin{border-left:4px solid var(--gold);}
+.filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center;}
+.filter-bar input,.filter-bar select{margin-bottom:0;font-size:13px;padding:9px 12px;width:auto;flex:1;min-width:140px;}
+.settings-block{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px;}
+.settings-block-title{font-size:13px;font-weight:700;margin-bottom:10px;}
+.sql-block{background:#000;border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-family:monospace;font-size:11px;color:#10b981;line-height:1.8;white-space:pre-wrap;word-break:break-all;margin-bottom:8px;}
+.activity-item{display:flex;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);}
+.activity-item:last-child{border-bottom:none;}
+.activity-dot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0;}
+@media(max-width:860px){
+  #sidebar{transform:translateX(-100%);}#sidebar.open{transform:translateX(0);}
+  #sidebar-overlay.open{display:block;}#main-content{margin-left:0;}#hamburger{display:flex;}
+  .page-wrap{padding:16px;}.grid-2,.grid-3,.grid-4{grid-template-columns:1fr;}
+}
+@media print{#sidebar,#topbar,.no-print{display:none!important;}#main-content{margin-left:0;}body{background:#fff;color:#000;}.card{border:1px solid #ddd;box-shadow:none;background:#fff;}}
+/* ── ADMIN ANALYTICS ── */
+.chart-wrap{position:relative;height:240px;margin-top:10px;}
+.admin-analytics-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;}
+@media(max-width:860px){.admin-analytics-grid{grid-template-columns:1fr;}}
+/* ── BROADCAST MODAL ── */
+.broadcast-box{background:rgba(245,158,11,0.07);border:1px solid rgba(245,158,11,0.25);border-radius:12px;padding:16px 18px;}
+</style>
+<script src="assets/js/site-help.js"></script>
+</head>
+<body>
+<div id="toast"></div>
+<div id="sidebar-overlay" onclick="closeSidebar()"></div>
+
+<!-- BROADCAST MODAL -->
+<div id="broadcast-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:480px;">
+    <div class="modal-header">
+      <div style="font-size:16px;font-weight:700;">📢 Broadcast Announcement</div>
+      <button class="btn-sm btn-danger" onclick="document.getElementById('broadcast-modal').classList.add('hidden')">✕</button>
+    </div>
+    <p style="font-size:13px;margin-bottom:14px;">This message will be stored and displayed as a notification to all teachers when they next log in.</p>
+    <label>Message</label>
+    <textarea id="broadcast-msg" style="width:100%;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:inherit;font-size:14px;min-height:100px;resize:vertical;margin-bottom:14px;" placeholder="e.g. Platform maintenance scheduled for Friday 10 PM…"></textarea>
+    <button onclick="saveBroadcast()">📢 Save Announcement</button>
+  </div>
+</div>
+
+<!-- TEACHER DASHBOARD MODAL -->
+<div id="teacher-dash-modal" class="modal-overlay hidden">
+  <div class="modal-box" style="max-width:1000px;">
+    <div class="modal-header">
+      <div>
+        <div id="tdm-title" style="font-size:16px;font-weight:700;"></div>
+        <div id="tdm-meta" style="font-size:12px;color:var(--text-muted);margin-top:2px;"></div>
+      </div>
+      <button class="btn-sm btn-danger" onclick="document.getElementById('teacher-dash-modal').classList.add('hidden')">✕ Close</button>
+    </div>
+    <div id="tdm-body"></div>
+  </div>
+</div>
+
+<!-- AUTH SCREEN -->
+<div id="auth-screen" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
+  <div class="card" style="max-width:400px;width:100%;">
+    <div style="text-align:center;margin-bottom:20px;">
+      <img src="assets/hmg-academy-logo.png" alt="HMG Academy logo" style="width:82px;height:82px;object-fit:cover;border-radius:20px;border:1px solid rgba(139,92,246,.45);margin:0 auto 10px;display:block;">
+      <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;color:var(--gold);margin-bottom:6px;">HMG Academy Enterprise Admin</div>
+      <h2 style="font-size:19px;margin-bottom:4px;">Admin Sign In</h2>
+      <p style="font-size:13px;margin-bottom:0;">Restricted access — authorised personnel only</p>
+    </div>
+    <div id="auth-error" style="display:none;background:var(--danger-dim);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--danger);"></div>
+    <label>Admin Email</label>
+    <input type="email" id="a-email" placeholder="admin@yourdomain.com" onkeydown="if(event.key==='Enter')document.getElementById('a-pass').focus()">
+    <label>Password</label>
+    <div style="position:relative;margin-bottom:14px;">
+      <input type="password" id="a-pass" placeholder="••••••••" style="margin-bottom:0;padding-right:44px;" onkeydown="if(event.key==='Enter')adminLogin()">
+      <button onclick="toggleAdminPassVis()" style="position:absolute;right:0;top:0;width:42px;height:100%;background:none;border:none;color:var(--text-muted);font-size:16px;padding:0;">👁</button>
+    </div>
+    <button onclick="adminLogin()" id="admin-login-btn">Access Admin Panel</button>
+    <p style="text-align:center;font-size:12px;margin-top:12px;color:var(--text-muted);">
+      <a href="teacher.html" style="color:var(--text-muted);text-decoration:none;">← Back to Teacher Login</a>
+    </p>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app" class="hidden">
+
+  <!-- SIDEBAR -->
+  <div id="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-brand-row">
+        <img src="assets/hmg-academy-logo.png" alt="HMG Academy logo" class="hmg-logo-mini">
+        <div>
+          <div class="sidebar-logo-title">HMG Academy CBT</div>
+          <div class="sidebar-logo-sub">⭐ Enterprise Admin</div>
+        </div>
+      </div>
+    </div>
+    <div class="sidebar-admin">
+      <div class="admin-avatar" id="admin-avatar">A</div>
+      <div style="min-width:0;flex:1;">
+        <div style="font-size:12px;font-weight:800;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Administrator</div>
+        <div style="font-size:10px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="admin-email-display"></div>
+      </div>
+    </div>
+    <nav>
+      <div class="nav-section-label">Overview</div>
+      <button class="nav-item active" onclick="navigate('overview')" id="nav-overview"><span class="nav-icon">🏠</span>Overview</button>
+      <div class="nav-section-label">Teachers</div>
+      <button class="nav-item" onclick="navigate('pending')" id="nav-pending">
+        <span class="nav-icon">⏳</span>Pending Approvals
+        <span class="nav-badge hidden" id="pending-badge">0</span>
+      </button>
+      <button class="nav-item" onclick="navigate('teachers')" id="nav-teachers"><span class="nav-icon">👥</span>All Teachers</button>
+      <div class="nav-section-label">Platform</div>
+      <button class="nav-item" onclick="navigate('all-exams')" id="nav-all-exams"><span class="nav-icon">📋</span>All Exams</button>
+      <button class="nav-item" onclick="navigate('all-results')" id="nav-all-results"><span class="nav-icon">📊</span>All Results</button>
+      <button class="nav-item" onclick="navigate('activity')" id="nav-activity"><span class="nav-icon">📈</span>Activity Log</button>
+      <button class="nav-item" onclick="navigate('security')" id="nav-security"><span class="nav-icon">🛡️</span>Security & Deployment</button>
+      <div class="nav-section-label">Governance Console</div>
+      <button class="nav-item" onclick="window.location.href='admin-data.html'" id="nav-admin-data"><span class="nav-icon">💾</span>Data &amp; Drive Sync</button>
+      <button class="nav-item" onclick="window.location.href='disaster-recovery.html'" id="nav-recovery"><span class="nav-icon">🚨</span>Disaster Recovery</button>
+      <button class="nav-item" onclick="window.location.href='storage.html'" id="nav-storage"><span class="nav-icon">📦</span>Storage Manager</button>
+      <button class="nav-item" onclick="window.location.href='platform-health.html'" id="nav-health"><span class="nav-icon">🩺</span>Platform Health</button>
+      <button class="nav-item" onclick="window.location.href='status-manager.html'" id="nav-roles"><span class="nav-icon">👥</span>Roles &amp; Approvals</button>
+      <button class="nav-item" onclick="window.location.href='settings.html'" id="nav-psettings"><span class="nav-icon">🛠️</span>Platform Settings</button>
+      
+      <button class="nav-item" onclick="window.location.href='activity_log.html'" id="nav-auditlog"><span class="nav-icon">🧾</span>Audit Trail</button>
+      <div class="nav-section-label">Setup</div>
+      <button class="nav-item" onclick="navigate('setup')" id="nav-setup"><span class="nav-icon">⚙️</span>Setup &amp; SQL</button>
+      <div class="nav-section-label">Teacher Tools</div>
+      <button class="nav-item" onclick="window.location.href='teacher.html'" id="nav-teacherhub"><span class="nav-icon">👨‍🏫</span>Teacher Hub</button>
+      <button class="nav-item" onclick="window.location.href='cbt-multi.html'" id="nav-multi"><span class="nav-icon">🧪</span>Multi-Subject Builder</button>
+      <button class="nav-item" onclick="window.location.href='cbt-prompts.html'" id="nav-prompts"><span class="nav-icon">🤖</span>AI Prompts Studio</button>
+      <!-- PHASE 11 NAV FIX: complete the admin navigation pane — every
+           platform page is reachable, no page missing. -->
+      <div class="nav-section-label">Platform Pages</div>
+      <button class="nav-item" onclick="window.location.href='index.html'" id="nav-home"><span class="nav-icon">🏠</span>Portals Home</button>
+      <button class="nav-item" onclick="window.location.href='student.html'" id="nav-student"><span class="nav-icon">🎓</span>Student Portal</button>
+      <button class="nav-item" onclick="window.location.href='certificate.html'" id="nav-cert"><span class="nav-icon">🏅</span>Certificate Verify</button>
+      <button class="nav-item" onclick="window.location.href='feature_guide.html'" id="nav-guide"><span class="nav-icon">📘</span>Feature Guide</button>
+      <button class="nav-item" onclick="window.location.href='question-types.html'" id="nav-qtypes"><span class="nav-icon">📖</span>Question Types Guide</button>
+      <button class="nav-item" onclick="window.location.href='deployment_validator.html'" id="nav-validator"><span class="nav-icon">✅</span>Deployment Validator</button>
+      <button class="nav-item" onclick="window.location.href='link_checker.html'" id="nav-linkcheck"><span class="nav-icon">🔗</span>Link Checker</button>
+      
+    </nav>
+    <div class="sidebar-bottom">
+      <button class="nav-item" onclick="adminLogout()" style="color:var(--danger);background:var(--danger-dim);border:1px solid rgba(239,68,68,0.25);">
+        <span class="nav-icon">🚪</span>Log Out
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN CONTENT -->
+  <div id="main-content">
+    <div id="topbar">
+      <button id="hamburger" onclick="toggleSidebar()">☰</button>
+      <div class="topbar-title" id="topbar-title">Overview</div>
+      <div class="flex-gap no-print" style="justify-content:flex-end;">
+        <a href="index.html" class="btn-sm btn-ghost" style="text-decoration:none;">Home</a>
+        <a href="feature_guide.html" class="btn-sm btn-ghost" style="text-decoration:none;">Feature Guide</a>
+        <a href="deployment_validator.html" class="btn-sm btn-ghost" style="text-decoration:none;">Validator</a>
+        <button class="btn-sm btn-outline" onclick="exportPlatformCSV()" style="font-size:12px;">⬇ Platform CSV</button>
+        <div class="admin-badge-top">⭐ Admin</div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: OVERVIEW ══ -->
+    <div id="page-overview" class="page-wrap">
+      <div class="grid-4 stats-row" style="margin-bottom:20px;">
+        <div class="stat-box"><div class="stat-num" id="ov-teachers">—</div><div class="stat-label">Active Teachers</div></div>
+        <div class="stat-box"><div class="stat-num" id="ov-pending" style="color:var(--warning);">—</div><div class="stat-label">Pending Approval</div></div>
+        <div class="stat-box"><div class="stat-num" id="ov-exams">—</div><div class="stat-label">Total Exams</div></div>
+        <div class="stat-box"><div class="stat-num" id="ov-results">—</div><div class="stat-label">Total Submissions</div></div>
+      </div>
+
+      <!-- Platform Health -->
+      <div class="card" style="margin-bottom:20px;border-color:rgba(16,185,129,0.25);">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div><h2 style="margin-bottom:2px;">🏥 Platform Health</h2><p style="font-size:13px;margin-bottom:0;">Real-time health metrics across the platform.</p></div>
+          <button class="btn-sm btn-outline no-print" onclick="loadPlatformData()" style="padding:7px 12px;font-size:12px;">↻ Refresh</button>
+        </div>
+        <div class="grid-4" style="gap:12px;">
+          <div class="stat-box"><div class="stat-num" id="ph-live-exams" style="color:var(--primary);">—</div><div class="stat-label">Live Exams Now</div></div>
+          <div class="stat-box"><div class="stat-num" id="ph-avg-score" style="color:var(--info);">—</div><div class="stat-label">Platform Avg %</div></div>
+          <div class="stat-box"><div class="stat-num" id="ph-pass-rate" style="color:var(--primary);">—</div><div class="stat-label">Platform Pass Rate</div></div>
+          <div class="stat-box"><div class="stat-num" id="ph-flagged" style="color:var(--danger);">—</div><div class="stat-label">Integrity Flags</div></div>
+        </div>
+      </div>
+
+      <div class="grid-2" style="align-items:start;">
+        <div class="card" style="margin-bottom:0;">
+          <h2 style="margin-bottom:12px;">Recent Submissions</h2>
+          <div id="ov-recent-results">
+            <div class="empty"><div class="empty-icon">📭</div>No submissions yet.</div>
+          </div>
+        </div>
+        <div>
+          <div class="card" style="margin-bottom:18px;">
+            <h2 style="margin-bottom:12px;">Pending Teacher Approvals</h2>
+            <div id="ov-pending-list">
+              <div class="empty" style="padding:16px 0;"><div style="font-size:13px;color:var(--text-muted);">No pending approvals.</div></div>
+            </div>
+            <button class="btn-sm btn-outline" onclick="navigate('pending')" style="margin-top:10px;width:100%;font-size:12px;">View All Pending</button>
+          </div>
+          <div class="card" style="margin-bottom:0;">
+            <h2 style="margin-bottom:12px;">Top Teachers (By Submissions)</h2>
+            <div id="ov-top-teachers">
+              <div class="empty" style="padding:12px 0;"><div style="font-size:13px;color:var(--text-muted);">No data yet.</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Platform Charts -->
+      <div class="admin-analytics-grid">
+        <div class="card" style="margin-bottom:0;">
+          <div class="flex-between" style="margin-bottom:6px;">
+            <h3>Submissions (Last 14 Days)</h3>
+          </div>
+          <p style="font-size:12px;margin-bottom:8px;">Daily submission volume platform-wide.</p>
+          <div class="chart-wrap"><canvas id="admin-chart-trend"></canvas></div>
+        </div>
+        <div class="card" style="margin-bottom:0;">
+          <h3>Platform Score Distribution</h3>
+          <p style="font-size:12px;margin-bottom:8px;">Students by score band across all exams.</p>
+          <div class="chart-wrap"><canvas id="admin-chart-dist"></canvas></div>
+        </div>
+      </div>
+
+      <!-- Broadcast -->
+      <div class="card" style="margin-top:20px;border-color:rgba(245,158,11,0.3);">
+        <div class="flex-between" style="margin-bottom:10px;">
+          <div>
+            <h2 style="margin-bottom:4px;">📢 Platform Announcement</h2>
+            <p style="font-size:13px;margin-bottom:0;">Current notice visible to all users.</p>
+          </div>
+          <button class="btn-sm btn-warning no-print" onclick="document.getElementById('broadcast-modal').classList.remove('hidden');const saved=localStorage.getItem('cbt_broadcast')||'';document.getElementById('broadcast-msg').value=saved;" style="padding:7px 14px;font-size:12px;">Edit Announcement</button>
+        </div>
+        <div id="current-broadcast" class="broadcast-box" style="font-size:13px;color:var(--text-muted);">No announcement set.</div>
+        <button class="btn-sm btn-danger no-print" onclick="clearBroadcast()" style="margin-top:10px;width:auto;padding:6px 12px;font-size:12px;">🗑 Clear Announcement</button>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: PENDING APPROVALS ══ -->
+    <div id="page-pending" class="page-wrap hidden">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div>
+            <h2 style="margin-bottom:4px;">Pending Teacher Approvals</h2>
+            <p style="font-size:13px;margin-bottom:0;">New teachers awaiting your confirmation before they can access the platform.</p>
+          </div>
+          <button class="btn-sm btn-outline no-print" onclick="loadPlatformData()" style="padding:7px 14px;font-size:12px;">↻ Refresh</button>
+        </div>
+        <div id="pending-list">
+          <div class="empty"><div class="empty-icon">✅</div>No pending approvals.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ALL TEACHERS ══ -->
+    <div id="page-teachers" class="page-wrap hidden">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div>
+            <h2 style="margin-bottom:4px;">All Teachers</h2>
+            <p style="font-size:13px;margin-bottom:0;">Manage accounts, roles, and access.</p>
+          </div>
+          <div class="flex-gap no-print">
+            <span id="teacher-count" style="font-size:12px;color:var(--text-muted);"></span>
+            <button class="btn-sm btn-outline" onclick="loadPlatformData()" style="padding:7px 14px;font-size:12px;">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="filter-bar no-print">
+          <input type="text" id="teacher-search" placeholder="Search by name or email…" oninput="renderTeachers()">
+          <select id="teacher-filter-status" onchange="renderTeachers()">
+            <option value="">All Status</option>
+            <option value="active">Active</option>
+            <option value="pending">Pending</option>
+            <option value="inactive">Deactivated</option>
+          </select>
+          <select id="teacher-filter-role" onchange="renderTeachers()">
+            <option value="">All Roles</option>
+            <option value="admin">Admin</option>
+            <option value="teacher">Teacher</option>
+          </select>
+          <select id="teacher-status-filter" onchange="renderTeachers()" style="margin-bottom:0;font-size:13px;padding:8px 12px;">
+            <option value="">All Status</option>
+            <option value="active">✅ Active</option>
+            <option value="pending">⏳ Pending</option>
+            <option value="inactive">🔴 Inactive</option>
+          </select>
+          <button class="btn-sm btn-outline no-print" onclick="exportTeachersCSV()" style="padding:7px 12px;font-size:12px;">📄 Export CSV</button>
+        </div>
+        <div id="teacher-stats-row" style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;font-size:12px;color:var(--text-muted);">
+          <span id="t-stat-active">Active: —</span>
+          <span>·</span><span id="t-stat-pending">Pending: —</span>
+          <span>·</span><span id="t-stat-total">Total: —</span>
+        </div>
+        <div id="teachers-list">
+          <div class="empty"><div class="empty-icon">👥</div>No teachers found.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ALL EXAMS ══ -->
+    <div id="page-all-exams" class="page-wrap hidden">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div>
+            <h2 style="margin-bottom:4px;">All Exams — Platform Wide</h2>
+            <p style="font-size:13px;margin-bottom:0;">Every assessment created by all teachers.</p>
+          </div>
+          <div class="flex-gap no-print">
+            <input type="text" id="all-exams-search" placeholder="Search…" oninput="renderAllExams()" style="width:180px;margin-bottom:0;font-size:13px;padding:8px 12px;">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Subject</th><th>Teacher</th><th>Class</th><th>Term</th><th>Type</th>
+                <th>Status</th><th>Questions</th><th>Created</th><th class="no-print">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-exams-body"></tbody>
+          </table>
+        </div>
+        <div id="all-exams-empty" class="empty hidden"><div class="empty-icon">📋</div>No exams found.</div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ALL RESULTS ══ -->
+    <div id="page-all-results" class="page-wrap hidden">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div>
+            <h2 style="margin-bottom:4px;">All Results — Platform Wide</h2>
+            <p style="font-size:13px;margin-bottom:0;">Every student submission across all teachers.</p>
+          </div>
+          <div class="flex-gap no-print">
+            <button class="btn-sm btn-outline" onclick="exportAllResults()" style="padding:7px 14px;font-size:12px;">⬇ Export CSV</button>
+          </div>
+        </div>
+        <div class="filter-bar no-print" style="margin-bottom:14px;">
+          <input type="text" id="all-res-search" placeholder="Student name…" oninput="renderAllResults()" style="flex:1;min-width:140px;">
+          <select id="all-res-teacher" onchange="renderAllResults()" style="flex:1;min-width:140px;">
+            <option value="">All Teachers</option>
+          </select>
+          <select id="all-res-integrity" onchange="renderAllResults()" style="min-width:130px;">
+            <option value="">All Integrity</option>
+            <option value="clean">✅ Clean</option>
+            <option value="flagged">⚠️ Flagged</option>
+          </select>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>Student</th><th>Class</th><th>Subject</th><th>Teacher</th>
+                <th>Score</th><th>%</th><th>Mode</th><th>Integrity</th><th>Time</th><th>Date</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="all-results-body"></tbody>
+          </table>
+        </div>
+        <div id="all-results-empty" class="empty hidden"><div class="empty-icon">🔍</div>No results found.</div>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: ACTIVITY LOG ══ -->
+    <div id="page-activity" class="page-wrap hidden">
+      <div class="card">
+        <h2 style="margin-bottom:14px;">Platform Activity Log</h2>
+        <div id="activity-log-list">
+          <div class="empty"><div class="empty-icon">📈</div>No activity recorded yet.</div>
+        </div>
+      </div>
+    </div>
+
+
+
+    <!-- ══ PAGE: SECURITY & DEPLOYMENT ══ -->
+    <div id="page-security" class="page-wrap hidden">
+      <div class="card">
+        <div class="flex-between" style="margin-bottom:14px;">
+          <div>
+            <h2 style="margin-bottom:4px;">🛡️ Security & Deployment Centre</h2>
+            <p style="font-size:13px;margin-bottom:0;">Free browser-based checks for admin readiness, RLS/RPC availability, static deployment assets, and export tools. No paid AI API.</p>
+          </div>
+          <div class="flex-gap no-print">
+            <button class="btn-sm btn-outline" onclick="runAdminSecurityChecks()" style="padding:7px 14px;font-size:12px;">▶ Run Checks</button>
+            <button class="btn-sm btn-info" onclick="downloadAdminChecklist()" style="padding:7px 14px;font-size:12px;">📋 Admin Checklist</button>
+            <button class="btn-sm btn-info" onclick="downloadRlsSmokeTest()" style="padding:7px 14px;font-size:12px;">🔬 SQL Smoke Test</button>
+          </div>
+        </div>
+        <div id="security-checks" class="grid-3" style="margin-bottom:16px;"></div>
+        <div class="settings-block">
+          <div class="settings-block-title" style="color:var(--primary);">Feature Explanation</div>
+          <p style="font-size:13px;margin-bottom:8px;">This section helps the school owner/admin verify that the platform is deployed safely. It checks whether admin session exists, RPC data loaded, HTTPS is active, service-role keys are not exposed, required PWA/static files exist, and whether platform records are accessible. It also provides downloadable operational checklists.</p>
+          <span class="feature-chip">RLS-first</span><span class="feature-chip">No service_role key</span><span class="feature-chip">Free hosting ready</span><span class="feature-chip">No AI API</span>
+        </div>
+        <textarea id="security-report-text" readonly style="width:100%;min-height:190px;background:#000;color:#d1fae5;border:1px solid var(--border);border-radius:10px;padding:12px;font-family:monospace;font-size:12px;line-height:1.7;">Run checks to generate report...</textarea>
+      </div>
+    </div>
+
+    <!-- ══ PAGE: SETUP & SQL ══ -->
+    <div id="page-setup" class="page-wrap hidden">
+      <div class="card">
+
+        <h2 style="margin-bottom:6px;">⚙️ Complete CBT Pro Setup Guide</h2>
+        <p style="font-size:13px;margin-bottom:4px;">This guide contains every SQL statement needed to set up CBT Pro from scratch on any Supabase project. Follow every step in order. Each step explains what it does and why.</p>
+
+        <div style="background:rgba(59,130,246,0.07);border:1px solid rgba(59,130,246,0.25);border-radius:10px;padding:16px 18px;margin-bottom:20px;font-size:13px;line-height:1.9;">
+          <strong style="color:var(--info);">📌 How to run SQL in Supabase:</strong><br>
+          1. Go to <strong>supabase.com</strong> and open your project<br>
+          2. Click <strong>SQL Editor</strong> in the left sidebar<br>
+          3. Click <strong>New Query</strong><br>
+          4. Paste the SQL block and click <strong>Run</strong><br>
+          5. A green "Success" message confirms it worked<br>
+          6. Run each step below in order — do not skip any step
+        </div>
+
+        <!-- SUMMARY -->
+        <div style="background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:20px;">
+          <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:10px;">📋 All Steps at a Glance</div>
+          <div style="font-size:12px;color:var(--text-muted);line-height:2.2;">
+            <span style="color:var(--primary);font-weight:700;">Step 1</span> — Create the exams table<br>
+            <span style="color:var(--primary);font-weight:700;">Step 2</span> — Create the results table<br>
+            <span style="color:var(--warning);font-weight:700;">Step 3</span> — Create the profiles table (teacher accounts)<br>
+            <span style="color:var(--info);font-weight:700;">Step 4</span> — Create the students table (class rosters)<br>
+            <span style="color:var(--danger);font-weight:700;">Step 5</span> — Enable Row Level Security on all tables<br>
+            <span style="color:var(--primary);font-weight:700;">Step 6</span> — RLS policies for exams (data isolation per teacher)<br>
+            <span style="color:var(--primary);font-weight:700;">Step 7</span> — RLS policies for results (data isolation per teacher)<br>
+            <span style="color:var(--warning);font-weight:700;">Step 8</span> — RLS policies for profiles<br>
+            <span style="color:var(--info);font-weight:700;">Step 9</span> — RLS policies for students<br>
+            <span style="color:var(--purple);font-weight:700;">Step 10</span> — Grant permissions so the trigger can write profiles<br>
+            <span style="color:var(--purple);font-weight:700;">Step 11</span> — Auto-create pending profile on teacher signup (FIXED trigger)<br>
+            <span style="color:var(--primary);font-weight:700;">Step 12</span> — Admin RPC functions (admin sees all teachers and data)<br>
+            <span style="color:var(--warning);font-weight:700;">Step 13</span> — Migrate existing users (if platform already has teachers)<br>
+            <span style="color:var(--gold);font-weight:700;">Step 14</span> — Set up the admin account<br>
+            <span style="color:var(--info);font-weight:700;">Step 15</span> — Disable email confirmation for instant teacher access<br>
+            <span style="color:var(--primary);font-weight:700;">Step 16</span> — Verify everything is working
+          </div>
+        </div>
+
+        <!-- STEP 1 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 1 — Create the Exams Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This table stores every exam created by every teacher. Each row is one exam.
+            <br>• <strong>teacher_id</strong> — links each exam to the teacher who created it. Used by RLS to isolate data.
+            <br>• <strong>subject</strong> — stores all metadata (subject, class, term, topic, type, session, passmark) as a pipe-separated string.
+            <br>• <strong>csv_data</strong> — stores the entire question bank as JSON inside the database.
+            <br>• <strong>exam_mode</strong> — either 'open' (anyone can sit) or 'registered' (verified students only).
+            <br>• <strong>close_at</strong> — optional scheduled auto-close date and time.
+            <br>• <strong>is_open</strong> — controls whether students can currently access the exam.
+          </p>
+          <div class="sql-block" id="sql-step1">CREATE TABLE IF NOT EXISTS public.exams (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  code TEXT UNIQUE NOT NULL,
+  subject TEXT NOT NULL,
+  duration INTEGER NOT NULL DEFAULT 45,
+  attempt_limit INTEGER NOT NULL DEFAULT 1,
+  select_count INTEGER NOT NULL DEFAULT 0,
+  is_open BOOLEAN NOT NULL DEFAULT false,
+  exam_mode TEXT NOT NULL DEFAULT 'open',
+  negative_mark NUMERIC NOT NULL DEFAULT 0,
+  release_results BOOLEAN NOT NULL DEFAULT true,
+  instructions TEXT NOT NULL DEFAULT '',
+  is_archived BOOLEAN NOT NULL DEFAULT false,
+  cert_code TEXT NOT NULL DEFAULT '',
+  start_at TIMESTAMPTZ,
+  close_at TIMESTAMPTZ,
+  csv_data JSONB NOT NULL DEFAULT '[]'::jsonb,
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step1')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 2 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 2 — Create the Results Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This table stores every student submission. Each row is one student's completed exam attempt.
+            <br>• <strong>exam_id</strong> — links the result to its exam. If the exam is deleted, results are also deleted (CASCADE).
+            <br>• <strong>student_id_ref</strong> — the school ID used by registered-mode students to verify identity.
+            <br>• <strong>student_type</strong> — either 'open' (anonymous) or 'registered' (identity verified).
+            <br>• <strong>answers_data</strong> — JSON storing each question's answer, time spent, and flag status.
+            <br>• <strong>violations</strong> and <strong>violation_log</strong> — anti-cheat integrity data recorded during the exam.
+          </p>
+          <div class="sql-block" id="sql-step2">CREATE TABLE IF NOT EXISTS public.results (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  exam_id UUID NOT NULL REFERENCES public.exams(id) ON DELETE CASCADE,
+  student_name TEXT NOT NULL,
+  student_class TEXT NOT NULL DEFAULT '',
+  student_id_ref TEXT DEFAULT '',
+  student_type TEXT DEFAULT 'open',
+  score NUMERIC(10,2) NOT NULL DEFAULT 0,
+  total INTEGER NOT NULL DEFAULT 0,
+  correct_count INTEGER DEFAULT NULL,
+  wrong_count INTEGER DEFAULT NULL,
+  skipped_count INTEGER DEFAULT NULL,
+  attempt_number INTEGER DEFAULT 1,
+  time_taken INTEGER DEFAULT 0,
+  answers_data JSONB,
+  violations INTEGER DEFAULT 0,
+  violation_log JSONB DEFAULT '[]'::jsonb,
+  proctor_data JSONB,
+  cert_code TEXT DEFAULT '',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step2')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 3 -->
+        <div class="settings-block" style="border-color:rgba(245,158,11,0.4);">
+          <div class="settings-block-title" style="color:var(--warning);font-size:14px;">Step 3 — Create the Profiles Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This table manages teacher accounts. Every teacher has exactly one row here.
+            <br>• <strong>status</strong> controls login access: 'pending' (awaiting admin approval), 'active' (can log in), 'inactive' (suspended).
+            <br>• <strong>role</strong> is either 'teacher' or 'admin'.
+            <br>When a teacher signs up, the trigger in Step 11 automatically creates a pending row here.
+            The admin must approve from the Pending Approvals page before the teacher can access the dashboard.
+          </p>
+          <div class="sql-block" id="sql-step3">CREATE TABLE IF NOT EXISTS public.profiles (
+  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  email TEXT UNIQUE NOT NULL,
+  full_name TEXT DEFAULT '',
+  role TEXT NOT NULL DEFAULT 'teacher',
+  is_admin BOOLEAN NOT NULL DEFAULT false,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step3')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 4 -->
+        <div class="settings-block" style="border-color:rgba(59,130,246,0.4);">
+          <div class="settings-block-title" style="color:var(--info);font-size:14px;">Step 4 — Create the Students Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This table stores each teacher's class roster for registered-mode exams.
+            <br>• <strong>student_id</strong> — the school ID students enter to verify their identity (e.g. SS/2024/001).
+            <br>• <strong>UNIQUE (teacher_id, student_id)</strong> — prevents duplicate student IDs within the same teacher's roster.
+            <br>Students are not Supabase users — they are just records that the teacher manages.
+          </p>
+          <div class="sql-block" id="sql-step4">-- Registered-student roster table and secure teacher/admin policies.
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  student_id  TEXT NOT NULL,
+  class       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
+);</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step4')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 5 -->
+        <div class="settings-block" style="border-color:rgba(239,68,68,0.4);">
+          <div class="settings-block-title" style="color:var(--danger);font-size:14px;">Step 5 — Enable Row Level Security (RLS) on All Tables</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            Row Level Security is PostgreSQL's built-in data isolation system. When enabled, Supabase automatically enforces that each user can only access rows they are permitted to see — even if someone sends a direct API request.
+            <br><strong>This is the most important step.</strong> Without it, every teacher sees every other teacher's exams, results, and students.
+            <br>Run this block to enable RLS on all four tables at once.
+          </p>
+          <div class="sql-block" id="sql-step5">-- Enable RLS on every application table
+ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.exams    ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.results  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.students ENABLE ROW LEVEL SECURITY;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step5')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 6 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 6 — RLS Policies for the Exams Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            These four policies enforce that each teacher can only read, create, edit, and delete their own exams.
+            <br>The condition <code>auth.uid() = teacher_id</code> means Supabase checks that the logged-in teacher's user ID matches the exam's teacher_id column on every single request — automatically, without any JavaScript needed.
+          </p>
+          <div class="sql-block" id="sql-step6">-- Helper required before any admin-aware policy below.
+CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE((
+    SELECT (p.is_admin=true OR p.role='admin') AND p.status='active'
+    FROM public.profiles p WHERE p.id=auth.uid() LIMIT 1
+  ), false)
+  OR lower(COALESCE(auth.jwt()-&gt;&gt;'email','')) = lower('buildingmyictcareer@gmail.com');
+$$;
+
+-- Exams: teachers manage their own exams; platform admins can supervise all.
+-- Students load exams through get_public_exam_by_code(), not broad anonymous SELECT.
+DROP POLICY IF EXISTS "Students can read exams by code" ON public.exams;
+DROP POLICY IF EXISTS "Teachers select own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers insert own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers update own exams" ON public.exams;
+DROP POLICY IF EXISTS "Teachers delete own exams" ON public.exams;
+
+CREATE POLICY "Teachers select own exams"
+ON public.exams FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
+
+CREATE POLICY "Teachers insert own exams"
+ON public.exams FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+
+CREATE POLICY "Teachers update own exams"
+ON public.exams FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+
+CREATE POLICY "Teachers delete own exams"
+ON public.exams FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step6')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 7 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 7 — RLS Policies for the Results Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            A result belongs to a teacher if it was submitted to an exam that teacher created.
+            The sub-query <code>(SELECT teacher_id FROM exams WHERE id = exam_id)</code> traces from the result back to its exam to find the owner.
+            <br>The student INSERT policy uses <code>public.is_exam_open_for_submission(exam_id)</code>, so anonymous students can submit only to an open, active, non-expired exam. This prevents submissions to closed or archived exams.
+          </p>
+          <div class="sql-block" id="sql-step7">-- Results: create helper functions BEFORE policies, then create safe policies.
+CREATE OR REPLACE FUNCTION public.get_exam_teacher_id(p_exam_id UUID)
+RETURNS UUID
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$ SELECT teacher_id FROM public.exams WHERE id = p_exam_id LIMIT 1; $$;
+
+CREATE OR REPLACE FUNCTION public.is_exam_open_for_submission(p_exam_id UUID)
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT EXISTS (
+    SELECT 1 FROM public.exams e
+    WHERE e.id = p_exam_id
+      AND e.is_archived = false
+      AND e.is_open = true
+      AND (e.start_at IS NULL OR e.start_at &lt;= NOW())
+      AND (e.close_at IS NULL OR e.close_at &gt; NOW())
+  );
+$$;
+
+DROP POLICY IF EXISTS "Teachers select own results" ON public.results;
+DROP POLICY IF EXISTS "Students can submit results" ON public.results;
+DROP POLICY IF EXISTS "Teachers insert own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers update own results" ON public.results;
+DROP POLICY IF EXISTS "Teachers delete own results" ON public.results;
+
+CREATE POLICY "Teachers select own results"
+ON public.results FOR SELECT TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
+
+CREATE POLICY "Students can submit results"
+ON public.results FOR INSERT TO anon
+WITH CHECK (public.is_exam_open_for_submission(exam_id));
+
+CREATE POLICY "Teachers insert own results"
+ON public.results FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
+
+CREATE POLICY "Teachers update own results"
+ON public.results FOR UPDATE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin())
+WITH CHECK (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());
+
+CREATE POLICY "Teachers delete own results"
+ON public.results FOR DELETE TO authenticated
+USING (auth.uid() = public.get_exam_teacher_id(exam_id) OR public.is_platform_admin());</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step7')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 8 -->
+        <div class="settings-block" style="border-color:rgba(245,158,11,0.4);">
+          <div class="settings-block-title" style="color:var(--warning);font-size:14px;">Step 8 — RLS Policies for the Profiles Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            Each teacher can only read and update their own profile row.
+            The INSERT policy is open so the auto-signup trigger (Step 11) can create profile rows during signup.
+            Admins read ALL profiles through the special RPC functions in Step 12 — not through these policies.
+          </p>
+          <div class="sql-block" id="sql-step8">CREATE OR REPLACE FUNCTION public.is_platform_admin()
+RETURNS BOOLEAN
+LANGUAGE SQL SECURITY DEFINER STABLE
+SET search_path = public, pg_temp
+AS $$
+  SELECT COALESCE((
+    SELECT (p.is_admin=true OR p.role='admin') AND p.status='active'
+    FROM public.profiles p WHERE p.id=auth.uid() LIMIT 1
+  ), false)
+  OR lower(COALESCE(auth.jwt()-&gt;&gt;'email','')) = lower('buildingmyictcareer@gmail.com');
+$$;
+
+DROP POLICY IF EXISTS "Users read own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Allow profile insert" ON public.profiles;
+DROP POLICY IF EXISTS "Users update own profile" ON public.profiles;
+DROP POLICY IF EXISTS "Admins manage all profiles" ON public.profiles;
+
+CREATE POLICY "Users read own profile" ON public.profiles FOR SELECT TO authenticated
+USING (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Allow profile insert" ON public.profiles FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Users update own profile" ON public.profiles FOR UPDATE TO authenticated
+USING (auth.uid() = id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = id OR public.is_platform_admin());
+CREATE POLICY "Admins manage all profiles" ON public.profiles FOR DELETE TO authenticated
+USING (public.is_platform_admin());</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step8')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 9 -->
+        <div class="settings-block" style="border-color:rgba(59,130,246,0.4);">
+          <div class="settings-block-title" style="color:var(--info);font-size:14px;">Step 9 — RLS Policies for the Students Table</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            Each teacher can only read, add, and delete students from their own roster.
+            Registered-mode student ID checks now use the secure <code>verify_student_for_exam()</code> RPC. Do not create a broad anonymous roster SELECT policy; otherwise students could enumerate the whole class list.
+          </p>
+          <div class="sql-block" id="sql-step9">-- Registered-student roster table and secure teacher/admin policies.
+CREATE TABLE IF NOT EXISTS public.students (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  teacher_id  UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  full_name   TEXT NOT NULL,
+  student_id  TEXT NOT NULL,
+  class       TEXT NOT NULL DEFAULT '',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(teacher_id, student_id)
+);
+
+DROP POLICY IF EXISTS "Anyone can verify student ID" ON public.students;
+DROP POLICY IF EXISTS "Teachers select own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers insert own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers update own students" ON public.students;
+DROP POLICY IF EXISTS "Teachers delete own students" ON public.students;
+
+CREATE POLICY "Teachers select own students"
+ON public.students FOR SELECT TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());
+CREATE POLICY "Teachers insert own students"
+ON public.students FOR INSERT TO authenticated
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+CREATE POLICY "Teachers update own students"
+ON public.students FOR UPDATE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin())
+WITH CHECK (auth.uid() = teacher_id OR public.is_platform_admin());
+CREATE POLICY "Teachers delete own students"
+ON public.students FOR DELETE TO authenticated
+USING (auth.uid() = teacher_id OR public.is_platform_admin());</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step9')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 10 -->
+        <div class="settings-block" style="border-color:rgba(139,92,246,0.4);">
+          <div class="settings-block-title" style="color:var(--purple);font-size:14px;">Step 10 — Grant Permissions for the Trigger Function</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This step grants the <code>postgres</code> and <code>service_role</code> users full access to the profiles table.
+            Without this, the auto-signup trigger in Step 11 will fail with a "database error" when a new teacher tries to create an account — even though the trigger is correctly written.
+            <br><strong>This step is why signups were failing.</strong> Run this before creating the trigger.
+          </p>
+          <div class="sql-block" id="sql-step10">GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT SELECT, INSERT ON public.results TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.exams TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.results TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.students TO authenticated;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.profiles TO authenticated;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step10')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 11 -->
+        <div class="settings-block" style="border-color:rgba(139,92,246,0.6);background:rgba(139,92,246,0.03);">
+          <div class="settings-block-title" style="color:var(--purple);font-size:14px;">Step 11 — Auto-Create Pending Profile on Teacher Signup (Verified Working Trigger)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This is a PostgreSQL trigger — a function that runs automatically inside the database every time a new user is created in Supabase Auth.
+            When a teacher clicks "Create Account", Supabase creates their auth record, and this trigger immediately creates a profile row with <code>status = 'pending'</code>.
+            The teacher sees "Awaiting Approval" and cannot access the dashboard until the admin approves them.
+            <br><strong>Key details of this version:</strong>
+            <br>• <code>SET search_path = public</code> — ensures the trigger always finds the profiles table regardless of schema context.
+            <br>• <code>EXCEPTION WHEN others</code> — if the profile insert fails for any reason, the signup still succeeds. The teacher gets a pending profile on their first login attempt instead.
+            <br>• <code>SECURITY DEFINER</code> — the function runs with the privileges of its creator (postgres), not the signing-up user.
+          </p>
+          <div class="sql-block" id="sql-step11">DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+LANGUAGE PLPGSQL SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    COALESCE(NEW.raw_user_meta_data-&gt;&gt;'full_name', NEW.raw_user_meta_data-&gt;&gt;'display_name', split_part(NEW.email,'@',1)),
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN 'admin' ELSE 'teacher' END,
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN true ELSE false END,
+    CASE WHEN lower(NEW.email)=lower('buildingmyictcareer@gmail.com') THEN 'active' ELSE 'pending' END
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN NEW;
+EXCEPTION WHEN others THEN
+  RAISE WARNING 'handle_new_user failed: %', SQLERRM;
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER on_auth_user_created
+AFTER INSERT ON auth.users
+FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step11')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 12 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.6);background:rgba(16,185,129,0.02);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 12 — Admin RPC Functions (Required — Without This Admin Sees Zero Teachers)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            These are special database functions that allow the admin panel to read and modify ALL data across ALL teachers — bypassing RLS safely.
+            Without these functions, the admin panel shows zero teachers, zero exams, and zero results because normal RLS blocks cross-teacher access.
+            <br>• <code>SECURITY DEFINER</code> — these functions execute with database owner privileges, not the caller's.
+            <br>• The SELECT functions let the admin read everything. The UPDATE/DELETE functions let the admin approve, suspend, promote, or remove teachers.
+            <br>Run the entire block as a single query.
+          </p>
+          <div class="sql-block" id="sql-step12">-- STEP 10: ADMIN RPC FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════
+
+DROP FUNCTION IF EXISTS public.admin_get_all_profiles() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_all_exams() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_all_results() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_set_profile_status(UUID, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_set_profile_role(UUID, TEXT, TEXT) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_delete_profile(UUID) CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_platform_stats() CASCADE;
+DROP FUNCTION IF EXISTS public.admin_get_exam_results(UUID) CASCADE;
+
+CREATE OR REPLACE FUNCTION public.admin_get_all_profiles()
+RETURNS SETOF public.profiles
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  RETURN QUERY SELECT * FROM public.profiles ORDER BY created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_all_exams()
+RETURNS SETOF public.exams
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+  RETURN QUERY SELECT * FROM public.exams ORDER BY created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_all_results()
+RETURNS TABLE (
+  id              UUID,
+  exam_id         UUID,
+  student_name    TEXT,
+  student_class   TEXT,
+  student_id_ref  TEXT,
+  student_type    TEXT,
+  score           NUMERIC,
+  total           INTEGER,
+  correct_count   INTEGER,
+  wrong_count     INTEGER,
+  skipped_count   INTEGER,
+  attempt_number  INTEGER,
+  time_taken      INTEGER,
+  answers_data    JSONB,
+  violations      INTEGER,
+  violation_log   JSONB,
+  proctor_data    JSONB,
+  cert_code       TEXT,
+  created_at      TIMESTAMPTZ,
+  exams           JSONB
+)
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    r.id, r.exam_id, r.student_name, r.student_class,
+    r.student_id_ref, r.student_type, r.score, r.total,
+    r.correct_count, r.wrong_count, r.skipped_count,
+    r.attempt_number, r.time_taken, r.answers_data,
+    r.violations, r.violation_log, r.proctor_data,
+    r.cert_code, r.created_at,
+    jsonb_build_object(
+      'subject',    e.subject,
+      'teacher_id', e.teacher_id,
+      'code',       e.code
+    ) AS exams
+  FROM public.results r
+  LEFT JOIN public.exams e ON e.id = r.exam_id
+  ORDER BY r.created_at DESC;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_set_profile_status(p_id UUID, p_status TEXT)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  IF p_status NOT IN ('pending', 'active', 'inactive', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid status: %', p_status;
+  END IF;
+
+  UPDATE public.profiles
+  SET status = p_status, updated_at = NOW()
+  WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_set_profile_role(p_id UUID, p_role TEXT, p_status TEXT)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  IF p_role NOT IN ('teacher', 'admin') THEN
+    RAISE EXCEPTION 'Invalid role: %', p_role;
+  END IF;
+
+  IF p_status NOT IN ('pending', 'active', 'inactive', 'rejected') THEN
+    RAISE EXCEPTION 'Invalid status: %', p_status;
+  END IF;
+
+  UPDATE public.profiles
+  SET is_admin  = (p_role = 'admin'),
+      role      = p_role,
+      status    = p_status,
+      updated_at = NOW()
+  WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_delete_profile(p_id UUID)
+RETURNS VOID
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  DELETE FROM public.profiles WHERE id = p_id;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_platform_stats()
+RETURNS TABLE (
+  total_teachers   BIGINT,
+  active_teachers  BIGINT,
+  pending_teachers BIGINT,
+  total_exams      BIGINT,
+  live_exams       BIGINT,
+  total_results    BIGINT,
+  total_students   BIGINT,
+  avg_score        NUMERIC,
+  pass_rate        NUMERIC
+)
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    (SELECT COUNT(*) FROM public.profiles WHERE role IN ('teacher', 'admin')) AS total_teachers,
+    (SELECT COUNT(*) FROM public.profiles WHERE status = 'active') AS active_teachers,
+    (SELECT COUNT(*) FROM public.profiles WHERE status = 'pending') AS pending_teachers,
+    (SELECT COUNT(*) FROM public.exams) AS total_exams,
+    (SELECT COUNT(*) FROM public.exams WHERE is_open = true AND is_archived = false) AS live_exams,
+    (SELECT COUNT(*) FROM public.results) AS total_results,
+    (SELECT COUNT(*) FROM public.students) AS total_students,
+    COALESCE((SELECT ROUND(AVG((score / NULLIF(total, 0)) * 100), 2) FROM public.results WHERE total &gt; 0), 0) AS avg_score,
+    COALESCE((
+      SELECT ROUND(
+        AVG(CASE WHEN (score / NULLIF(total, 0)) * 100 &gt;= 50 THEN 1 ELSE 0 END) * 100,
+        2
+      )
+      FROM public.results
+      WHERE total &gt; 0
+    ), 0) AS pass_rate;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION public.admin_get_exam_results(p_exam_id UUID)
+RETURNS TABLE (
+  id              UUID,
+  exam_id         UUID,
+  student_name    TEXT,
+  student_class   TEXT,
+  student_id_ref  TEXT,
+  student_type    TEXT,
+  score           NUMERIC,
+  total           INTEGER,
+  correct_count   INTEGER,
+  wrong_count     INTEGER,
+  skipped_count   INTEGER,
+  attempt_number  INTEGER,
+  time_taken      INTEGER,
+  answers_data    JSONB,
+  violations      INTEGER,
+  violation_log   JSONB,
+  created_at      TIMESTAMPTZ
+)
+LANGUAGE PLPGSQL
+SECURITY DEFINER
+STABLE
+SET search_path = public, pg_temp
+AS $$
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  RETURN QUERY
+  SELECT
+    r.id, r.exam_id, r.student_name, r.student_class,
+    r.student_id_ref, r.student_type, r.score, r.total,
+    r.correct_count, r.wrong_count, r.skipped_count,
+    r.attempt_number, r.time_taken, r.answers_data,
+    r.violations, r.violation_log, r.created_at
+  FROM public.results r
+  WHERE r.exam_id = p_exam_id
+  ORDER BY r.created_at DESC;
+END;
+$$;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step12')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 8b — SCORING COUNT COLUMNS -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);background:rgba(16,185,129,0.03);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 8b — Add Scoring Count Columns (Fixes Student/Teacher Score Mismatch)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            These three columns store the <strong>correct, wrong, and skipped question counts</strong> as computed by the student's browser at exam submission time.
+            They are the authoritative source of truth — the teacher dashboard reads these directly rather than re-computing from <code>answers_data</code>.
+            Re-computing from the current question bank can give wrong results if questions were edited after students submitted.
+            <br><strong>Run this if your teacher dashboard shows different wrong counts than students see on their result screen.</strong>
+          </p>
+          <div class="sql-block" id="sql-step8b">-- Accurate result columns for objective + partial-credit scoring.
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS correct_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS wrong_count    INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS skipped_count  INTEGER DEFAULT NULL;
+ALTER TABLE public.results ADD COLUMN IF NOT EXISTS attempt_number INTEGER DEFAULT 1;
+ALTER TABLE public.results ALTER COLUMN score TYPE NUMERIC(10,2) USING score::NUMERIC;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step8b')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 13 -->
+        <div class="settings-block" style="border-color:rgba(245,158,11,0.5);background:rgba(245,158,11,0.02);">
+          <div class="settings-block-title" style="color:var(--warning);font-size:14px;">Step 13 — Migrate Existing Users (Only for Platforms Already in Use)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            <strong>Skip this step if you are setting up a brand new platform with no existing users.</strong>
+            <br>If you already have teachers registered BEFORE the profiles table was created, they have no profile row and will see "Platform setup incomplete" when they try to log in.
+            Run this SQL once to create active profile rows for all existing auth users.
+            <br><strong>Before running:</strong> change <code>buildingmyictcareer@gmail.com</code> to your actual admin email address — that account will be set to admin role, everyone else becomes an active teacher.
+          </p>
+          <div class="sql-block" id="sql-step13">-- Migrate existing Auth users into profiles. Change the admin email if needed.
+INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
+SELECT
+  u.id,
+  u.email,
+  COALESCE(u.raw_user_meta_data-&gt;&gt;'full_name', u.raw_user_meta_data-&gt;&gt;'display_name', split_part(u.email, '@', 1)),
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN 'admin' ELSE 'teacher' END,
+  CASE WHEN lower(u.email) = lower('buildingmyictcareer@gmail.com') THEN true ELSE false END,
+  'active'
+FROM auth.users u
+WHERE NOT EXISTS (SELECT 1 FROM public.profiles p WHERE p.id = u.id)
+ON CONFLICT (id) DO NOTHING;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step13')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 14 -->
+        <div class="settings-block" style="border-left:4px solid var(--gold);background:rgba(245,158,11,0.02);">
+          <div class="settings-block-title" style="color:var(--gold);font-size:14px;">Step 14 — Set Up the Admin Account</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            This ensures your admin account has the correct role and active status in the profiles table.
+            <br><strong>How to get your UUID:</strong> Go to <strong>Supabase Dashboard → Authentication → Users</strong>, find your admin email in the list, and copy the UUID shown next to it.
+            <br>Paste your UUID in place of <code>YOUR-UUID-HERE</code> below, update the email, then run the query.
+          </p>
+          <div class="sql-block" id="sql-step14">-- Replace YOUR-UUID-HERE with your UUID from Supabase Auth → Users.
+INSERT INTO public.profiles (id, email, full_name, role, is_admin, status)
+VALUES (
+  'YOUR-UUID-HERE',
+  'buildingmyictcareer@gmail.com',
+  'Adewale Samson Adeagbo',
+  'admin',
+  true,
+  'active'
+)
+ON CONFLICT (id) DO UPDATE
+  SET role='admin', is_admin=true, status='active', updated_at=NOW();</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step14')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- STEP 15 -->
+        <div class="settings-block" style="border-color:rgba(59,130,246,0.4);">
+          <div class="settings-block-title" style="color:var(--info);font-size:14px;">Step 15 — Disable Email Confirmation (Recommended for School Use)</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            By default, Supabase requires new users to click a confirmation link in their email before their account is active.
+            For a school platform where the admin manually approves every teacher anyway, this extra step is unnecessary and can cause confusion.
+            <br><strong>This is NOT SQL — do it in the Supabase Dashboard:</strong>
+            <br>1. Go to <strong>Supabase Dashboard → Authentication → Providers</strong>
+            <br>2. Click on <strong>Email</strong>
+            <br>3. Toggle <strong>OFF</strong> the "Confirm email" switch
+            <br>4. Click <strong>Save</strong>
+            <br>After this, new teachers who sign up will immediately see "Awaiting Approval" instead of a verification email, and the admin approves them from this panel.
+          </p>
+          <div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:12px 14px;font-size:12px;color:var(--text-muted);line-height:1.7;">
+            📍 <strong style="color:var(--info);">Supabase Dashboard → Authentication → Providers → Email → Confirm email → OFF → Save</strong>
+          </div>
+        </div>
+
+        <!-- STEP 16 -->
+        <div class="settings-block" style="border-color:rgba(16,185,129,0.4);">
+          <div class="settings-block-title" style="color:var(--primary);font-size:14px;">Step 16 — Verify Everything Is Working</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+            Run these queries to confirm all tables exist, RLS is enabled on all of them, and your profiles are correctly set up.
+            <br>• The first query should return 4 rows — one for each table — all with <code>rowsecurity = true</code>.
+            <br>• The second query shows all profiles with their roles and statuses.
+            <br>• The third query confirms the trigger is attached.
+          </p>
+          <div class="sql-block" id="sql-step16">-- Verification checks
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname='public' AND tablename IN ('profiles','exams','results','students')
+ORDER BY tablename;
+
+SELECT tablename, policyname, cmd, roles
+FROM pg_policies
+WHERE schemaname='public'
+ORDER BY tablename, policyname;
+
+SELECT routine_name
+FROM information_schema.routines
+WHERE routine_schema='public'
+  AND routine_name IN ('get_public_exam_by_code','verify_student_for_exam','get_exam_attempt_count','is_platform_admin')
+ORDER BY routine_name;</div>
+          <button class="btn-sm btn-outline" onclick="copySQL('sql-step16')" style="width:auto;padding:6px 14px;font-size:12px;">📋 Copy SQL</button>
+        </div>
+
+        <!-- CSV FORMATS -->
+        <div class="settings-block" style="margin-top:8px;">
+          <div class="settings-block-title" style="color:var(--warning);font-size:14px;">📋 Question Bank CSV Format Reference</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+            When uploading questions via CSV, your file must follow this exact column order.
+            Row 1 is treated as the header and is automatically skipped.
+            The Explanation column is optional but recommended — it helps students learn from their mistakes.
+          </p>
+          <div class="sql-block" style="color:#f59e0b;">Column order: Question, A, B, C, D, CorrectAnswer, Explanation
+
+Rules:
+  - CorrectAnswer must be exactly A, B, C, or D (uppercase)
+  - Wrap any field containing a comma in double quotes
+  - One question per row — no blank rows between questions
+
+Example rows:
+"What is 2 squared?","2","4","6","8","B","2² = 2×2 = 4"
+"Which gas do plants absorb during photosynthesis?","Oxygen","Nitrogen","Carbon Dioxide","Hydrogen","C","Plants absorb CO₂ and release oxygen during photosynthesis"
+"What is the capital of Nigeria?","Lagos","Abuja","Kano","Ibadan","B","Abuja replaced Lagos as capital in December 1991"</div>
+        </div>
+
+        <div class="settings-block">
+          <div class="settings-block-title" style="color:var(--info);font-size:14px;">👨‍🎓 Student Roster CSV Format Reference</div>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">
+            When importing a class roster on the Students page, the CSV must follow this format.
+            Row 1 is the header and is automatically skipped. Duplicate Student IDs are silently skipped.
+          </p>
+          <div class="sql-block" style="color:var(--info);">Column order: FullName, StudentID, Class
+
+Rules:
+  - StudentID must be unique per teacher
+  - Class should match the class set on the exam (e.g. SSS2A)
+  - One student per row
+
+Example rows:
+ADEWALE SAMSON, SS/2024/001, SSS2A
+FATIMA IBRAHIM, SS/2024/002, SSS2A
+CHUKWUEMEKA OBI, SS/2024/003, SSS2B
+NGOZI ADELEKE,   SS/2024/004, SSS2A</div>
+        </div>
+
+      </div>
+    </div><!-- /setup -->
+  </div><!-- /main-content -->
+</div><!-- /app -->
+
+<script>
+// ══════════════════════════════════════════════
+// CONFIG — your admin email (already set)
+// ══════════════════════════════════════════════
+const ADMIN_EMAIL = 'buildingmyictcareer@gmail.com';
+const SB_URL = 'https://pstnsaqjshmtintjrnas.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBzdG5zYXFqc2htdGludGpybmFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU3MDEzODUsImV4cCI6MjA5MTI3NzM4NX0.KNVgpVN0xp1njin1HL3udntc7psfzjnz7mqzpEN_Z6w';
+const ADMIN_SESSION_KEY = 'cbt_admin_session';
+
+let adminSession    = null;
+let allProfiles     = [];
+let allExams        = [];
+let allResults      = [];
+let activityLog     = [];
+let _adminPollTimer = null;
+
+// ══════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════
+function showToast(msg){
+  const t=document.getElementById('toast');
+  t.innerText=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),3500);
+}
+function escHtml(s){
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function pct(score,total){return total?Math.round((score/total)*100):0;}
+function formatTime(s){s=s||0;return`${Math.floor(s/60)}m ${s%60}s`;}
+function timeAgo(iso){
+  const d=Math.floor((Date.now()-new Date(iso))/1000);
+  if(d<60)return'just now';if(d<3600)return`${Math.floor(d/60)}m ago`;
+  if(d<86400)return`${Math.floor(d/3600)}h ago`;
+  return new Date(iso).toLocaleDateString('en-GB');
+}
+function pillClass(p){return p>=70?'pill-green':p>=50?'pill-amber':'pill-red';}
+function copySQL(id){
+  navigator.clipboard.writeText(document.getElementById(id).innerText)
+    .then(()=>showToast('SQL copied!'))
+    .catch(()=>showToast('Copy failed — select manually.'));
+}
+function decodeMeta(r){
+  if(!r||!r.includes('|'))return{subject:r||'—',cls:'—',term:'—',topic:'—',type:'—',session:'—',passmark:50};
+  const p=r.split('|');
+  return{subject:p[0]||'—',cls:p[1]||'—',term:p[2]||'—',topic:p[3]||'—',type:p[4]||'—',session:p[5]||'—',passmark:parseInt(p[6])||50};
+}
+
+function parseQuestionData(raw){
+  if(Array.isArray(raw))return raw;
+  if(!raw)return [];
+  try{
+    let parsed=typeof raw==='string'?JSON.parse(raw):raw;
+    if(typeof parsed==='string')parsed=JSON.parse(parsed);
+    return Array.isArray(parsed)?parsed:[];
+  }catch(e){return [];}
+}
+
+async function sbFetch(path,method='GET',body=null,useServiceKey=false){
+  const token = useServiceKey ? SB_KEY : (adminSession?.access_token || SB_KEY);
+  const headers={'apikey':SB_KEY,'Authorization':`Bearer ${token}`,'Content-Type':'application/json'};
+  // Only add return=minimal for data-write operations, NOT for RPC calls (/rpc/)
+  // RPC calls return data and must not have return=minimal or they return nothing
+  const isRpc = path.includes('/rpc/');
+  if(!isRpc && method==='POST')headers['Prefer']='return=minimal';
+  if(method==='PATCH')headers['Prefer']='return=minimal';
+  const res=await fetch(`${SB_URL}${path}`,{method,headers,body:body?JSON.stringify(body):null});
+  if(!res.ok){const e=await res.json().catch(()=>({}));throw new Error(e.message||'Request failed');}
+  const text=await res.text();return text?JSON.parse(text):{};
+}
+
+// ══════════════════════════════════════════════
+// NAVIGATION
+// ══════════════════════════════════════════════
+const PAGE_TITLES={overview:'Overview',pending:'Pending Approvals',teachers:'All Teachers','all-exams':'All Exams','all-results':'All Results',activity:'Activity Log',security:'Security & Deployment',setup:'Setup & SQL'};
+
+function navigate(page){
+  Object.keys(PAGE_TITLES).forEach(p=>{
+    const el=document.getElementById('page-'+p);
+    const nav=document.getElementById('nav-'+p);
+    if(el)el.classList.add('hidden');
+    if(nav)nav.classList.remove('active');
+  });
+  const el=document.getElementById('page-'+page);
+  const nav=document.getElementById('nav-'+page);
+  if(el)el.classList.remove('hidden');
+  if(nav)nav.classList.add('active');
+  document.getElementById('topbar-title').innerText=PAGE_TITLES[page]||page;
+  document.title='HMG Academy CBT Admin | '+(PAGE_TITLES[page]||page);
+  closeSidebar();window.scrollTo(0,0);
+}
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('sidebar-overlay').classList.toggle('open');}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('sidebar-overlay').classList.remove('open');}
+
+// ══════════════════════════════════════════════
+// AUTH
+// ══════════════════════════════════════════════
+function toggleAdminPassVis(){
+  const inp=document.getElementById('a-pass');
+  inp.type=inp.type==='password'?'text':'password';
+}
+
+async function adminLogin(){
+  const email    = document.getElementById('a-email').value.trim();
+  const password = document.getElementById('a-pass').value;
+  const errEl    = document.getElementById('auth-error');
+  errEl.style.display = 'none'; errEl.innerText = '';
+
+  if(!email)  { errEl.innerText='Please enter your email address.'; errEl.style.display='block'; return; }
+  if(!password){ errEl.innerText='Please enter your password.';    errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('admin-login-btn');
+  btn.disabled = true; btn.innerText = 'Signing in…';
+
+  try{
+    // ── Step 1: Authenticate with Supabase ──
+    // Use raw fetch (not sbFetch) so we can read the exact error body on failure
+    const authRes = await fetch(`${SB_URL}/auth/v1/token?grant_type=password`, {
+      method: 'POST',
+      headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+
+    const authData = await authRes.json();
+
+    if(!authRes.ok){
+      // Supabase returns { error, error_description } or { msg }
+      const msg = authData.error_description || authData.msg || authData.error || 'Incorrect email or password.';
+      errEl.innerText = msg;
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.innerText = 'Access Admin Panel';
+      return;
+    }
+
+    // authData now contains { access_token, refresh_token, user }
+    const s = authData;
+
+    // ── Step 2: Verify admin access ──
+    // Access is granted if the email equals ADMIN_EMAIL OR the profile row has is_admin=true.
+    let isAllowedAdmin = s.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+    try{
+      const profRes = await fetch(
+        `${SB_URL}/rest/v1/profiles?id=eq.${s.user.id}&select=is_admin,status`,
+        { headers: { 'apikey': SB_KEY, 'Authorization': `Bearer ${s.access_token}` } }
+      );
+      const profiles = await profRes.json();
+      if(Array.isArray(profiles) && profiles.length){
+        isAllowedAdmin = isAllowedAdmin || profiles[0].is_admin === true;
+        if(profiles[0].status && profiles[0].status !== 'active'){
+          errEl.innerText = 'Your admin profile is not active. Contact the platform owner.';
+          errEl.style.display = 'block';
+          btn.disabled = false; btn.innerText = 'Access Admin Panel';
+          return;
+        }
+      }
+    }catch(profileErr){
+      console.warn('Profile check skipped:', profileErr.message);
+    }
+    if(!isAllowedAdmin){
+      errEl.innerText = 'Access denied. This portal is for administrators only. Set profiles.is_admin=true or use the configured ADMIN_EMAIL.';
+      errEl.style.display = 'block';
+      btn.disabled = false; btn.innerText = 'Access Admin Panel';
+      return;
+    }
+
+    // ── Step 4: Session is valid — save and enter panel ──
+    adminSession = s;
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+      access_token:  s.access_token,
+      refresh_token: s.refresh_token,
+      user:          s.user,
+      saved_at:      Date.now()
+    }));
+    initAdminPanel(s.user.email);
+
+  }catch(e){
+    // Network error or unexpected failure
+    errEl.innerText = 'Connection error: ' + (e.message || 'Check your internet connection and try again.');
+    errEl.style.display = 'block';
+    btn.disabled = false; btn.innerText = 'Access Admin Panel';
+  }
+}
+
+function initAdminPanel(email){
+  document.getElementById('auth-screen').style.display='none';
+  document.getElementById('app').classList.remove('hidden');
+  document.getElementById('admin-email-display').innerText=email;
+  document.getElementById('admin-avatar').innerText=email[0].toUpperCase();
+  logActivity('Admin signed in','info');
+  loadPlatformData();
+  // Poll for new submissions every 30 seconds
+  if(!_adminPollTimer){
+    _adminPollTimer=setInterval(async()=>{
+      if(!adminSession||!adminSession.access_token)return;
+      const before=allResults.length;
+      await loadPlatformData();
+      if(allResults.length>before){
+        const diff=allResults.length-before;
+        showToast(`🔔 ${diff} new submission${diff>1?'s':''} received!`);
+        logActivity(`${diff} new submission(s) received`,'success');
+      }
+    },30000);
+  }
+}
+
+function adminLogout(){
+  if(!confirm('Log out of Admin Panel?'))return;
+  localStorage.removeItem(ADMIN_SESSION_KEY);
+  adminSession=null;allProfiles=[];allExams=[];allResults=[];
+  document.getElementById('app').classList.add('hidden');
+  document.getElementById('auth-screen').style.display='flex';
+  document.getElementById('a-email').value='';document.getElementById('a-pass').value='';
+  document.getElementById('admin-login-btn').disabled=false;document.getElementById('admin-login-btn').innerText='Access Admin Panel';
+}
+
+// ── Try restore admin session on page load ──
+(async()=>{
+  try{
+    let saved = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || 'null');
+    /* PHASE 11 WIRING FIX: the Teacher Hub's admin shortcut signs the
+       platform admin in via teacher.html (which stores its session under
+       'cbt_pro_session') and redirects here — but this restore only read
+       'cbt_admin_session', so the admin landed on the login screen again.
+       Adopt that session when it belongs to the platform admin. */
+    if(!saved || !saved.access_token){
+      const viaTeacher = App.getTeacherSession ? App.getTeacherSession() : null;
+      if(viaTeacher && viaTeacher.access_token && viaTeacher.user &&
+         String(viaTeacher.user.email||'').toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+        saved = viaTeacher;
+        localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(saved));
+      }
+    }
+    if(!saved || !saved.access_token) return;
+
+    const age = Date.now() - (saved.saved_at || 0);
+
+    if(age > 3600000){
+      // Token older than 1 hour — try to refresh it
+      const resp = await fetch(`${SB_URL}/auth/v1/token?grant_type=refresh_token`, {
+        method: 'POST',
+        headers: { 'apikey': SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: saved.refresh_token })
+      });
+      if(!resp.ok){ localStorage.removeItem(ADMIN_SESSION_KEY); return; }
+      const refreshed = await resp.json();
+      adminSession = refreshed;
+      localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
+        access_token:  refreshed.access_token,
+        refresh_token: refreshed.refresh_token,
+        user:          refreshed.user,
+        saved_at:      Date.now()
+      }));
+    }else{
+      adminSession = { access_token: saved.access_token, refresh_token: saved.refresh_token, user: saved.user };
+    }
+
+    if(adminSession && adminSession.user && adminSession.user.email &&
+       adminSession.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+      initAdminPanel(adminSession.user.email);
+    }else{
+      localStorage.removeItem(ADMIN_SESSION_KEY);
+      adminSession = null;
+    }
+  }catch(e){
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+    adminSession = null;
+  }
+})();
+
+// ══════════════════════════════════════════════
+// LOAD ALL PLATFORM DATA (admin sees everything)
+// ══════════════════════════════════════════════
+async function loadPlatformData(){
+  showToast('Loading platform data…');
+  try{
+    // Fetch all profiles via RPC function (bypasses RLS so admin sees everyone)
+    try{
+      allProfiles=await sbFetch('/rest/v1/rpc/admin_get_all_profiles','POST',{});
+    }catch(rpcErr){
+      allProfiles=await sbFetch('/rest/v1/profiles?select=*&order=created_at.desc').catch(()=>[]);
+    }
+    // Fetch ALL exams via RPC (bypasses teacher_id RLS filter)
+    try{
+      allExams=await sbFetch('/rest/v1/rpc/admin_get_all_exams','POST',{});
+    }catch(e){
+      allExams=await sbFetch('/rest/v1/exams?select=*&order=created_at.desc').catch(()=>[]);
+    }
+
+    // Fetch ALL results — RPC first, then full columns, then core columns only
+    const FULL_COLS = 'id,exam_id,student_name,student_class,student_id_ref,student_type,score,total,correct_count,wrong_count,skipped_count,attempt_number,time_taken,answers_data,violations,violation_log,created_at';
+    const CORE_COLS = 'id,exam_id,student_name,student_class,score,total,created_at';
+
+    try{
+      allResults = await sbFetch('/rest/v1/rpc/admin_get_all_results','POST',{});
+    }catch(e){
+      console.warn('[CBT Admin] admin_get_all_results RPC failed:', e.message);
+      let loaded = false;
+      if(allExams.length){
+        // Attempt 2: direct query with full columns
+        try{
+          const chunks=[];
+          for(let i=0;i<allExams.length;i+=50){
+            const slice=allExams.slice(i,i+50).map(x=>x.id).join(',');
+            const chunk=await sbFetch(
+              `/rest/v1/results?exam_id=in.(${slice})&select=${FULL_COLS},exams(subject,teacher_id,csv_data)&order=created_at.desc`
+            );
+            chunks.push(...chunk);
+          }
+          allResults=chunks; loaded=true;
+          showToast('⚠️ Admin RPC not set up — run Step 9 SQL for full access.');
+        }catch(e2){
+          // Attempt 3: core columns only
+          try{
+            const chunks=[];
+            for(let i=0;i<allExams.length;i+=50){
+              const slice=allExams.slice(i,i+50).map(x=>x.id).join(',');
+              const chunk=await sbFetch(
+                `/rest/v1/results?exam_id=in.(${slice})&select=${CORE_COLS},exams(subject,teacher_id,csv_data)&order=created_at.desc`
+              ).catch(()=>[]);
+              chunks.push(...chunk);
+            }
+            allResults=chunks; loaded=true;
+            showToast('⚠️ Loaded results with core fields only. Run Steps 4,5,8 SQL.');
+          }catch(e3){
+            allResults=[];
+            showToast('❌ Cannot load results: '+e3.message.slice(0,60)+'. Run Steps 3+9 SQL.');
+          }
+        }
+      }else{ allResults=[]; }
+    }
+
+    // Populate teacher filter in results page
+    const sel=document.getElementById('all-res-teacher');
+    if(sel){
+      sel.innerHTML='<option value="">All Teachers</option>'+
+        allProfiles.filter(p=>p.status==='active').map(p=>`<option value="${p.id}">${p.email}</option>`).join('');
+    }
+
+    // Update pending badge
+    const pending=allProfiles.filter(p=>p.status==='pending');
+    const badge=document.getElementById('pending-badge');
+    if(badge){badge.innerText=pending.length;badge.classList.toggle('hidden',pending.length===0);}
+    document.getElementById('ov-pending').innerText=pending.length;
+
+    updateOverview();
+    renderPendingList();
+    renderTeachers();
+    renderAllExams();
+    renderAllResults();
+    renderActivityLog();
+    showToast('✅ Platform data loaded.');
+  }catch(e){showToast('Error loading data: '+e.message);}
+}
+
+// ══════════════════════════════════════════════
+// OVERVIEW PAGE
+// ══════════════════════════════════════════════
+function updateOverview(){
+  const active=allProfiles.filter(p=>p.status==='active'&&!p.is_admin).length;
+  document.getElementById('ov-teachers').innerText=active;
+  document.getElementById('ov-pending').innerText=allProfiles.filter(p=>p.status==='pending').length;
+  document.getElementById('ov-exams').innerText=allExams.length;
+  document.getElementById('ov-results').innerText=allResults.length;
+
+  // Recent results
+  const recents=allResults.slice(0,6);
+  const recEl=document.getElementById('ov-recent-results');
+  if(!recents.length){recEl.innerHTML='<div class="empty" style="padding:16px 0;"><div style="font-size:13px;color:var(--text-muted);">No submissions yet.</div></div>';return;}
+  recEl.innerHTML=recents.map(r=>{
+    const m=decodeMeta(r.exams?.subject);const p=pct(r.score,r.total);
+    const teacher=allProfiles.find(pr=>pr.id===r.exams?.teacher_id);
+    return`<div class="activity-item">
+      <div class="activity-dot" style="background:${p>=50?'var(--primary)':'var(--danger)'};"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;">${escHtml(r.student_name)} <span style="color:var(--text-muted);font-weight:400;">· ${escHtml(r.student_class)}</span></div>
+        <div style="font-size:11px;color:var(--text-muted);">${escHtml(m.subject)} · <strong style="color:${p>=50?'var(--primary)':'var(--danger)'};">${p}%</strong> · ${escHtml(teacher?teacher.email:'Unknown')} · ${timeAgo(r.created_at)}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Pending mini list
+  const pending=allProfiles.filter(p=>p.status==='pending').slice(0,3);
+  const pendEl=document.getElementById('ov-pending-list');
+  if(!pending.length){pendEl.innerHTML='<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:10px 0;">No pending approvals. ✅</div>';return;}
+  pendEl.innerHTML=pending.map(p=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:13px;font-weight:600;">${escHtml(p.full_name||'—')}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${escHtml(p.email)} · ${timeAgo(p.created_at)}</div>
+      </div>
+      <div class="flex-gap">
+        <button class="btn-sm" onclick="approveTeacher('${p.id}')" style="padding:5px 12px;font-size:11px;background:var(--primary);color:#000;">Approve</button>
+        <button class="btn-sm btn-danger" onclick="rejectTeacher('${p.id}')" style="padding:5px 10px;font-size:11px;">Reject</button>
+      </div>
+    </div>`).join('');
+
+  // Top teachers
+  const teacherSubmissions={};
+  allResults.forEach(r=>{
+    const tid=r.exams?.teacher_id||'unknown';
+    teacherSubmissions[tid]=(teacherSubmissions[tid]||0)+1;
+  });
+  const top=Object.entries(teacherSubmissions).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  const topEl=document.getElementById('ov-top-teachers');
+  if(!top.length){topEl.innerHTML='<div style="font-size:13px;color:var(--text-muted);text-align:center;padding:10px 0;">No data.</div>';return;}
+  topEl.innerHTML=top.map(([tid,count])=>{
+    const prof=allProfiles.find(p=>p.id===tid);
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:13px;">${prof?prof.email:tid.slice(0,8)+'…'}</div>
+      <div style="font-size:13px;font-weight:700;color:var(--primary);">${count} submissions</div>
+    </div>`;
+  }).join('');
+}
+
+// ══════════════════════════════════════════════
+// PENDING APPROVALS
+// ══════════════════════════════════════════════
+function renderPendingList(){
+  const pending=allProfiles.filter(p=>p.status==='pending');
+  const el=document.getElementById('pending-list');
+  if(!pending.length){el.innerHTML='<div class="empty"><div class="empty-icon">✅</div>No pending approvals.</div>';return;}
+  el.innerHTML=pending.map(p=>`
+    <div class="teacher-card pending">
+      <div class="flex-between">
+        <div>
+          <div style="font-size:15px;font-weight:700;">${p.full_name||'No name provided'}</div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">${p.email}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">Signed up ${timeAgo(p.created_at)} · <span class="badge badge-pending">Pending</span></div>
+        </div>
+        <div class="flex-gap no-print">
+          <button class="btn-sm" onclick="approveTeacher('${p.id}')" style="background:var(--primary);color:#000;padding:8px 18px;">✅ Approve</button>
+          <button class="btn-sm btn-danger" onclick="rejectTeacher('${p.id}')">✕ Reject</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+async function approveTeacher(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  if(!confirm(`Approve "${prof?.email}" as a teacher?`))return;
+  try{
+    await sbFetch('/rest/v1/rpc/admin_set_profile_status','POST',{p_id:id,p_status:'active'});
+    logActivity(`Approved teacher: ${prof?.email}`,'success');
+    showToast(`✅ ${prof?.email} approved.`);
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function rejectTeacher(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  if(!confirm(`Reject and remove platform profile for "${prof?.email}"?\n\nThis removes their CBT platform profile. If you also want to delete their Supabase Auth login, do that manually in Supabase Dashboard → Authentication → Users.`))return;
+  try{
+    await sbFetch('/rest/v1/rpc/admin_delete_profile','POST',{p_id:id});
+    logActivity(`Rejected teacher: ${prof?.email}`,'warning');
+    showToast(`Account for ${prof?.email} rejected.`);
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+// ══════════════════════════════════════════════
+// ALL TEACHERS
+// ══════════════════════════════════════════════
+function renderTeachers(){
+  const q=(document.getElementById('teacher-search')?.value||'').toLowerCase();
+  const fStatus=document.getElementById('teacher-filter-status')?.value||
+                document.getElementById('teacher-status-filter')?.value||'';
+  const fRole=document.getElementById('teacher-filter-role')?.value||'';
+
+  let list=allProfiles.filter(p=>{
+    if(fStatus&&p.status!==fStatus)return false;
+    // Role filter: 'admin' matches is_admin===true, 'teacher' matches !is_admin
+    if(fRole==='admin'&&!p.is_admin)return false;
+    if(fRole==='teacher'&&p.is_admin)return false;
+    if(q&&!`${p.email} ${p.full_name||''}`.toLowerCase().includes(q))return false;
+    return true;
+  });
+
+  const countEl=document.getElementById('teacher-count');
+  if(countEl)countEl.innerText=`${list.length} of ${allProfiles.length}`;
+
+  const el=document.getElementById('teachers-list');
+  if(!list.length){el.innerHTML='<div class="empty"><div class="empty-icon">🔍</div>No teachers match your filters.</div>';return;}
+
+  el.innerHTML=list.map(p=>{
+    const examCount=allExams.filter(e=>e.teacher_id===p.id).length;
+    const resultCount=allResults.filter(r=>r.exams?.teacher_id===p.id).length;
+    const isAdmin=p.is_admin===true;
+    const isActive=p.status==='active';
+    const cardClass=isAdmin?'admin':p.status==='pending'?'pending':p.status==='inactive'?'inactive':'';
+    return`
+    <div class="teacher-card ${cardClass}">
+      <div class="flex-between">
+        <div>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <span style="font-size:15px;font-weight:700;">${p.full_name||'—'}</span>
+            <span class="badge ${isAdmin?'badge-admin':p.status==='pending'?'badge-pending':p.status==='inactive'?'badge-inactive':'badge-active'}">${isAdmin?'⭐ Admin':p.status==='pending'?'⏳ Pending':p.status==='inactive'?'🔴 Inactive':'🟢 Active'}</span>
+            <span class="badge badge-teacher" style="${isAdmin?'display:none':''}">${isAdmin?'Admin':'Teacher'}</span>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-top:4px;">${p.email}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">
+            📋 ${examCount} exam${examCount!==1?'s':''} · 
+            📊 ${resultCount} submission${resultCount!==1?'s':''} · 
+            Joined ${new Date(p.created_at).toLocaleDateString('en-GB')}
+          </div>
+        </div>
+        <div class="flex-gap no-print" style="flex-shrink:0;flex-direction:column;align-items:flex-end;gap:6px;">
+          <div class="flex-gap">
+            <button class="btn-sm btn-info" onclick="viewTeacherDashboard('${p.id}')" style="padding:6px 12px;font-size:11px;">👁 View Dashboard</button>
+            ${!isAdmin?`<button class="btn-sm btn-gold" onclick="promoteToAdmin('${p.id}')" style="padding:6px 12px;font-size:11px;">⭐ Make Admin</button>`:''}
+          </div>
+          <div class="flex-gap">
+            ${p.status==='pending'?`<button class="btn-sm" onclick="approveTeacher('${p.id}')" style="background:var(--primary);color:#000;padding:6px 12px;font-size:11px;">✅ Approve</button>`:''}
+            ${isActive&&!isAdmin?`<button class="btn-sm btn-warning" onclick="deactivateTeacher('${p.id}')" style="padding:6px 12px;font-size:11px;">⏸ Deactivate</button>`:''}
+            ${p.status==='inactive'?`<button class="btn-sm btn-outline" onclick="activateTeacher('${p.id}')" style="padding:6px 12px;font-size:11px;">▶ Reactivate</button>`:''}
+            ${!isAdmin?`<button class="btn-sm btn-danger" onclick="removeTeacher('${p.id}')" style="padding:6px 10px;font-size:11px;">🗑 Remove</button>`:''}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  renderTeacherStats();
+}
+
+async function promoteToAdmin(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  if(!confirm(`Promote "${prof?.email}" to Admin?\n\nThey will have full access to all teachers' data and can manage the platform.`))return;
+  try{
+    // Use the RPC which now sets is_admin=true via the updated admin_set_profile_role function
+    await sbFetch('/rest/v1/rpc/admin_set_profile_role','POST',{p_id:id,p_role:'admin',p_status:'active'});
+    logActivity(`Promoted to admin: ${prof?.email}`,'success');
+    showToast(`⭐ ${prof?.email} is now an admin.`);
+    await loadPlatformData();
+  }catch(e){
+    // Fallback: direct PATCH if RPC not yet updated
+    try{
+      await sbFetch(`/rest/v1/profiles?id=eq.${id}`,'PATCH',{is_admin:true,status:'active'});
+      logActivity(`Promoted to admin: ${prof?.email}`,'success');
+      showToast(`⭐ ${prof?.email} is now an admin.`);
+      await loadPlatformData();
+    }catch(e2){showToast('Error: '+e2.message);}
+  }
+}
+
+async function deactivateTeacher(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  if(!confirm(`Deactivate "${prof?.email}"?\n\nThey will not be able to log in until reactivated.`))return;
+  try{
+    await sbFetch('/rest/v1/rpc/admin_set_profile_status','POST',{p_id:id,p_status:'inactive'});
+    logActivity(`Deactivated teacher: ${prof?.email}`,'warning');
+    showToast(`${prof?.email} deactivated.`);
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function activateTeacher(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  try{
+    await sbFetch('/rest/v1/rpc/admin_set_profile_status','POST',{p_id:id,p_status:'active'});
+    logActivity(`Reactivated teacher: ${prof?.email}`,'success');
+    showToast(`✅ ${prof?.email} reactivated.`);
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function removeTeacher(id){
+  const prof=allProfiles.find(p=>p.id===id);
+  const examCount=allExams.filter(e=>e.teacher_id===id).length;
+  if(!confirm(`⚠️ PERMANENTLY remove "${prof?.email}"?\n\nThis will delete:\n• Their profile\n• All ${examCount} of their exams\n• All student results for those exams\n\nThis cannot be undone.`))return;
+  try{
+    // Delete results → exams → profile in order
+    const teacherExamIds=allExams.filter(e=>e.teacher_id===id).map(e=>e.id);
+    for(const eid of teacherExamIds){
+      await sbFetch(`/rest/v1/results?exam_id=eq.${eid}`,'DELETE');
+      await sbFetch(`/rest/v1/exams?id=eq.${eid}`,'DELETE');
+    }
+    await sbFetch('/rest/v1/rpc/admin_delete_profile','POST',{p_id:id});
+    logActivity(`Removed teacher: ${prof?.email} (${examCount} exams deleted)`,'danger');
+    showToast(`Teacher ${prof?.email} and all their data removed.`);
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+// ══════════════════════════════════════════════
+// VIEW TEACHER'S FULL DASHBOARD (IMPERSONATION VIEW)
+// ══════════════════════════════════════════════
+function viewTeacherDashboard(teacherId){
+  const prof=allProfiles.find(p=>p.id===teacherId);
+  const exams=allExams.filter(e=>e.teacher_id===teacherId);
+  const results=allResults.filter(r=>r.exams?.teacher_id===teacherId);
+
+  document.getElementById('tdm-title').innerText=`Dashboard: ${prof?.full_name||prof?.email||'Teacher'}`;
+  document.getElementById('tdm-meta').innerText=`${prof?.email} · ${exams.length} exams · ${results.length} submissions`;
+
+  // Stats
+  const pcts=results.map(r=>pct(r.score,r.total));
+  const avg=pcts.length?Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length):0;
+  const passed=results.filter(r=>pct(r.score,r.total)>=50).length;
+  const passRate=results.length?Math.round((passed/results.length)*100):0;
+  const flags=results.filter(r=>r.violations&&Number(r.violations)>0).length;
+
+  let html=`
+
+    <div style="background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.25);border-radius:12px;padding:12px 14px;margin-bottom:16px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;">
+      <div style="font-size:12px;color:var(--text-muted);line-height:1.6;"><strong style="color:var(--info);">Admin Teacher Control:</strong> open the teacher dashboard as this teacher using your admin token. Actions are recorded as admin-supervised operations.</div>
+      <button class="btn-sm btn-info" onclick="startTeacherImpersonation('${teacherId}')" style="padding:8px 13px;font-size:12px;">👤 Impersonate / Control Teacher</button>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">${exams.length}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Exams</div></div>
+      <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">${results.length}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Submissions</div></div>
+      <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--primary);">${avg?avg+'%':'—'}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Avg Score</div></div>
+      <div style="background:var(--bg);border:1px solid var(--border);padding:14px;border-radius:10px;text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--danger);">${flags}</div><div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;">Flags</div></div>
+    </div>
+
+    <h3 style="margin-bottom:10px;">Exams (${exams.length})</h3>
+    ${exams.length?`<div style="overflow-x:auto;margin-bottom:20px;"><table>
+      <thead><tr><th>Subject</th><th>Class</th><th>Term</th><th>Type</th><th>Status</th><th>Questions</th></tr></thead>
+      <tbody>${exams.map(e=>{const m=decodeMeta(e.subject);const qLen=parseQuestionData(e.csv_data).length;return`<tr>
+        <td style="font-weight:600;">${m.subject}</td><td>${m.cls}</td><td>${m.term}</td><td>${m.type}</td>
+        <td><span style="padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;${e.is_open?'background:rgba(16,185,129,0.15);color:var(--primary)':'background:var(--danger-dim);color:var(--danger)'}">${e.is_open?'Live':'Locked'}</span></td>
+        <td>${qLen}</td>
+      </tr>`;}).join('')}</tbody>
+    </table></div>`:'<p style="color:var(--text-muted);font-size:13px;">No exams created yet.</p>'}
+
+    <h3 style="margin-bottom:10px;">Recent Results (${results.length})</h3>`;
+
+  if(results.length){
+    html+=`<div style="overflow-x:auto;"><table>
+      <thead><tr><th>Student</th><th>Subject</th><th>Score</th><th>%</th><th>Integrity</th><th>Date</th></tr></thead>
+      <tbody>${results.slice(0,20).map(r=>{
+        const m=decodeMeta(r.exams?.subject);const p=pct(r.score,r.total);
+        const v=Number(r.violations||0);
+        const iCell=v===0?'<span style="font-size:11px;color:var(--primary);">✅</span>':
+          v===1?`<span style="font-size:11px;color:var(--warning);">⚠️ 1</span>`:
+          `<span style="font-size:11px;color:var(--danger);">🚨 ${v}</span>`;
+        return`<tr>
+          <td style="font-weight:600;">${r.student_name}<br><small style="color:var(--text-muted);">${r.student_class}</small></td>
+          <td style="font-size:12px;">${m.subject}</td>
+          <td style="font-weight:700;">${r.score}/${r.total}</td>
+          <td><span class="score-pill ${pillClass(p)}">${p}%</span></td>
+          <td>${r.student_type==='registered'?'<span style="font-size:10px;font-weight:700;color:var(--info);">🔐 Reg</span>':'<span style="font-size:10px;font-weight:700;color:var(--primary);">🌐 Open</span>'}</td>
+          <td>${iCell}</td>
+          <td style="font-size:12px;color:var(--text-muted);">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+        </tr>`;}).join('')}</tbody>
+    </table></div>`;
+    if(results.length>20)html+=`<p style="font-size:12px;color:var(--text-muted);margin-top:8px;">Showing 20 of ${results.length} results.</p>`;
+  }else{html+='<p style="color:var(--text-muted);font-size:13px;">No submissions yet.</p>';}
+
+  document.getElementById('tdm-body').innerHTML=html;
+  document.getElementById('teacher-dash-modal').classList.remove('hidden');
+}
+
+
+function startTeacherImpersonation(teacherId){
+  const prof=allProfiles.find(p=>p.id===teacherId);
+  if(!prof||!adminSession?.access_token)return showToast('Admin session or teacher profile not found.');
+  if(!confirm(`Open Teacher Dashboard as ${prof.email}?
+
+You will use your admin privileges to manage this teacher's exams, students, and results. This is not a password login as the teacher; it is an admin-supervised control mode.`))return;
+  const payload={
+    access_token:adminSession.access_token,
+    refresh_token:adminSession.refresh_token,
+    admin_email:adminSession.user?.email||ADMIN_EMAIL,
+    target_user:{id:prof.id,email:prof.email,user_metadata:{display_name:prof.full_name||prof.email?.split('@')[0]||'Teacher'}},
+    saved_at:Date.now()
+  };
+  localStorage.setItem('cbt_admin_impersonate_teacher',JSON.stringify(payload));
+  logActivity(`Started teacher impersonation/control view: ${prof.email}`,'warning');
+  window.open('teacher.html?admin_impersonate=1','_blank');
+}
+
+// ══════════════════════════════════════════════
+// ALL EXAMS
+// ══════════════════════════════════════════════
+function renderAllExams(){
+  const q=(document.getElementById('all-exams-search')?.value||'').toLowerCase();
+  const list=allExams.filter(e=>{
+    if(!q)return true;
+    const m=decodeMeta(e.subject);
+    const prof=allProfiles.find(p=>p.id===e.teacher_id);
+    return[m.subject,m.cls,m.term,m.type,prof?.email||''].join(' ').toLowerCase().includes(q);
+  });
+  const tbody=document.getElementById('all-exams-body');
+  const empty=document.getElementById('all-exams-empty');
+  if(!list.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=list.map(e=>{
+    const m=decodeMeta(e.subject);
+    const prof=allProfiles.find(p=>p.id===e.teacher_id);
+    const qLen=parseQuestionData(e.csv_data).length;
+    return`<tr>
+      <td style="font-weight:600;">${m.subject}${m.topic!=='—'?`<br><small style="color:var(--text-muted);">📖 ${m.topic}</small>`:''}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${prof?.email||'—'}</td>
+      <td>${m.cls!=='—'?`<span style="padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;background:rgba(245,158,11,0.12);color:var(--warning);">${m.cls}</span>`:'—'}</td>
+      <td style="font-size:12px;">${m.term!=='—'?m.term:'—'}</td>
+      <td style="font-size:12px;">${m.type!=='—'?m.type:'—'}</td>
+      <td><span style="padding:3px 8px;border-radius:20px;font-size:11px;font-weight:700;${e.is_open?'background:rgba(16,185,129,0.15);color:var(--primary)':'background:var(--danger-dim);color:var(--danger)'}">${e.is_open?'Live':'Locked'}</span></td>
+      <td>${qLen}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${new Date(e.created_at).toLocaleDateString('en-GB')}</td>
+      <td class="no-print" style="white-space:nowrap;">
+        <button class="btn-sm btn-outline" onclick="adminToggleExam('${e.id}',${!e.is_open})" style="padding:5px 10px;font-size:11px;">${e.is_open?'Lock':'Open'}</button>
+        <button class="btn-sm btn-warning" onclick="adminClearExamResults('${e.id}')" style="padding:5px 10px;font-size:11px;">Clear Results</button>
+        <button class="btn-sm btn-danger" onclick="adminDeleteExam('${e.id}')" style="padding:5px 10px;font-size:11px;">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+
+async function adminToggleExam(id, open){
+  const exam=allExams.find(e=>e.id===id);if(!exam)return;
+  const m=decodeMeta(exam.subject);
+  if(!confirm(`${open?'Open':'Lock'} exam "${m.subject}"?`))return;
+  try{
+    await sbFetch(`/rest/v1/exams?id=eq.${id}`,'PATCH',{is_open:!!open,updated_at:new Date().toISOString()});
+    logActivity(`Admin ${open?'opened':'locked'} exam: ${m.subject}`,'warning');
+    showToast(open?'Exam opened.':'Exam locked.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+async function adminClearExamResults(id){
+  const exam=allExams.find(e=>e.id===id);if(!exam)return;
+  const count=allResults.filter(r=>r.exam_id===id).length;
+  const m=decodeMeta(exam.subject);
+  if(!count)return showToast('No results to clear for this exam.');
+  if(!confirm(`Delete all ${count} result(s) for "${m.subject}"?
+
+This resets attempts for affected students and cannot be undone.`))return;
+  try{
+    await sbFetch(`/rest/v1/results?exam_id=eq.${id}`,'DELETE');
+    logActivity(`Admin cleared ${count} result(s) for exam: ${m.subject}`,'danger');
+    showToast('Exam results cleared.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+async function adminDeleteExam(id){
+  const exam=allExams.find(e=>e.id===id);if(!exam)return;
+  const m=decodeMeta(exam.subject);
+  if(!confirm(`Delete exam "${m.subject}" (${m.cls})?\n\nAll student results for this exam will also be deleted.`))return;
+  try{
+    await sbFetch(`/rest/v1/results?exam_id=eq.${id}`,'DELETE');
+    await sbFetch(`/rest/v1/exams?id=eq.${id}`,'DELETE');
+    logActivity(`Admin deleted exam: ${m.subject} (${m.cls})`,'warning');
+    showToast('Exam deleted.');await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+// ══════════════════════════════════════════════
+// ALL RESULTS
+// ══════════════════════════════════════════════
+function renderAllResults(){
+  const q=(document.getElementById('all-res-search')?.value||'').toLowerCase();
+  const fTeacher=document.getElementById('all-res-teacher')?.value||'';
+  const fInteg=document.getElementById('all-res-integrity')?.value||'';
+  const list=allResults.filter(r=>{
+    if(q&&!r.student_name.toLowerCase().includes(q))return false;
+    if(fTeacher&&r.exams?.teacher_id!==fTeacher)return false;
+    const v=Number(r.violations||0);
+    if(fInteg==='clean'&&v>0)return false;
+    if(fInteg==='flagged'&&v===0)return false;
+    return true;
+  });
+  const tbody=document.getElementById('all-results-body');
+  const empty=document.getElementById('all-results-empty');
+  if(!list.length){tbody.innerHTML='';empty.classList.remove('hidden');return;}
+  empty.classList.add('hidden');
+  tbody.innerHTML=list.map(r=>{
+    const m=decodeMeta(r.exams?.subject);
+
+    // Use stored score directly — never re-score from answers_data
+    // (re-scoring from the current question bank can differ from what the student saw)
+    const displayScore=r.score;
+    const displayTotal=r.total;
+
+    const p=pct(displayScore,displayTotal);
+    const prof=allProfiles.find(pr=>pr.id===r.exams?.teacher_id);
+    const v=Number(r.violations||0);
+    const iCell=r.violations===undefined||r.violations===null
+      ?'<span style="font-size:11px;color:var(--text-muted);">—</span>'
+      :v===0?'<span style="font-size:11px;color:var(--primary);">✅</span>'
+      :v===1?`<span style="font-size:11px;color:var(--warning);">⚠️ ${v}</span>`
+      :`<span style="font-size:11px;color:var(--danger);">🚨 ${v}</span>`;
+    return`<tr>
+      <td style="font-weight:600;">${escHtml(r.student_name)}<br><small style="color:var(--text-muted);">${escHtml(r.student_class)} · #${r.attempt_number||1}</small></td>
+      <td>${escHtml(r.student_class)}</td>
+      <td style="font-size:12px;">${escHtml(m.subject)}</td>
+      <td style="font-size:12px;color:var(--text-muted);">${escHtml(prof?.email||'—')}</td>
+      <td style="font-weight:700;">${displayScore}/${displayTotal}</td>
+      <td><span class="score-pill ${pillClass(p)}">${p}%</span></td>
+      <td>${r.student_type==='registered'?'<span style="font-size:10px;font-weight:700;color:var(--info);">🔐 Registered</span>':'<span style="font-size:10px;font-weight:700;color:var(--primary);">🌐 Open</span>'}</td>
+      <td>${iCell}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${formatTime(r.time_taken)}</td>
+      <td style="color:var(--text-muted);font-size:12px;">${new Date(r.created_at).toLocaleDateString('en-GB')}</td>
+      <td>
+        <button class="btn-sm btn-danger" onclick="adminDeleteResult('${r.id}')" style="padding:5px 10px;font-size:11px;">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function adminDeleteResult(id){
+  if(!confirm(`⚠️ Delete this result permanently?`)) return;
+  try{
+    await sbFetch(`/rest/v1/results?id=eq.${id}`,'DELETE');
+    logActivity(`Admin deleted a student result`,'warning');
+    showToast('Result deleted.');
+    await loadPlatformData();
+  }catch(e){showToast('Error: '+e.message);}
+}
+
+function exportAllResults(){
+  if(!allResults.length)return showToast('No results to export.');
+  const header='Student,Class,Subject,Teacher,Score,Total,%,Violations,Time(s),Date\n';
+  const rows=allResults.map(r=>{
+    const m=decodeMeta(r.exams?.subject);
+    const prof=allProfiles.find(p=>p.id===r.exams?.teacher_id);
+    return`"${r.student_name}","${r.student_class}","${m.subject}","${prof?.email||''}",${r.score},${r.total},${pct(r.score,r.total)}%,${r.violations||0},${r.time_taken||0},"${new Date(r.created_at).toLocaleDateString('en-GB')}"`;
+  }).join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([header+rows],{type:'text/csv'}));
+  a.download='cbt_all_results_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+}
+
+// ══════════════════════════════════════════════
+// ACTIVITY LOG
+// ══════════════════════════════════════════════
+function logActivity(msg, type='info'){
+  activityLog.unshift({msg,type,time:new Date().toISOString()});
+  if(activityLog.length>100)activityLog.pop();
+  renderActivityLog();
+}
+
+function renderActivityLog(){
+  const el=document.getElementById('activity-log-list');
+  if(!el)return;
+  if(!activityLog.length){el.innerHTML='<div class="empty"><div class="empty-icon">📈</div>No activity yet.</div>';return;}
+  const colours={success:'var(--primary)',warning:'var(--warning)',danger:'var(--danger)',info:'var(--info)'};
+  el.innerHTML=activityLog.map(a=>`
+    <div class="activity-item">
+      <div class="activity-dot" style="background:${colours[a.type]||colours.info};"></div>
+      <div style="flex:1;">
+        <div style="font-size:13px;">${a.msg}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${timeAgo(a.time)}</div>
+      </div>
+    </div>`).join('');
+}
+
+// ══════════════════════════════════════════════
+// PLATFORM ANALYTICS CHARTS (Admin Overview)
+// ══════════════════════════════════════════════
+let _adminCharts={};
+function destroyAdminChart(id){if(_adminCharts[id]){_adminCharts[id].destroy();delete _adminCharts[id];}}
+
+function renderAdminCharts(){
+  const gridColor='rgba(255,255,255,0.06)';
+  const textColor='#a1a1aa';
+  const fontFamily="'Plus Jakarta Sans', sans-serif";
+
+  // ── Submission trend (14 days) ──
+  destroyAdminChart('admin-chart-trend');
+  const ctx1=document.getElementById('admin-chart-trend');
+  if(ctx1&&allResults.length){
+    const days=14;const now=new Date();
+    const labels=[],counts=[];
+    for(let i=days-1;i>=0;i--){
+      const d=new Date(now);d.setDate(d.getDate()-i);
+      const key=d.toISOString().slice(0,10);
+      labels.push(i===0?'Today':d.toLocaleDateString('en-GB',{day:'2-digit',month:'short'}));
+      counts.push(allResults.filter(r=>r.created_at?.startsWith(key)).length);
+    }
+    _adminCharts['admin-chart-trend']=new Chart(ctx1,{
+      type:'bar',
+      data:{labels,datasets:[{label:'Submissions',data:counts,backgroundColor:'rgba(16,185,129,0.6)',borderRadius:4,borderSkipped:false}]},
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:textColor,font:{family:fontFamily,size:10},maxRotation:45}},y:{grid:{color:gridColor},ticks:{color:textColor,font:{family:fontFamily,size:10},stepSize:1},beginAtZero:true}}}
+    });
+  }
+
+  // ── Score Distribution ──
+  destroyAdminChart('admin-chart-dist');
+  const ctx2=document.getElementById('admin-chart-dist');
+  if(ctx2&&allResults.length){
+    const pcts=allResults.map(r=>r.total?Math.round((r.score/r.total)*100):0);
+    const bands=[{l:'0–39%',min:0,max:39,c:'rgba(239,68,68,0.7)'},{l:'40–49%',min:40,max:49,c:'rgba(249,115,22,0.7)'},{l:'50–69%',min:50,max:69,c:'rgba(245,158,11,0.7)'},{l:'70–89%',min:70,max:89,c:'rgba(59,130,246,0.7)'},{l:'90–100%',min:90,max:100,c:'rgba(16,185,129,0.8)'}];
+    _adminCharts['admin-chart-dist']=new Chart(ctx2,{
+      type:'doughnut',
+      data:{labels:bands.map(b=>b.l),datasets:[{data:bands.map(b=>pcts.filter(p=>p>=b.min&&p<=b.max).length),backgroundColor:bands.map(b=>b.c),borderWidth:0,hoverOffset:4}]},
+      options:{responsive:true,maintainAspectRatio:false,cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:textColor,font:{family:fontFamily,size:11},padding:12}}}}
+    });
+  }
+}
+
+// Charts rendered after loadPlatformData — see hook below
+
+// ══════════════════════════════════════════════
+// BROADCAST ANNOUNCEMENT
+// ══════════════════════════════════════════════
+function saveBroadcast(){
+  const msg=document.getElementById('broadcast-msg').value.trim();
+  localStorage.setItem('cbt_broadcast',msg);
+  document.getElementById('broadcast-modal').classList.add('hidden');
+  renderBroadcast();
+  showToast(msg?'✅ Announcement saved.':'Announcement cleared.');
+}
+function clearBroadcast(){
+  if(!confirm('Clear the current announcement?'))return;
+  localStorage.removeItem('cbt_broadcast');
+  renderBroadcast();
+  showToast('Announcement cleared.');
+}
+function renderBroadcast(){
+  const msg=localStorage.getItem('cbt_broadcast')||'';
+  const el=document.getElementById('current-broadcast');
+  if(el)el.innerText=msg||'No announcement set.';
+}
+
+// ══════════════════════════════════════════════
+// PLATFORM HEALTH METRICS
+// ══════════════════════════════════════════════
+function renderPlatformHealth(){
+  const liveExams=allExams.filter(e=>e.is_open).length;
+  document.getElementById('ph-live-exams').innerText=liveExams;
+
+  if(allResults.length){
+    const pcts=allResults.map(r=>r.total?Math.round((r.score/r.total)*100):0);
+    const avg=Math.round(pcts.reduce((a,b)=>a+b,0)/pcts.length);
+    const passed=pcts.filter(p=>p>=50).length;
+    const passRate=Math.round((passed/allResults.length)*100);
+    document.getElementById('ph-avg-score').innerText=avg+'%';
+    document.getElementById('ph-pass-rate').innerText=passRate+'%';
+  }else{
+    document.getElementById('ph-avg-score').innerText='—';
+    document.getElementById('ph-pass-rate').innerText='—';
+  }
+
+  const flagged=allResults.filter(r=>r.violations&&Number(r.violations)>0).length;
+  document.getElementById('ph-flagged').innerText=flagged||'0';
+}
+
+// ══════════════════════════════════════════════
+// TEACHER STATS ROW
+// ══════════════════════════════════════════════
+function renderTeacherStats(){
+  const active=allProfiles.filter(p=>p.status==='active').length;
+  const pending=allProfiles.filter(p=>p.status==='pending').length;
+  const el_a=document.getElementById('t-stat-active');
+  const el_p=document.getElementById('t-stat-pending');
+  const el_t=document.getElementById('t-stat-total');
+  if(el_a)el_a.innerText=`✅ Active: ${active}`;
+  if(el_p)el_p.innerText=`⏳ Pending: ${pending}`;
+  if(el_t)el_t.innerText=`Total: ${allProfiles.length}`;
+}
+
+// ══════════════════════════════════════════════
+// EXPORT TEACHERS CSV
+// ══════════════════════════════════════════════
+function exportTeachersCSV(){
+  if(!allProfiles.length)return showToast('No teachers to export.');
+  const rows=allProfiles.map(p=>{
+    const exams=allExams.filter(e=>e.teacher_id===p.id).length;
+    const results=allResults.filter(r=>r.exams?.teacher_id===p.id).length;
+    const roleLabel=p.is_admin?'Admin':'Teacher';
+    return`"${p.email}","${roleLabel}","${p.status}",${exams},${results},"${new Date(p.created_at).toLocaleDateString('en-GB')}"`;
+  });
+  const csv='Email,Role,Status,Exams,Submissions,Joined\n'+rows.join('\n');
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));
+  a.download='teachers_'+new Date().toISOString().slice(0,10)+'.csv';
+  a.click();
+  showToast('✅ Teachers exported.');
+}
+
+// ══════════════════════════════════════════════
+// SINGLE loadPlatformData HOOK — charts + health + broadcast
+// ══════════════════════════════════════════════
+const _origLoadPlatformData = loadPlatformData;
+window.loadPlatformData = async function(){
+  await _origLoadPlatformData();
+  setTimeout(()=>{
+    renderAdminCharts();
+    renderPlatformHealth();
+    renderTeacherStats();
+    renderBroadcast();
+  }, 300);
+};
+
+
+// ══════════════════════════════════════════════
+// ENTERPRISE ENHANCEMENTS: SECURITY, EXPORTS, DOWNLOADS
+// Free browser-only tools. No AI API, no service_role key.
+// ══════════════════════════════════════════════
+function _downloadAdminFile(name,content,type='text/plain'){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=name;document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(a.href),800);
+}
+function _csvEsc(v){return '"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
+function exportPlatformCSV(){
+  let csv='TYPE,NAME,CLASS,SUBJECT,SCORE,TOTAL,STATUS,EMAIL,FLAGS,DATE\n';
+  allProfiles.forEach(p=>csv += ['TEACHER',p.full_name||'', '', '', '', '', p.status||'', p.email||'', '', p.created_at||''].map(_csvEsc).join(',')+'\n');
+  allExams.forEach(e=>{const m=decodeMeta(e.subject);const owner=allProfiles.find(p=>p.id===e.teacher_id);csv += ['EXAM','',m.cls,m.subject,'','',e.is_open?'open':'locked',owner?.email||e.teacher_id,'',e.created_at||''].map(_csvEsc).join(',')+'\n';});
+  allResults.forEach(r=>{const m=decodeMeta(r.exams?.subject||'');csv += ['RESULT',r.student_name,r.student_class,m.subject,r.score,r.total,'', '', r.violations||0,r.created_at||''].map(_csvEsc).join(',')+'\n';});
+  _downloadAdminFile('hmg_cbt_platform_export_'+new Date().toISOString().slice(0,10)+'.csv','\ufeff'+csv,'text/csv;charset=utf-8;');
+  showToast('✅ Platform CSV exported.');
+}
+function downloadAdminChecklist(){
+  _downloadAdminFile('hmg_cbt_enterprise_admin_checklist.txt',`HMG Academy CBT Enterprise Admin Checklist
+
+1. Confirm ADMIN_EMAIL or profiles.is_admin=true for admin users.
+2. Never expose a Supabase service_role key in frontend files.
+3. Run every SQL setup block in Admin/Teacher setup pages.
+4. Verify RLS is enabled on exams, results, profiles, and students.
+5. Verify admin RPC functions exist and return data.
+6. Approve only verified teacher accounts.
+7. Use registered-student mode for high-stakes exams.
+8. Export platform CSV and teacher backups regularly.
+9. Review flagged submissions with teachers before decisions.
+10. Keep backup JSON, CSV exports, and proctor evidence confidential.
+11. Use HTTPS hosting for production.
+12. Run deployment_validator.html after every major update.
+
+Cost model: free static hosting + Supabase free tier where possible. No paid AI API required.`);
+}
+function downloadRlsSmokeTest(){
+  _downloadAdminFile('hmg_cbt_enterprise_rls_smoke_test.sql',`-- HMG Academy CBT Enterprise RLS/Admin Smoke Test
+SELECT tablename, rowsecurity
+FROM pg_tables
+WHERE schemaname='public' AND tablename IN ('exams','results','profiles','students')
+ORDER BY tablename;
+
+SELECT tablename, policyname, cmd, roles
+FROM pg_policies
+WHERE tablename IN ('exams','results','profiles','students')
+ORDER BY tablename, cmd, policyname;
+
+SELECT proname
+FROM pg_proc
+WHERE proname IN (
+  'admin_get_all_profiles',
+  'admin_get_all_exams',
+  'admin_get_all_results',
+  'admin_set_profile_status',
+  'admin_set_profile_role',
+  'admin_delete_profile',
+  'get_exam_teacher_id'
+)
+ORDER BY proname;
+
+SELECT COUNT(*) AS exams FROM exams;
+SELECT COUNT(*) AS results FROM results;
+SELECT COUNT(*) AS profiles FROM profiles;
+SELECT COUNT(*) AS students FROM students;`);
+}
+async function _fileExists(path){try{const r=await fetch(path,{cache:'no-store'});return r.ok}catch(e){return false}}
+async function runAdminSecurityChecks(){
+  const checks=[];
+  const add=(name,ok,msg,warn=false)=>checks.push({name,ok,msg,warn});
+  add('Admin session',!!adminSession,'Admin session is active in this browser.');
+  add('Profiles loaded',Array.isArray(allProfiles),`${allProfiles.length} profile(s) loaded.`);
+  add('Exams loaded',Array.isArray(allExams),`${allExams.length} exam(s) loaded.`);
+  add('Results loaded',Array.isArray(allResults),`${allResults.length} result(s) loaded.`);
+  add('HTTPS/local',location.protocol==='https:'||location.hostname==='localhost'||location.protocol==='file:',`Current protocol: ${location.protocol}`,true);
+  add('No service_role key',!String(SB_KEY).includes('service_role'),'Frontend uses anon public key only.');
+  const files=['index.html','teacher.html','student.html','admin.html','manifest.webmanifest','sw.js','offline.html','assets/hmg-academy-logo.png'];
+  let found=0;for(const f of files){if(await _fileExists(f))found++;}
+  add('Required static files',found===files.length,`${found}/${files.length} checked files found.`);
+  add('Admin RPC likely configured',allProfiles.length>0||allExams.length>0||allResults.length>0,'If data is zero unexpectedly, run Step 12 Admin RPC SQL.',true);
+  const box=document.getElementById('security-checks');
+  if(box){box.innerHTML=checks.map(c=>`<div class="stat-box"><div class="stat-num ${c.ok?'security-pass':c.warn?'security-warn':'security-fail'}">${c.ok?'✅':c.warn?'⚠️':'❌'}</div><div class="stat-label">${c.name}</div><div style="font-size:11px;color:var(--text-muted);margin-top:6px;line-height:1.5;">${c.msg}</div></div>`).join('');}
+  const report=['HMG Academy CBT Enterprise Admin Security Report',new Date().toISOString(),'','Checks:',...checks.map(c=>`${c.ok?'✅':c.warn?'⚠️':'❌'} ${c.name}: ${c.msg}`),'','Recommendations:','1. Fix any ❌ checks before production use.','2. Run the downloadable SQL smoke test in Supabase SQL Editor.','3. Keep service_role key out of frontend files.','4. Use HTTPS for live deployment.','5. Export backups routinely.'].join('\n');
+  const ta=document.getElementById('security-report-text');if(ta)ta.value=report;
+  showToast('✅ Security checks completed.');
+}
+
+// Register service worker for free PWA app shell caching.
+if('serviceWorker' in navigator && location.protocol !== 'file:'){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+</script>
+<script src="pwa_install_enforcer.js"></script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

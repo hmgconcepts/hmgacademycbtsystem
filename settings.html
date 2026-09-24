@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Platform Settings — HMG Academy CBT Pro</title>
+  <meta name="description" content="Platform settings: institution branding, exam defaults, security options, accessibility and system configuration for HMG Academy CBT Pro.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .a11y-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);gap:14px;}
+  .a11y-row:last-child{border-bottom:none;}
+  .switch{position:relative;flex:none;width:46px;height:24px;background:var(--surface-hover,#323238);border-radius:12px;cursor:pointer;transition:.2s;border:1px solid var(--border);}
+  .switch.on{background:var(--primary);}
+  .switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}
+  .switch.on::after{left:24px;}
+  input[type=range]{width:160px;}
+  .code-chip{font-family:ui-monospace,Consolas,monospace;background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:1px 6px;font-size:11px;}
+  .contract-table{width:100%;border-collapse:collapse;font-size:12px;}
+  .contract-table th,.contract-table td{border:1px solid var(--border);padding:6px 8px;text-align:left;vertical-align:top;}
+  .contract-table th{background:var(--surface-2);}
+  [data-contrast="high"] body{background:#000;}
+  [data-motion="reduced"] *{transition:none!important;animation:none!important;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Platform Settings Console</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>⚙️ Platform Settings</h1>
+      <p>One settings row, shared by every admin device. Branding, CBT defaults, accessibility, security, module access, signatures and cloud sync — saved to the <span class="code-chip" id="settings-src-hint">platform_settings</span> table.</p>
+    </div>
+    <div class="flex-gap">
+      <span class="badge badge-warning" id="role-badge">Checking role…</span>
+    </div>
+  </div>
+
+  <!-- ═══════════ BRANDING ═══════════ -->
+  <div class="card">
+    <h2>🏫 Institution Branding</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">The name shown across the platform (header, printouts, certificates, exports). Logo files are managed at deploy time via the Generator.</p>
+    <div class="grid-2">
+      <div>
+        <label>Institution / Platform Name</label>
+        <input type="text" id="set-inst-name" placeholder="e.g. God of Seed Academy CBT">
+        <label>Tagline</label>
+        <input type="text" id="set-inst-tagline" placeholder="e.g. Computer-Based Testing & Exam Simulation">
+      </div>
+      <div>
+        <label>Primary Colour</label>
+        <input type="color" id="set-primary" style="width:80px;height:38px;">
+        <label>Accent Colour</label>
+        <input type="color" id="set-accent" style="width:80px;height:38px;">
+        <div style="margin-top:14px;padding:14px;border-radius:12px;border:1px dashed var(--border);background:var(--surface-2);">
+          <label style="font-weight:800;">📣 Announcement Banner <span class="muted" style="font-weight:600;">(broadcast to every page, every visitor — PHASE 12K)</span></label>
+          <textarea id="set-announcement" rows="2" maxlength="300" placeholder="e.g. ⚠️ Mid-term CBT runs Mon 10:00–Thu 2:00. Bring your index code." style="width:100%;margin-top:8px;padding:10px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);"></textarea>
+          <div style="display:flex;gap:10px;align-items:center;margin-top:8px;flex-wrap:wrap;">
+            <label>Style</label>
+            <select id="set-announce-level" style="padding:8px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);">
+              <option value="info">📣 Info (blue)</option>
+              <option value="warning">⚠️ Warning (amber)</option>
+            </select>
+            <span class="muted" style="font-size:.85rem;">Empty = off. Dismissal is per visitor session; editing the text re-shows it everywhere.</span>
+          </div>
+        </div>
+        <div style="margin-top:10px;padding:12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);">
+          <div id="brand-preview" style="font-weight:800;font-size:1.05rem;">— preview —</div>
+          <div style="font-size:.8rem;color:var(--text-muted);" id="brand-preview-sub">tagline</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ CBT DEFAULTS ═══════════ -->
+  <div class="card">
+    <h2>📝 Assessment & CBT Defaults</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Pre-filled every time a teacher creates a new exam. Teachers can still override per exam.</p>
+    <div class="grid-4">
+      <div><label>Default Duration (minutes)</label><input type="number" id="set-duration" min="1" max="600" value="45"></div>
+      <div><label>Default Passmark (%)</label><input type="number" id="set-passmark" min="1" max="100" value="50"></div>
+      <div><label>Default Attempts</label><input type="number" id="set-attempts" min="1" max="10" value="1"></div>
+      <div><label>Default Negative Marking</label><input type="number" id="set-negative" min="0" max="1" step="0.25" value="0"></div>
+    </div>
+    <div class="a11y-row"><div><b>Shuffle questions</b><br><small style="color:var(--text-muted);">Randomise question order per candidate by default</small></div><div class="switch" id="set-shuffle-q" onclick="toggleSwitch(this)"></div></div>
+    <div class="a11y-row"><div><b>Shuffle options</b><br><small style="color:var(--text-muted);">Randomise option order per candidate by default</small></div><div class="switch" id="set-shuffle-o" onclick="toggleSwitch(this)"></div></div>
+    <div class="a11y-row"><div><b>Release results immediately</b><br><small style="color:var(--text-muted);">Candidates see scores right after submitting</small></div><div class="switch" id="set-release" onclick="toggleSwitch(this)"></div></div>
+  </div>
+
+  <!-- ═══════════ ACCESSIBILITY ═══════════ -->
+  <div class="card">
+    <h2>♿ Accessibility & Language</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Platform-wide defaults; each device can also override locally (stored in that browser). Applies on every page load.</p>
+    <div class="a11y-row">
+      <div><b>Text size</b><br><small style="color:var(--text-muted);">Scales the whole interface</small></div>
+      <div style="display:flex;align-items:center;gap:10px;"><span style="font-size:.75rem;">A</span><input type="range" id="set-font-scale" min="0.85" max="1.4" step="0.05" value="1" oninput="document.getElementById('font-scale-val').textContent=Math.round(this.value*100)+'%'"><span style="font-size:1.1rem;">A</span><span class="badge badge-info" id="font-scale-val">100%</span></div>
+    </div>
+    <div class="a11y-row"><div><b>High contrast</b><br><small style="color:var(--text-muted);">Stronger borders and darker surfaces for low-vision users</small></div><div class="switch" id="set-contrast" onclick="toggleSwitch(this)"></div></div>
+    <div class="a11y-row"><div><b>Reduce motion</b><br><small style="color:var(--text-muted);">Disable animations and transitions</small></div><div class="switch" id="set-motion" onclick="toggleSwitch(this)"></div></div>
+    <div class="a11y-row"><div><b>Dyslexia-friendly font</b><br><small style="color:var(--text-muted);">Rounded, widely-spaced letterforms</small></div><div class="switch" id="set-dyslexia" onclick="toggleSwitch(this)"></div></div>
+    <div class="a11y-row"><div><b>Interface language</b><br><small style="color:var(--text-muted);">Sets the page language attribute and exam instruction language</small></div>
+      <select id="set-language"><option value="en">English</option><option value="fr">French</option><option value="yo">Yoruba</option><option value="ig">Igbo</option><option value="ha">Hausa</option></select>
+    </div>
+    <button class="btn btn-sm btn-outline" onclick="applyA11yPreview(true)">👁️ Preview on this device</button>
+  </div>
+
+  <!-- ═══════════ SECURITY ═══════════ -->
+  <div class="card">
+    <h2>🔐 Security & Session</h2>
+    <div class="grid-2">
+      <div>
+        <label>Idle auto sign-out (minutes, 0 = off)</label>
+        <input type="number" id="set-idle" min="0" max="240" value="30">
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Admins and teachers are signed out automatically after this much inactivity.</p>
+      </div>
+      <div>
+        <label>Audit log retention (days)</label>
+        <input type="number" id="set-retention" min="7" max="3650" value="365">
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">The Audit page offers a one-click purge of logs older than this. Minimum 7 days is enforced server-side.</p>
+      </div>
+    </div>
+    <div class="a11y-row"><div><b>🚨 Lockdown mode (emergency)</b><br><small style="color:var(--text-muted);">Instantly locks the portal for all non-admins — exam malpractice response, maintenance, incidents. Admins keep access to lift it.</small></div><div class="switch" id="set-lockdown" onclick="toggleSwitch(this)"></div></div>
+    <label>Lockdown notice message</label>
+    <input type="text" id="set-lockdown-msg" placeholder="The platform is temporarily locked for maintenance. Please check back shortly.">
+  </div>
+
+  <!-- ═══════════ MODULE ACCESS ═══════════ -->
+  <div class="card">
+    <h2>🔑 Module Access Control</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Choose which pages each role sees in the navigation. Hiding a page hides the link — the underlying RLS policies still enforce the real security.</p>
+    <div class="table-wrap">
+      <table class="contract-table" id="acl-table">
+        <tr><th>Page</th><th class="role-col">teacher</th><th class="role-col">student</th><th class="role-col">admin</th></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- ═══════════ SIGNATURE & WATERMARK ═══════════ -->
+  <div class="card">
+    <h2>✍️ Official Signature & Exam Watermark</h2>
+    <div class="grid-2">
+      <div>
+        <p style="font-size:.85rem;color:var(--text-muted);">Draw the proprietor's / exam officer's official signature once — it is stored as an image and available to certificates and printouts.</p>
+        <canvas id="sig-canvas" width="420" height="140" style="border:1px dashed var(--border-light);border-radius:10px;background:var(--bg);width:100%;max-width:420px;touch-action:none;cursor:crosshair;"></canvas>
+        <div class="flex-gap" style="margin-top:8px;">
+          <button class="btn btn-sm btn-outline" onclick="clearSignature()">🧽 Clear</button>
+          <button class="btn btn-sm btn-primary" onclick="saveSignature()">💾 Save Signature</button>
+        </div>
+        <div id="sig-status" style="font-size:.8rem;color:var(--text-muted);margin-top:6px;"></div>
+      </div>
+      <div>
+        <label>Exam-screen watermark text (optional)</label>
+        <input type="text" id="set-watermark" placeholder="e.g. EXAM2026 — CONFIDENTIAL">
+        <p style="font-size:.75rem;color:var(--text-muted);">Shown faintly across the exam screen on supported pages to deter screen photography.</p>
+        <div id="sig-preview" style="margin-top:14px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ GOOGLE DRIVE SYNC ═══════════ -->
+  <div class="card">
+    <h2>☁️ Google Drive Cloud Sync (school-owned, 100% free)</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Backups go to the school's OWN Google Drive. Scope <span class="code-chip">drive.file</span> — the platform can only see files it creates. See DEPLOYMENT.md for the one-time Google Cloud Console setup.</p>
+    <div class="grid-2">
+      <div>
+        <label>Google OAuth Client ID</label>
+        <input type="text" id="set-drive-client" placeholder="1234567890-abc…apps.googleusercontent.com">
+        <label>Automatic backup interval (days)</label>
+        <input type="number" id="set-drive-days" min="1" max="90" value="7">
+        <div class="a11y-row"><div><b>Enable auto-sync</b><br><small style="color:var(--text-muted);">Backup automatically whenever an admin visits and the interval has elapsed</small></div><div class="switch" id="set-drive-enabled" onclick="toggleSwitch(this)"></div></div>
+        <p style="font-size:.75rem;color:var(--text-muted);">Deployed origin must be added to the Client ID's <i>Authorized JavaScript origins</i>, or Google will block the popup.</p>
+      </div>
+      <div>
+        <label>Drive Status</label>
+        <div id="drive-status" style="background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:12px;font-size:.85rem;">Not checked yet.</div>
+        <div class="flex-gap" style="margin-top:8px;flex-wrap:wrap;">
+          <button class="btn btn-sm btn-outline" onclick="saveSettings({silent:false}).then(()=>authorizeDrive())">🔐 Authorize Drive</button>
+          <button class="btn btn-sm btn-outline" onclick="testDrive()">🧪 Test Connection</button>
+          <button class="btn btn-sm btn-primary" onclick="backupNow()">☁️ Backup Now</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ SUPABASE CONNECTION ═══════════ -->
+  <div class="card">
+    <h2>🔌 Supabase Database Connection</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">Connection details live in <span class="code-chip">assets/js/app.js</span> (baked by the Generator for whitelabel builds). Test the live connection and the free-tier keep-alive layers here.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      <button class="btn btn-sm btn-outline" onclick="testSupabaseConnection()">🛰️ Test Connection</button>
+      <button class="btn btn-sm btn-outline" onclick="triggerKeepalivePing()">💓 Force Keep-alive Ping</button>
+      <a class="btn btn-sm btn-info" href="platform-health.html">🩺 Full Health Console →</a>
+    </div>
+    <div id="sb-status" style="margin-top:10px;font-size:.85rem;color:var(--text-muted);">Endpoint: <span class="code-chip">…</span></div>
+  </div>
+
+  <div class="flex-gap" style="margin:18px 0 40px;">
+    <button class="btn btn-primary btn-lg" style="flex:1;" onclick="saveSettings()">💾 Save All Settings</button>
+    <button class="btn btn-outline btn-lg" onclick="loadSettings()">↩️ Reload From Database</button>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/drive-sync.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script src="assets/js/keepalive.js"></script>
+<script>
+const MODULES = [
+  ['index.html', '🏠 Home / Login'], ['student.html', '📝 Take Exam'], ['teacher.html', '👨‍🏫 Teacher Hub'],
+  ['cbt-multi.html', '🧪 Multi-Subject CBT'], ['cbt-prompts.html', '🤖 AI Prompts Studio'],
+  ['admin.html', '🛡️ Admin Console'], ['admin-data.html', '💾 Data & Sync'],
+  ['storage.html', '📦 Storage Manager'], ['platform-health.html', '🩺 Platform Health'],
+  ['status-manager.html', '👥 Roles & Status'], ['activity_log.html', '📊 Audit Logs'],
+   ['certificate.html', '🏅 Verify Certificate'],
+  ['deployment_validator.html', '✅ Deployment Validator']
+];
+let aclState = {};
+let isAdmin = false;
+
+function toggleSwitch(el) { el.classList.toggle('on'); }
+
+function requireAdmin() {
+  const s = App.getBestSession();
+  if (!s || !s.access_token) { document.body.innerHTML = '<div style="padding:60px;text-align:center;font-family:system-ui;">🔒 Admin sign-in required. <a href="index.html">Go to login</a>.</div>'; return false; }
+  return true;
+}
+
+async function checkRole() {
+  const s = App.getBestSession();
+  if (!s || !s.user) { document.getElementById('role-badge').textContent = 'Not signed in'; return false; }
+  try {
+    const rows = await App.sbFetch(`/rest/v1/profiles?email=eq.${encodeURIComponent(s.user.email)}&select=role,status`);
+    const p = rows && rows[0];
+    if (p) {
+      isAdmin = (p.role === 'admin' || p.role === 'super_admin') && p.status === 'active';
+      document.getElementById('role-badge').textContent = (p.role || 'teacher') + (isAdmin ? ' · can save' : ' · read-only');
+      document.getElementById('role-badge').className = 'badge ' + (isAdmin ? 'badge-primary' : 'badge-warning');
+    }
+  } catch (_) {}
+  return isAdmin;
+}
+
+/* ── Load current settings from platform_settings + institutions ── */
+async function loadSettings() {
+  await App.loadPublicSettings(true);
+  const ps = App.publicSettings || {};
+  const branding = ps.branding || {};
+  const cbt = ps.cbt_defaults || {};
+  const a11y = ps.accessibility || {};
+  aclState = ps.module_access || {};
+
+  document.getElementById('set-inst-name').value = ps.institution_name || '';
+  document.getElementById('set-inst-tagline').value = branding.tagline || '';
+  document.getElementById('set-primary').value = branding.primary_color || '#10b981';
+  document.getElementById('set-accent').value = branding.accent_color || '#8b5cf6';
+  document.getElementById('set-announcement').value = branding.announcement || '';
+  document.getElementById('set-announce-level').value = branding.announcement_level === 'warning' ? 'warning' : 'info';
+  document.getElementById('set-duration').value = cbt.duration ?? 45;
+  document.getElementById('set-passmark').value = cbt.passmark ?? 50;
+  document.getElementById('set-attempts').value = cbt.attempt_limit ?? 1;
+  document.getElementById('set-negative').value = cbt.negative_mark ?? 0;
+  setSwitch('set-shuffle-q', cbt.shuffle_questions !== false);
+  setSwitch('set-shuffle-o', cbt.shuffle_options !== false);
+  setSwitch('set-release', cbt.release_results !== false);
+  document.getElementById('set-font-scale').value = a11y.font_scale || 1;
+  document.getElementById('font-scale-val').textContent = Math.round((a11y.font_scale || 1) * 100) + '%';
+  setSwitch('set-contrast', !!a11y.high_contrast);
+  setSwitch('set-motion', !!a11y.motion || !!a11y.reduced_motion);
+  setSwitch('set-dyslexia', !!a11y.dyslexia_font);
+  document.getElementById('set-language').value = a11y.language || 'en';
+  document.getElementById('set-idle').value = ps.idle_lock_minutes ?? 30;
+  document.getElementById('set-retention').value = ps.audit_retention_days ?? 365;
+  setSwitch('set-lockdown', !!ps.lockdown_mode);
+  document.getElementById('set-lockdown-msg').value = ps.lockdown_message || '';
+  document.getElementById('set-watermark').value = ps.watermark_text || '';
+
+  // Drive settings (shared row)
+  try {
+    const rows = await App.sbFetch('/rest/v1/platform_settings?id=eq.1&select=drive_client_id,drive_sync_enabled,drive_sync_days,drive_last_backup');
+    const d = rows && rows[0];
+    if (d) {
+      document.getElementById('set-drive-client').value = d.drive_client_id || '';
+      document.getElementById('set-drive-days').value = d.drive_sync_days || 7;
+      setSwitch('set-drive-enabled', !!d.drive_sync_enabled);
+      document.getElementById('drive-status').innerHTML = d.drive_last_backup
+        ? `✅ Last backup: <b>${new Date(d.drive_last_backup).toLocaleString()}</b>${DriveSync.isDue() && d.drive_sync_enabled ? ' · <span style="color:var(--warning)">auto-backup due on next admin visit</span>' : ''}`
+        : 'No backup recorded yet.';
+    }
+  } catch (_) {}
+
+  // Signature preview
+  if (ps.signature_data_uri) {
+    document.getElementById('sig-preview').innerHTML = `<img src="${ps.signature_data_uri}" alt="Saved signature" style="max-width:280px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:6px;">`;
+    document.getElementById('sig-status').textContent = 'Signature saved ✓ (re-draw and save to replace)';
+  }
+
+  renderACLTable();
+  previewBrand();
+  document.getElementById('sb-status').innerHTML = 'Endpoint: <span class="code-chip">' + App.SB_URL.replace('https://', '') + '</span>';
+}
+
+function setSwitch(id, on) { document.getElementById(id).classList.toggle('on', !!on); }
+function getSwitch(id) { return document.getElementById(id).classList.contains('on'); }
+
+function previewBrand() {
+  const name = document.getElementById('set-inst-name').value || 'Platform preview';
+  document.getElementById('brand-preview').textContent = name;
+  document.getElementById('brand-preview').style.color = document.getElementById('set-primary').value;
+  document.getElementById('brand-preview-sub').textContent = document.getElementById('set-inst-tagline').value || 'tagline';
+}
+
+/* ── ACL matrix ── */
+function renderACLTable() {
+  const tbl = document.getElementById('acl-table');
+  const defaultAcl = { teacher: MODULES.map(m => m[0]), student: ['index.html', 'student.html', 'cbt-multi.html', 'certificate.html'], admin: MODULES.map(m => m[0]) };
+  const acl = Object.keys(aclState).length ? aclState : defaultAcl;
+  aclState = acl;
+  tbl.innerHTML = '<tr><th>Page</th><th>teacher</th><th>student</th><th>admin</th></tr>' +
+    MODULES.map(([href, label]) => `
+      <tr><td>${label}</td>${['teacher', 'student', 'admin'].map(role => `
+        <td style="text-align:center;"><input type="checkbox" ${ (acl[role] || []).includes(href) ? 'checked' : ''} onchange="toggleAcl('${role}','${href}',this.checked)"></td>`).join('')}
+      </tr>`).join('');
+}
+function toggleAcl(role, href, on) {
+  const list = new Set(aclState[role] || []);
+  if (on) list.add(href); else list.delete(href);
+  aclState[role] = [...list];
+}
+
+/* ── Save ── */
+async function saveSettings(opts = {}) {
+  if (!isAdmin) return showToast('Only admins can save settings.', 'danger');
+  const patch = {
+    institution_name: document.getElementById('set-inst-name').value.trim() || 'HMG Academy CBT Pro',
+    branding: {
+      tagline: document.getElementById('set-inst-tagline').value.trim(),
+      primary_color: document.getElementById('set-primary').value,
+      accent_color: document.getElementById('set-accent').value,
+      announcement: document.getElementById('set-announcement').value.trim().slice(0, 300),
+      announcement_level: document.getElementById('set-announce-level').value
+    },
+    cbt_defaults: {
+      duration: +document.getElementById('set-duration').value || 45,
+      passmark: +document.getElementById('set-passmark').value || 50,
+      attempt_limit: +document.getElementById('set-attempts').value || 1,
+      negative_mark: +document.getElementById('set-negative').value || 0,
+      shuffle_questions: getSwitch('set-shuffle-q'),
+      shuffle_options: getSwitch('set-shuffle-o'),
+      release_results: getSwitch('set-release')
+    },
+    accessibility: {
+      font_scale: +document.getElementById('set-font-scale').value || 1,
+      high_contrast: getSwitch('set-contrast'),
+      reduced_motion: getSwitch('set-motion'),
+      dyslexia_font: getSwitch('set-dyslexia'),
+      language: document.getElementById('set-language').value
+    },
+    idle_lock_minutes: +document.getElementById('set-idle').value || 0,
+    audit_retention_days: +document.getElementById('set-retention').value || 365,
+    lockdown_mode: getSwitch('set-lockdown'),
+    lockdown_message: document.getElementById('set-lockdown-msg').value.trim(),
+    watermark_text: document.getElementById('set-watermark').value.trim(),
+    drive_client_id: document.getElementById('set-drive-client').value.trim(),
+    drive_sync_days: +document.getElementById('set-drive-days').value || 7,
+    drive_sync_enabled: getSwitch('set-drive-enabled'),
+    module_access: aclState
+  };
+  try {
+    await App.sbRpc('save_platform_settings', { p_patch: patch });
+    if (!opts.silent) showToast('Settings saved — every admin device now sees them ✓', 'success');
+    await App.loadPublicSettings(true);
+    return true;
+  } catch (e) {
+    showToast('Could not save: ' + (e.message || e), 'danger');
+    return false;
+  }
+}
+
+/* ── Accessibility preview (device-local) ── */
+function applyA11yPreview(persistLocal) {
+  const a11y = {
+    font_scale: +document.getElementById('set-font-scale').value || 1,
+    high_contrast: getSwitch('set-contrast'),
+    reduced_motion: getSwitch('set-motion'),
+    dyslexia_font: getSwitch('set-dyslexia'),
+    language: document.getElementById('set-language').value
+  };
+  App.publicSettings = Object.assign({}, App.publicSettings, { accessibility: a11y });
+  App.applyAccessibility();
+  if (persistLocal) {
+    localStorage.setItem('cbt_a11y', JSON.stringify(a11y));
+    showToast('Accessibility applied to this device (locally). Save All Settings to make it platform-wide.', 'info', 6000);
+  }
+}
+
+/* ── Signature canvas ── */
+let sigDrawing = false, sigDirty = false;
+function initSignature() {
+  const c = document.getElementById('sig-canvas');
+  const ctx = c.getContext('2d');
+  ctx.lineWidth = 2.2; ctx.lineCap = 'round'; ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue('--text') || '#111';
+  const pos = e => {
+    const r = c.getBoundingClientRect();
+    const t = e.touches ? e.touches[0] : e;
+    return [(t.clientX - r.left) * (c.width / r.width), (t.clientY - r.top) * (c.height / r.height)];
+  };
+  const start = e => { sigDrawing = true; sigDirty = true; ctx.beginPath(); ctx.moveTo(...pos(e)); e.preventDefault(); };
+  const move = e => { if (sigDrawing) { ctx.lineTo(...pos(e)); ctx.stroke(); e.preventDefault(); } };
+  const end = () => { sigDrawing = false; };
+  c.addEventListener('mousedown', start); c.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  c.addEventListener('touchstart', start); c.addEventListener('touchmove', move); c.addEventListener('touchend', end);
+}
+function clearSignature() {
+  const c = document.getElementById('sig-canvas');
+  c.getContext('2d').clearRect(0, 0, c.width, c.height);
+  sigDirty = false;
+  document.getElementById('sig-status').textContent = '';
+}
+async function saveSignature() {
+  if (!sigDirty) return showToast('Draw a signature first.', 'info');
+  if (!isAdmin) return showToast('Only admins can save the signature.', 'danger');
+  const dataUri = document.getElementById('sig-canvas').toDataURL('image/png');
+  try {
+    await App.sbRpc('save_platform_settings', { p_patch: { signature_data_uri: dataUri } });
+    document.getElementById('sig-preview').innerHTML = `<img src="${dataUri}" style="max-width:280px;border:1px solid var(--border);border-radius:8px;background:#fff;padding:6px;">`;
+    showToast('Official signature saved ✓', 'success');
+  } catch (e) { showToast('Save failed: ' + (e.message || e), 'danger'); }
+}
+
+/* ── Drive actions ── */
+async function authorizeDrive() {
+  await saveSettings({ silent: true });
+  try {
+    await DriveSync.loadCfg();
+    const t = await DriveSync.getToken(true);
+    if (t) { showToast('Google Drive authorized ✓ Backups will go to your school Drive.', 'success'); testDrive(); }
+  } catch (e) { showToast(e.message || 'Authorization failed.', 'danger'); }
+}
+async function testDrive() {
+  const el = document.getElementById('drive-status');
+  el.textContent = 'Testing…';
+  try {
+    await DriveSync.loadCfg();
+    const about = await DriveSync.testConnection();
+    el.innerHTML = `✅ Connected as <b>${escapeHtml(about.user?.emailAddress || 'your account')}</b> · Drive quota: ${escapeHtml((about.storageQuota?.limit ? (Number(about.storageQuota.limit) / 1073741824).toFixed(0) + ' GB' : 'unknown'))}`;
+  } catch (e) { el.innerHTML = '❌ ' + escapeHtml(e.message || 'Test failed'); }
+}
+async function backupNow() {
+  try {
+    showToast('Building full backup envelope…', 'info');
+    const env = await DataPort.buildFullEnvelope();
+    window.__driveManualBackup = true;
+    const f = await DriveSync.uploadBackup(env);
+    window.__driveManualBackup = false;
+    showToast(`Backup uploaded to Drive ✓ (${f.name})`, 'success');
+    loadSettings();
+  } catch (e) {
+    window.__driveManualBackup = false;
+    showToast('Backup failed: ' + (e.message || e), 'danger', 6000);
+  }
+}
+
+/* ── Supabase tests ── */
+async function testSupabaseConnection() {
+  const el = document.getElementById('sb-status');
+  el.innerHTML = 'Testing…';
+  try {
+    const t0 = performance.now();
+    await App.sbFetch('/rest/v1/institutions?select=id&limit=1');
+    const ms = Math.round(performance.now() - t0);
+    el.innerHTML = `✅ Connected to <span class="code-chip">${App.SB_URL.replace('https://', '')}</span> — REST answered in ${ms} ms.`;
+  } catch (e) {
+    el.innerHTML = '❌ ' + escapeHtml(e.message || 'Connection failed');
+  }
+}
+async function triggerKeepalivePing() {
+  const r = await FreeTierKeeper.ping(true);
+  if (r.success) showToast(`Keep-alive heartbeat written via ${r.via} ✓ ${r.proof ? 'Proof: ' + r.proof : ''}`, 'success', 6000);
+  else showToast('Keep-alive failed: ' + (r.error || 'unknown'), 'danger');
+}
+
+/* ── Boot ── */
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAdmin()) return;
+  initSignature();
+  await checkRole();
+  await loadSettings();
+  ['set-inst-name', 'set-inst-tagline'].forEach(id => document.getElementById(id).addEventListener('input', previewBrand));
+  document.getElementById('set-primary').addEventListener('input', previewBrand);
+  document.getElementById('set-font-scale').addEventListener('input', () => {
+    document.getElementById('font-scale-val').textContent = Math.round(document.getElementById('set-font-scale').value * 100) + '%';
+  });
+});
+</script>
+<script src="assets/js/site-license.js"></script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>
