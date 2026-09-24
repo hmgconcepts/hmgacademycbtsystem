@@ -1,0 +1,114 @@
+# ============================================================
+# Supabase Free-Tier Heartbeat & Anti-Pause — V4.0 (Phase 2)
+# ------------------------------------------------------------
+# Supabase pauses FREE-tier projects after ~7 days without
+# REAL database activity. This workflow performs a genuine
+# database WRITE through the sc_keep_alive() RPC (installed by
+# COMPLETE_SCHEMA_SQL.sql) twice a week, so the project never
+# crosses the 7-day inactivity window. It then VERIFIES the
+# write actually happened (the RPC returns the new timestamp)
+# and fails loudly if it did not — GitHub emails you on failure.
+#
+# ONE-TIME SETUP (2 minutes):
+#   GitHub repo → Settings → Secrets and variables → Actions →
+#   add two repository secrets:
+#     SUPABASE_URL        e.g. https://abcdefgh.supabase.co
+#     SUPABASE_ANON_KEY   your project's anon/public key
+#
+# V4.0 — FULLY SELF-SUSTAINING:
+#   1. WATCHDOG: after writing the heartbeat, the workflow
+#      VERIFIES the database really recorded it (a timestamp in
+#      the RPC response is the proof of a successful UPDATE).
+#   2. SELF-COMMITTING: GitHub disables *scheduled* workflows in
+#      repos with no commits for 60 days. This workflow resets
+#      that clock BY ITSELF — whenever the repository's last
+#      commit is older than 30 days, it commits a tiny timestamp
+#      file (.github/last-keepalive.txt) and pushes. The 60-day
+#      freeze can never be reached. No human action required.
+#   3. AUTO-RESTORE companion: supabase-auto-restore.yml checks
+#      the project daily and restores it automatically if it is
+#      ever paused anyway (separate secrets, optional).
+#
+# Secrets unset? The workflow skips gracefully with a notice
+# (safe default) instead of failing.
+# ============================================================
+name: Supabase Free-Tier Heartbeat & Anti-Pause
+
+on:
+  schedule:
+    # 06:17 UTC every Monday and Thursday (max gap = 4 days, well inside the 7-day window)
+    - cron: '17 6 * * 1,4'
+  workflow_dispatch: {}
+
+# "contents: write" is required ONLY by the self-commit step below.
+# It grants this workflow's built-in GITHUB_TOKEN push access to THIS
+# repo and nothing else.
+permissions:
+  contents: write
+
+jobs:
+  heartbeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Heartbeat write to Supabase (sc_keep_alive RPC)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          set -e
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+            echo "::notice::SUPABASE_URL / SUPABASE_ANON_KEY secrets are not set. Add them in Settings → Secrets and variables → Actions to activate the heartbeat (the platform still has other protection layers)."
+            exit 0
+          fi
+          code=$(curl -s -o /tmp/resp.txt -w '%{http_code}' \
+            -X POST "$SUPABASE_URL/rest/v1/rpc/sc_keep_alive" \
+            -H "apikey: $SUPABASE_ANON_KEY" \
+            -H "Authorization: Bearer $SUPABASE_ANON_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"p_src":"github-actions"}')
+          echo "Response: $(cat /tmp/resp.txt)"
+          if [ "$code" -lt 200 ] || [ "$code" -ge 300 ]; then
+            echo "::error::Keep-alive failed (HTTP $code). If the RPC is missing, run COMPLETE_SCHEMA_SQL.sql in the Supabase SQL Editor (it installs sc_keep_alive)."
+            exit 1
+          fi
+          # V4.0 WATCHDOG: HTTP 200 alone is not proof — confirm the database
+          # actually recorded the write. sc_keep_alive() returns the NEW
+          # last_ping timestamp, so a timestamp in the body IS the proof.
+          if grep -Eq '20[0-9]{2}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}' /tmp/resp.txt; then
+            echo "✅ Keep-alive heartbeat written AND verified (HTTP $code, timestamp returned). Supabase inactivity timer reset."
+          elif grep -q "heartbeat written" /tmp/resp.txt; then
+            echo "✅ Keep-alive heartbeat written AND verified (HTTP $code). Supabase inactivity timer reset."
+          else
+            echo "::error::HTTP $code received but the response body does not contain the confirmation timestamp the RPC returns. Run COMPLETE_SCHEMA_SQL.sql once in the Supabase SQL Editor, then re-run this workflow."
+            exit 1
+          fi
+
+      # ---------- Layer 9: self-commit — resets GitHub's 60-day clock ----------
+      # GitHub disables scheduled workflows after 60 days without a commit.
+      # Whenever the last commit is older than 30 days, this step commits a
+      # one-line timestamp file, so the repository NEVER looks inactive.
+      - name: Check out repository (needed for the self-commit step)
+        uses: actions/checkout@v4
+
+      - name: Self-commit to reset the 60-day scheduler clock (only when needed)
+        run: |
+          set -e
+          last=$(git log -1 --format=%ct)
+          now=$(date +%s)
+          age_days=$(( (now - last) / 86400 ))
+          echo "Last commit was ${age_days} day(s) ago."
+          if [ "$age_days" -lt 30 ]; then
+            echo "✅ Repository is active (last commit < 30 days). No self-commit needed — GitHub's 60-day scheduler freeze is not a risk."
+            exit 0
+          fi
+          git config user.name  "cbt-keepalive-bot"
+          git config user.email "keepalive-bot@users.noreply.github.com"
+          date -u +"Last automated keepalive commit: %Y-%m-%dT%H:%M:%SZ" > .github/last-keepalive.txt
+          git add .github/last-keepalive.txt
+          git commit -m "chore: automated keepalive commit — resets GitHub's 60-day scheduler clock [skip ci]"
+          if git push; then
+            echo "✅ Self-commit pushed. GitHub's 60-day scheduled-workflow freeze clock has been reset automatically."
+          else
+            echo "::warning::Could not push the keepalive commit (branch protection or restricted workflow permissions?). Enable it via repo Settings → Actions → General → Workflow permissions → 'Read and write permissions', or push any small commit manually before the 60-day mark."
+          fi
