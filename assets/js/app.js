@@ -19,6 +19,7 @@ const App = {
     this.bindHeader();
     this.bindShell();
     this.bindPalette();
+    this.bindUpdateWatcher();
     this.injectEngines();
     this.loadPublicSettings().then(() => {
       this.applyAccessibility();
@@ -364,6 +365,9 @@ const App = {
 
     const esc = (x) => String(x == null ? '' : x).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     const email = (sess && sess.user && sess.user.email) || '';
+    const licChip = isAdmin
+      ? '<div class="shell-lic" id="shell-lic"><span class="shell-lic-dot"></span><span id="shell-lic-text">Subscription: checking…</span></div>'
+      : '';
     const userChip = authed
       ? '<div class="shell-user"><div class="shell-user-avatar">' + esc((email[0] || '?').toUpperCase()) + '</div>' +
         '<div class="shell-user-meta"><div class="shell-user-email" title="' + esc(email) + '">' + esc(email) + '</div>' +
@@ -385,12 +389,33 @@ const App = {
         '</div>'
       ).join('') +
       '</nav>' +
+      licChip +
       userChip +
       '<div class="shell-foot">' +
       '<button class="shell-foot-btn" id="shell-search-btn" title="Search everywhere (Ctrl+K)">🔎 Search</button>' +
       '<button class="shell-foot-btn" onclick="history.length>1?history.back():location.href=\'index.html\'" title="Go back to the previous page">↩ Back</button>' +
       '<button class="shell-foot-btn" onclick="window.SiteHelp&&SiteHelp.openHelpCenter?SiteHelp.openHelpCenter():window.ChatBot&&ChatBot.open?ChatBot.open():void 0" title="Open the help center">📘 Help</button>' +
       '</div>';
+    if (isAdmin) {
+      const fillLic = (txt, cls) => {
+        const el = document.getElementById('shell-lic');
+        if (!el) return;
+        el.className = 'shell-lic ' + (cls || '');
+        const t = document.getElementById('shell-lic-text');
+        if (t) t.textContent = txt;
+      };
+      if (window.SiteSub && SiteSub.status) {
+        SiteSub.status().then((info) => {
+          const r = (info && info.result) || {};
+          const model = (info && info.lic && info.lic.model) || 'subscription';
+          const st = r.state || 'unknown';
+          const days = r.daysLeft != null ? (r.daysLeft + 'd left') : (r.daysOver != null ? (r.daysOver + 'd over') : '');
+          const label = model === 'lifetime' ? 'Lifetime licence' : 'Subscription: ' + st;
+          const cls = ['active', 'lifetime'].indexOf(st) !== -1 ? 'ok' : (st === 'warning' || st === 'grace' ? 'warn' : (st === 'unknown' ? '' : 'bad'));
+          fillLic(label + (days ? ' — ' + days : '') + ' · renewals: HMG Concepts', cls);
+        }).catch(() => fillLic('Subscription: managed by HMG Concepts', ''));
+      } else fillLic('Subscription: managed by HMG Concepts', '');
+    }
     const so = aside.querySelector('#shell-signout');
     if (so) so.onclick = () => this.signOutEverywhere();
     const sb = aside.querySelector('#shell-search-btn');
@@ -422,6 +447,47 @@ const App = {
   },
 
   /* ═══════════════════════════════════════════════════════════════════
+     PHASE 12L — PWA update watcher.
+     After a redeploy, browsers keep serving the previous service-worker
+     cache until the new worker installs — visitors (and owners) can stare
+     at a "still broken" site that is actually fixed. This watches for a
+     newly installed worker and offers a one-tap Refresh. Never appears on
+     the exam runner or the offline screen. */
+  bindUpdateWatcher() {
+    const page = this.pageName();
+    if (page === 'student.html' || page === 'offline.html') return; // never interrupt an exam
+    if (!('serviceWorker' in navigator) || !navigator.serviceWorker.getRegistration) return;
+    try {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (!reg) return;
+        if (reg.waiting && navigator.serviceWorker.controller) this.showUpdateBanner();
+        reg.addEventListener('updatefound', () => {
+          const nw = reg.installing;
+          if (!nw) return;
+          nw.addEventListener('statechange', () => {
+            if (nw.state === 'installed' && navigator.serviceWorker.controller) this.showUpdateBanner();
+          });
+        });
+      }).catch(() => {});
+      setInterval(() => {
+        try { navigator.serviceWorker.getRegistration().then((r) => { if (r && r.update) r.update(); }).catch(() => {}); } catch (e) {}
+      }, 15 * 60 * 1000);
+    } catch (e) { /* never break a page over the watcher */ }
+  },
+  showUpdateBanner() {
+    if (document.getElementById('app-update-banner')) return;
+    const bar = document.createElement('div');
+    bar.id = 'app-update-banner';
+    bar.setAttribute('role', 'status');
+    bar.innerHTML = '🚀 <b>A new version is available.</b> ' +
+      '<button class="ub-refresh">Refresh now</button> <button class="ub-later" aria-label="Dismiss">Later</button>';
+    const rBtn = bar.querySelector('.ub-refresh'), lBtn = bar.querySelector('.ub-later');
+    if (rBtn) rBtn.onclick = () => location.reload();
+    if (lBtn) lBtn.onclick = () => bar.remove();
+    document.body.appendChild(bar);
+  },
+
+  /* ═══════════════════════════════════════════════════════════════════
      PHASE 12K — Global command palette (Ctrl+K / ⌘K).
      Jump to any page, tool or action you are allowed to use. Role-aware
      (same model as the sidebar), zero dependencies, works offline. */
@@ -437,6 +503,7 @@ const App = {
     const ACTIONS = [
       { label: '🎨 Toggle light / dark theme', run: () => this.toggleTheme() },
       { label: '📘 Open the Help Center', run: () => { if (window.SiteHelp && SiteHelp.openHelpCenter) SiteHelp.openHelpCenter(); else if (window.CBTChatbot && CBTChatbot.open) CBTChatbot.open(); } },
+      { label: '✅ Run the Deployment Validator', href: 'deployment_validator.html' },
       { label: '🏅 Verify a certificate', href: 'certificate.html' },
       { label: '📝 Take an exam (student portal)', href: 'student.html' },
       authed ? { label: '👋 Sign out', run: () => this.signOutEverywhere() }

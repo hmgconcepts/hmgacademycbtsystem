@@ -345,3 +345,19 @@ tr:hover td { background: rgba(255,255,255,0.02); }
 .announce-banner .announce-dismiss{border:0;background:transparent;cursor:pointer;font-size:14px;color:inherit;opacity:.7;padding:2px 6px}
 .announce-banner .announce-dismiss:hover{opacity:1}
 @media print{.announce-banner,#app-palette-fab,#app-palette{display:none!important}}
+
+/* ═══════════ PHASE 12L — update banner + subscription chip ═══════════ */
+.update-banner{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:1450;display:flex;align-items:center;gap:12px;background:#111827;color:#f9fafb;border:1px solid #374151;border-radius:999px;padding:10px 18px;font-size:13.5px;font-weight:600;box-shadow:0 12px 34px rgba(0,0,0,.35);max-width:calc(100vw - 32px)}
+.update-banner button{border:0;border-radius:999px;padding:6px 14px;font-weight:800;cursor:pointer;font-size:12.5px}
+.update-banner .ub-refresh{background:#10b981;color:#052e22}
+.update-banner .ub-refresh:hover{background:#34d399}
+.update-banner .ub-later{background:transparent;color:#9ca3af}
+#app-shell .shell-lic{display:flex;align-items:center;gap:8px;padding:8px 14px;font-size:11px;font-weight:700;border-top:1px solid var(--border,#e5e7eb);color:var(--text-muted,#6b7280)}
+#app-shell .shell-lic .shell-lic-dot{width:8px;height:8px;border-radius:50%;background:#9ca3af;flex:0 0 auto}
+#app-shell .shell-lic.ok .shell-lic-dot{background:#10b981}
+#app-shell .shell-lic.ok{color:#059669}
+#app-shell .shell-lic.warn .shell-lic-dot{background:#f59e0b}
+#app-shell .shell-lic.warn{color:#b45309}
+#app-shell .shell-lic.bad .shell-lic-dot{background:#ef4444}
+#app-shell .shell-lic.bad{color:#dc2626}
+@media print{.update-banner{display:none!important}}
