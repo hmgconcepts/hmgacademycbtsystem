@@ -1,5 +1,5 @@
 # DEPLOYMENT GUIDE — HMG Academy CBT Pro (Client Platform) & HMG CBT Builder (Generator)
-**Version:** Phase 12K · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
+**Version:** Phase 12L · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
 
 ---
 
@@ -38,14 +38,14 @@ git push                                                      # Vercel redeploys
 ### A1. Upload the build
 Follow Way 1 or Way 2 above with `cbt-system-PHASE12K.zip`.
 
-### A2. Delete the 4 stale files (web-UI deploys only — 2 minutes)
-On GitHub, open each file, click the **⋮ (three dots) → Delete file → Commit changes**:
-1. `license.html` (retired builder tool — tombstone until deleted)
-2. `client-monitor.html` (retired builder tool — tombstone until deleted)
-3. `,github/a` (junk from a mangled upload)
-4. `,github/workflows/supabase-auto-restore.yml` and `,github/workflows/supabase-heartbeat.yml` (mangled junk — the real ones are re-created in A3)
+### A2. Delete the stale files (web-UI deploys only — 2 minutes)
+Easiest: open the **🔧 Repair Center** (ships with the generator package, `repair-center.html`) — it has one-click GitHub deep links for every deletion below. Or do it manually: on GitHub, open each file → **⋮ (three dots) → Delete file → Commit changes**:
+1. `license.html` — retired builder tool. Builds no longer ship it (Phase 12L), so after this deletion it is 404 forever.
+2. `client-monitor.html` — same.
+3. Any junk left by older uploads: `.github/a`, and anything under a `,github/` folder.
+(Your 2026-09-24 deploy already deleted the `,github/…` files and re-created the real workflows — verified.)
 
-### A3. Restore the GitHub Actions anti-pause layers (web-UI deploys only)
+### A3. Restore the GitHub Actions anti-pause layers (only if the Actions tab is empty)
 The dot-folder `.github/` gets dropped by uploads. Re-create the two workflow files once:
 1. GitHub → **Add file → Create new file**.
 2. Type the full path: `.github/workflows/supabase-heartbeat.yml`
@@ -62,7 +62,8 @@ The dot-folder `.github/` gets dropped by uploads. Re-create the two workflow fi
 5. RLS is enforced by the schema — never paste a `service_role` key anywhere in the front-end (Platform Health grades this an instant F).
 
 ### A5. Verify the deployment (5 minutes, every time)
-1. Open `https://<your-site>/deployment_validator.html` → **Run all checks**. Everything must be green — including the new **Builder-tool leakage** and **Stale upload artifacts** rows. A red row prints the exact fix.
+0. Hard-refresh once (Ctrl+Shift+R / Cmd+Shift+R) — browsers keep the previous service-worker cache after a redeploy; the platform now shows a “🚀 A new version is available” pill when that happens. Confirm the version: `sw.js` should read `hmg-cbt-shell-v12-phase12l-v1`.
+1. Open `https://<your-site>/deployment_validator.html` → **Run all checks**. Everything must be green — including the **Builder-tool leakage** and **Stale upload artifacts** rows. A red row prints the exact fix.
 2. Open `platform-health.html` → latency probe, 7 RPC smokes, heartbeat evidence, security grade **A/B**.
 3. Open a governance page (e.g. `/storage`) in a **private/incognito window** → you must be redirected to the admin sign-in (this proves the clean-URL guard fix is live).
 4. Sign in as admin → the sidebar shows Governance Console, breadcrumbs, your user chip; press **Ctrl+K** → the palette opens; try “storage”.

@@ -666,3 +666,22 @@ Vercel serves every page at its clean URL (`/storage`), issuing a 308 from `stor
 
 ### 6. Upload-safe tombstones
 `license.html` and `client-monitor.html` ship as instant-redirect tombstones (noindex, zero functionality) so that a plain GitHub re-upload immediately neutralizes any older functional copies still deployed. Fresh deployments and generated client builds never contain the files at all; the tombstones exist purely to repair upgrade-over-old-upload scenarios and can be deleted (DEPLOYMENT_GUIDE Part A2).
+
+## Phase 12L — Live-Deployment Verification, Update Pill & Repair Center — 2026-09-25
+
+Audited against the live deployments: the 12K build is confirmed live on both sites (tombstone licence page, clean-URL guard fix, palette, meta descriptions, running GitHub Actions, clean generator templates). This phase closes the last gaps and hardens the deployment experience.
+
+### 1. 🚀 PWA update-available pill
+After any redeploy, browsers keep serving the previous service-worker cache until the new worker installs — the classic “I fixed it but the site still looks broken” trap. `App.bindUpdateWatcher()` now watches the service worker: the moment a new version has installed, a bottom pill offers **Refresh now** (or Later). It re-checks every 15 minutes on long-open tabs and never appears on the fullscreen exam runner or offline screen.
+
+### 2. 💳 Subscription status chip (admins)
+The sidebar shows administrators a live, read-only, colour-coded licence chip — model (subscription/lifetime), state and days left/right over — sourced from the existing licence engine (`SiteSub.status()`). Renewal stays 100% provider-managed; the chip is information, not a bypass.
+
+### 3. 🔧 Deployment Repair Center (builder console)
+An interactive operator page (`repair-center.html` in the generator package) that turns every deployment fix into a click: a live verification checklist with expected results, one-click GitHub deep links to delete stale files (`license.html`, `client-monitor.html`, `.github/a`, `,github/…`), pre-filled GitHub new-file links plus copy-ready contents for the two anti-pause workflows, and the browser-cache explainer. Targets are configurable per client deployment and remembered per browser.
+
+### 4. ✅ Validator one keystroke away
+The command palette gains “Run the Deployment Validator” — post-deploy verification is now Ctrl+K → “valid” → Enter.
+
+### 5. Tombstones retired
+With the live pages neutralized and deletions one click away, builds no longer ship the tombstone stubs — after deletion the retired builder tools are permanently 404 on client platforms, exactly as directed.

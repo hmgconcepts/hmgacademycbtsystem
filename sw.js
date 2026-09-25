@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12k-v1'; // PHASE 12K: clean-URL guard fix, Ctrl+K palette, breadcrumbs, user chip, announcement broadcasts, upload-safe tombstones + validator leakage scan // PHASE 12J: unified sidebar shell on every internal page, per-page meta descriptions, builder tools (license + client-monitor) removed from the client platform — they now live only in the generator root
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12l-v1'; // PHASE 12L: PWA update pill, admin subscription chip, validator palette action, tombstones retired (builder pages now 404 after one-click deletion)
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
