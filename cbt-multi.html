@@ -412,7 +412,17 @@ document.addEventListener('DOMContentLoaded', () => {
   try{
     const t = App.getTeacherSession();
     const b = document.getElementById('teacher-session-banner');
-    if(b && !(t && t.user && t.user.id)) b.classList.remove('hidden');
+    if(b && !(t && t.user && t.user.id)){
+      /* PHASE 12M: an ADMIN landing here (e.g. from the Admin Panel) used to
+         see a generic "not signed in" message that read as being logged out.
+         Explain the workspace split instead — and never touch their session. */
+      const a = App.getAdminSession ? App.getAdminSession() : null;
+      if(a && a.user && a.user.id){
+        b.innerHTML = '<span style="font-size:20px;">🧪</span><div style="font-size:13px;"><b>You are signed in as an administrator.</b> The Multi-Subject Builder is a Teacher workspace tool — open the Teacher Hub and sign in with your teacher (or owner) account to build exams. Your Admin Panel session stays active in this browser.</div>' +
+          '<a href="teacher.html?note=multi-subject" style="font-size:12.5px;font-weight:800;color:#b45309;">Open the Teacher Hub →</a>';
+      }
+      b.classList.remove('hidden');
+    }
     else if(b && t && t.user) b.innerHTML = '<span style="font-size:20px;">✅</span><div style="font-size:13px;"><b>Signed in as ' + String(t.user.email||'teacher').replace(/[<>&]/g,'') + '</b> — packages you publish here will be owned by this teacher account.</div>';
   }catch(_){}
 });

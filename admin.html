@@ -242,7 +242,7 @@ tbody tr:hover td{background:var(--surface-hover);}
       <button class="nav-item" onclick="navigate('setup')" id="nav-setup"><span class="nav-icon">⚙️</span>Setup &amp; SQL</button>
       <div class="nav-section-label">Teacher Tools</div>
       <button class="nav-item" onclick="window.location.href='teacher.html'" id="nav-teacherhub"><span class="nav-icon">👨‍🏫</span>Teacher Hub</button>
-      <button class="nav-item" onclick="window.location.href='cbt-multi.html'" id="nav-multi"><span class="nav-icon">🧪</span>Multi-Subject Builder</button>
+      <button class="nav-item" onclick="openMultiBuilder()" id="nav-multi"><span class="nav-icon">🧪</span>Multi-Subject Builder</button>
       <button class="nav-item" onclick="window.location.href='cbt-prompts.html'" id="nav-prompts"><span class="nav-icon">🤖</span>AI Prompts Studio</button>
       <!-- PHASE 11 NAV FIX: complete the admin navigation pane — every
            platform page is reachable, no page missing. -->
@@ -1447,6 +1447,39 @@ function toggleAdminPassVis(){
   inp.type=inp.type==='password'?'text':'password';
 }
 
+/* ═══ PHASE 12M — seamless navigation helpers ═══
+   honorNextParam(): when the page-guard redirects a signed-in admin here
+   with ?next=<page>, send them straight to that page after authentication
+   instead of leaving them on the dashboard (the "bounced back to the admin
+   dashboard" bug). The target is normalized (clean URLs) and allowlisted. */
+const ADMIN_NEXT_ALLOWLIST = ['index.html','student.html','certificate.html','feature_guide.html',
+  'teacher.html','cbt-multi.html','cbt-prompts.html','question-types.html','admin-data.html',
+  'disaster-recovery.html','storage.html','platform-health.html','status-manager.html',
+  'settings.html','activity_log.html','link_checker.html','deployment_validator.html'];
+function honorNextParam(){
+  try{
+    const raw = new URLSearchParams(window.location.search).get('next');
+    if(!raw) return false;
+    let target = decodeURIComponent(raw).split(/[?#]/)[0].replace(/^\/+/,'');
+    if(target && !/\.[a-z0-9]+$/i.test(target)) target += '.html'; /* clean URL → file name */
+    if(ADMIN_NEXT_ALLOWLIST.indexOf(target) === -1) return false;  /* same-site pages only */
+    window.location.replace(target);
+    return true;
+  }catch(_){ return false; }
+}
+
+/* openMultiBuilder(): the Multi-Subject Builder is a TEACHER workspace tool.
+   An admin without a teacher session used to land on it and be told to sign
+   in (it read as being logged out). Now: with a teacher session → straight
+   to the builder; without → the Teacher Hub sign-in, which explains exactly
+   what to do (the admin panel session is untouched). */
+function openMultiBuilder(){
+  let t = null;
+  try{ t = App.getTeacherSession ? App.getTeacherSession() : null; }catch(_){}
+  if(t && t.user && t.user.id) window.location.href = 'cbt-multi.html';
+  else window.location.href = 'teacher.html?note=multi-subject';
+}
+
 async function adminLogin(){
   const email    = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-pass').value;
@@ -1512,13 +1545,21 @@ async function adminLogin(){
 
     // ── Step 4: Session is valid — save and enter panel ──
     adminSession = s;
+    /* PHASE 12M FIX: stamp the VERIFIED role into the saved session. The
+       sync page-guard (app.js) cannot query the profiles table, so a
+       role-less admin session made every governance page bounce the admin
+       back here. adminLogin() has already verified admin-ness at this
+       point — record it. */
+    const adminRole = s.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase() ? 'super_admin' : 'admin';
     localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({
       access_token:  s.access_token,
       refresh_token: s.refresh_token,
       user:          s.user,
+      profile:       { role: adminRole, status: 'active' },
       saved_at:      Date.now()
     }));
     initAdminPanel(s.user.email);
+    honorNextParam();
 
   }catch(e){
     // Network error or unexpected failure
@@ -1574,6 +1615,8 @@ function adminLogout(){
       if(viaTeacher && viaTeacher.access_token && viaTeacher.user &&
          String(viaTeacher.user.email||'').toLowerCase() === ADMIN_EMAIL.toLowerCase()){
         saved = viaTeacher;
+        /* 12M: stamp the role — adopted sessions are the platform owner */
+        saved.profile = saved.profile || { role: 'super_admin', status: 'active' };
         localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify(saved));
       }
     }
@@ -1595,6 +1638,7 @@ function adminLogout(){
         access_token:  refreshed.access_token,
         refresh_token: refreshed.refresh_token,
         user:          refreshed.user,
+        profile:       (saved.profile || { role: 'admin', status: 'active' }), /* 12M: keep the role stamp */
         saved_at:      Date.now()
       }));
     }else{
@@ -1604,6 +1648,7 @@ function adminLogout(){
     if(adminSession && adminSession.user && adminSession.user.email &&
        adminSession.user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
       initAdminPanel(adminSession.user.email);
+      honorNextParam(); /* 12M: a guard redirect lands the admin on the page they asked for */
     }else{
       localStorage.removeItem(ADMIN_SESSION_KEY);
       adminSession = null;

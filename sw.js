@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12l-v1'; // PHASE 12L: PWA update pill, admin subscription chip, validator palette action, tombstones retired (builder pages now 404 after one-click deletion)
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12m-v1'; // PHASE 12M: session/role fix (admin no longer bounced to dashboard, teacher no longer dumped on admin login), shell.css auto-injection (components render correctly on every page), ?next= + denial banners, smart Multi-Subject routing
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
@@ -33,6 +33,7 @@ const SHELL_ASSETS = [
   './hmg-icon.svg',
   './assets/hmg-academy-logo.png',
   './assets/css/style.css',
+    './assets/css/shell.css',
   './assets/js/app.js',
   './assets/js/drive-sync.js',
   './assets/js/cbt-engine.js',

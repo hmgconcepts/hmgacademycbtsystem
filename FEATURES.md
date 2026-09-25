@@ -685,3 +685,21 @@ The command palette gains “Run the Deployment Validator” — post-deploy ver
 
 ### 5. Tombstones retired
 With the live pages neutralized and deletions one click away, builds no longer ship the tombstone stubs — after deletion the retired builder tools are permanently 404 on client platforms, exactly as directed.
+
+## Phase 12M — Session-Role, Navigation-Flow & Rendering Fixes — 2026-09-25
+
+Three user-reported live bugs, each reproduced behaviourally and fixed at the root. Full analysis: `PHASE12M_BUGFIX_REPORT.md`.
+
+### 1. 🎨 shell.css — components render correctly on EVERY page
+Pages that don't link the platform stylesheet (certificate verification, feature guide, link checker) used to show the injected sidebar/palette unstyled. `assets/css/shell.css` now carries every component style (sidebar, command palette, announcement banner, update pill, breadcrumbs, user & subscription chips) with fallback-aware colours, and `App.injectShellStyles()` auto-injects it on any page app.js runs on — idempotent, offline-precached, and never touching the page's own design.
+
+### 2. 🧭 Navigation flow — no more false “logged out” / “bounced to dashboard”
+- **Role resolution** now uses the best session (admin preferred), honours the role stamp / metadata / JWT claim, and recognises that a `cbt_admin_session` is admin by construction (admin.html verifies admin-ness before ever saving it).
+- **admin.html stamps the verified role** into every saved session (login, adoption, refresh) so the synchronous page-guard always knows an admin.
+- **`?next=` is honored** after sign-in: land exactly where you were headed (allowlisted, clean-URL aware).
+- **Teachers hitting an admin tool** return to their own hub with a friendly “🔒 administrator tool — you're still signed in” banner instead of the admin login screen.
+- **🔒 markers** flag admin-gated tools in the sidebar/palette for non-admins.
+- **Multi-Subject Builder** routes smartly: teacher session → builder; admin without one → Teacher Hub with instructions; the builder's banner explains the workspace split to administrators.
+
+### 3. 🔎 Regression safety
+New `phase12m_session_render_test.js` (52 behavioural checks) reproduces both reported bugs in a VM (role-less admin session + stale teacher alias; teacher on link checker) and asserts the fixed flows, alongside 36 suites and 346 smoke checks.

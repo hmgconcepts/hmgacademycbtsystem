@@ -1,5 +1,5 @@
 # DEPLOYMENT GUIDE — HMG Academy CBT Pro (Client Platform) & HMG CBT Builder (Generator)
-**Version:** Phase 12L · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
+**Version:** Phase 12M · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
 
 ---
 
@@ -62,7 +62,7 @@ The dot-folder `.github/` gets dropped by uploads. Re-create the two workflow fi
 5. RLS is enforced by the schema — never paste a `service_role` key anywhere in the front-end (Platform Health grades this an instant F).
 
 ### A5. Verify the deployment (5 minutes, every time)
-0. Hard-refresh once (Ctrl+Shift+R / Cmd+Shift+R) — browsers keep the previous service-worker cache after a redeploy; the platform now shows a “🚀 A new version is available” pill when that happens. Confirm the version: `sw.js` should read `hmg-cbt-shell-v12-phase12l-v1`.
+0. Hard-refresh once (Ctrl+Shift+R / Cmd+Shift+R) — browsers keep the previous service-worker cache after a redeploy; the platform now shows a “🚀 A new version is available” pill when that happens. Confirm the version: `sw.js` should read `hmg-cbt-shell-v12-phase12m-v1`. Then **sign in to the Admin Panel once** — the sign-in stamps your verified role into the stored session (Phase 12M session fix); sessions saved before this version lack the stamp.
 1. Open `https://<your-site>/deployment_validator.html` → **Run all checks**. Everything must be green — including the **Builder-tool leakage** and **Stale upload artifacts** rows. A red row prints the exact fix.
 2. Open `platform-health.html` → latency probe, 7 RPC smokes, heartbeat evidence, security grade **A/B**.
 3. Open a governance page (e.g. `/storage`) in a **private/incognito window** → you must be redirected to the admin sign-in (this proves the clean-URL guard fix is live).

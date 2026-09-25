@@ -8542,6 +8542,43 @@ async function importStudentResultBackup(file){
   }
 }
 
+/* ═══ PHASE 12M — role notice banner ═══
+   When the page-guard sends a signed-in TEACHER back here from an
+   admin-only tool (?denied=<page>), or the Admin Panel routes an admin
+   here to use a teacher workspace (?note=multi-subject), show a friendly,
+   dismissible explanation instead of a silent landing that read as being
+   "logged out". The user stays signed in throughout. */
+(function roleNotice(){
+  try{
+    const q = new URLSearchParams(location.search);
+    const denied = q.get('denied'), note = q.get('note');
+    if(!denied && !note) return;
+    const NAMES = {
+      'admin-data.html':'💾 Data & Drive Sync','disaster-recovery.html':'🚨 Disaster Recovery',
+      'storage.html':'📦 Storage Manager','platform-health.html':'🩺 Platform Health',
+      'status-manager.html':'👥 Roles & Approvals','settings.html':'🛠️ Platform Settings',
+      'activity_log.html':'📊 Audit Trail','link_checker.html':'🔗 Link Checker',
+      'deployment_validator.html':'✅ Deployment Validator'
+    };
+    const bar = document.createElement('div');
+    bar.id = 'role-notice';
+    bar.style.cssText = 'display:flex;gap:12px;align-items:center;flex-wrap:wrap;padding:12px 18px;font-size:13.5px;font-weight:600;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.4);border-bottom:1px solid rgba(245,158,11,.4);color:var(--text,#111827);position:sticky;top:0;z-index:900';
+    if(denied){
+      const nm = NAMES[denied] || denied;
+      bar.innerHTML = '<span style="font-size:20px;">🔒</span><div><b>' + nm + '</b> is an administrator tool — it needs an admin account. You are still signed in as a teacher; everything in your Teacher Hub below remains fully available.</div>';
+    } else if(note === 'multi-subject'){
+      bar.innerHTML = '<span style="font-size:20px;">🧪</span><div>The <b>Multi-Subject Builder</b> lives in the Teacher workspace. Sign in here with your teacher (or owner) account, then open it from your hub — your Admin Panel session stays active in this browser.</div>';
+    } else return;
+    const x = document.createElement('button');
+    x.textContent = '✕';
+    x.style.cssText = 'margin-left:auto;border:0;background:transparent;cursor:pointer;font-size:15px;color:inherit;opacity:.7;padding:4px 8px';
+    x.onclick = () => bar.remove();
+    bar.appendChild(x);
+    document.body.insertBefore(bar, document.body.firstChild);
+    try{ history.replaceState(null, '', location.pathname); }catch(_){}
+  }catch(_){}
+})();
+
 // PWA shell cache — free static hosting support. Supabase calls still use the network.
 if('serviceWorker' in navigator && location.protocol !== 'file:'){
   window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));
