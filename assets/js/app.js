@@ -13,6 +13,7 @@ const App = {
   init() {
     /* v5 — access map first: cold visitors of internal pages are bounced
        to the matching login before anything else renders. */
+    this.injectShellStyles();
     if (!this.guardPageAccess()) return;
     this.initTheme();
     this.restoreSession();
@@ -31,6 +32,22 @@ const App = {
       FreeTierKeeper.ping();
     }
     this.guardSession();
+  },
+
+  /* PHASE 12M — injectShellStyles(): every page running app.js automatically
+     gets shell.css (sidebar, palette, announcements, update pill, chips).
+     Fixes the "not well-rendered" bug on pages that don't link style.css
+     (certificate, feature guide, link checker): the components were injected
+     but had no styles. Component selectors only — the page's own design is
+     never touched. */
+  injectShellStyles() {
+    if (document.querySelector('link[href="assets/css/shell.css"]')) return;
+    try {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet';
+      l.href = 'assets/css/shell.css';
+      document.head.appendChild(l);
+    } catch (e) { /* never block the page */ }
   },
 
   /* ── Engine Loader (v4.0) — every app.js page automatically gets the
@@ -100,7 +117,7 @@ const App = {
   /* ── Session guard: lockdown mode (emergency portal lock) + idle
      auto-sign-out. Runs on every app.js page for signed-in users. ── */
   async guardSession() {
-    const s = this.getSession();
+    const s = this.getBestSession(); /* 12M: guard the ACTIVE persona */
     if (!s || !s.access_token) return;
     if (window.SecurityGuard) {
       const ok = await SecurityGuard.enforceLockdown(s);
@@ -268,19 +285,45 @@ const App = {
     return p;
   },
 
+  /* PHASE 12M FIX — role resolution.
+     BUG: this used getSession(), which prefers the 'cbt_session' TEACHER
+     alias, and defaulted every role-less session to 'teacher'. An admin
+     (whose saved session carries no user_metadata.role) was therefore
+     misread as a teacher on every governance page and bounced back to the
+     admin dashboard. Fixes:
+     1. resolve the BEST session (admin preferred), never a stale alias;
+     2. a session stored under 'cbt_admin_session' is admin BY CONSTRUCTION
+        (admin.html verifies ADMIN_EMAIL / profiles.is_admin before saving)
+        — so it resolves to admin/super_admin even without metadata;
+     3. a JWT 'role'/'user_role' claim is honoured when present. */
   sessionRole() {
-    const s = this.getSession();
+    const fromMeta = (sess, fallback) => {
+      const meta = (sess.user && sess.user.user_metadata) || {};
+      const appMeta = (sess.user && sess.user.app_metadata) || {};
+      let r = appMeta.role || meta.role || (sess.profile && sess.profile.role);
+      if (!r && sess.access_token) {
+        try {
+          const payload = JSON.parse(atob(String(sess.access_token).split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          r = payload.role || payload.user_role || null;
+        } catch (e) {}
+      }
+      return String(r || fallback).toLowerCase();
+    };
+    const admin = this.getAdminSession();
+    if (admin && admin.access_token) {
+      const r = fromMeta(admin, 'admin');
+      return r === 'teacher' ? 'admin' : r; /* an admin-panel session never downgrades */
+    }
+    const s = this.getTeacherSession() || this.getSession();
     if (!s || !s.access_token) return null;
-    const meta = (s.user && s.user.user_metadata) || {};
-    const appMeta = (s.user && s.user.app_metadata) || {};
-    return String(appMeta.role || meta.role || (s.profile && s.profile.role) || 'teacher').toLowerCase();
+    return fromMeta(s, 'teacher');
   },
 
   /* Redirect cold visitors of internal pages to the matching login. */
   guardPageAccess() {
     const page = this.pageName();
     if (this.PUBLIC_PAGES.indexOf(page) !== -1) return true;
-    const s = this.getSession();
+    const s = this.getBestSession(); /* 12M: admin session is never masked by a stale teacher alias */
     const authed = !!(s && s.access_token);
     const teacherPage = this.GUARD_TEACHER_PAGES.indexOf(page) !== -1;
     const adminPage = this.GUARD_ADMIN_PAGES.indexOf(page) !== -1;
@@ -290,12 +333,15 @@ const App = {
       window.location.replace(login + '?next=' + next);
       return false;
     }
-    /* a teacher-role account opening an admin-only tool is bounced politely
-       to the admin login (admins and super_admins pass) */
+    /* PHASE 12M FIX: an authenticated teacher opening an admin-only tool is
+       no longer dumped on the admin login (it read as being "logged out") —
+       they return to their own hub with a friendly denial banner and stay
+       signed in. Admins and super_admins pass. Anonymous visitors still go
+       to the admin sign-in (they need an account). */
     if (adminPage && authed) {
       const role = this.sessionRole();
       if (['admin', 'super_admin'].indexOf(role) === -1) {
-        window.location.replace('admin.html?next=' + encodeURIComponent(window.location.pathname.split('/').pop() + window.location.search));
+        window.location.replace('teacher.html?denied=' + encodeURIComponent(page));
         return false;
       }
     }
@@ -350,7 +396,7 @@ const App = {
     if (this.SHELL_SKIP.indexOf(page) !== -1) return;
     if (document.getElementById('app-shell')) return;
 
-    const sess = this.getSession();
+    const sess = this.getBestSession(); /* 12M: never masked by a stale alias */
     const authed = !!(sess && sess.access_token);
     const role = authed ? this.sessionRole() : null;
     const isAdmin = authed && ['admin', 'super_admin'].indexOf(role) !== -1;
@@ -385,7 +431,10 @@ const App = {
       '<nav class="shell-nav">' +
       GROUPS.map(g =>
         '<div class="shell-group"><div class="shell-group-title">' + g.name + '</div>' +
-        g.items.map(l => '<a href="' + l.href + '" class="shell-link' + (l.href === page ? ' active' : '') + '">' + l.label + '</a>').join('') +
+        g.items.map(l => {
+          const gated = !isAdmin && this.GUARD_ADMIN_PAGES.indexOf(l.href) !== -1;
+          return '<a href="' + l.href + '" class="shell-link' + (l.href === page ? ' active' : '') + '" title="' + (gated ? 'Administrator sign-in required' : '') + '">' + l.label + (gated ? ' 🔒' : '') + '</a>';
+        }).join('') +
         '</div>'
       ).join('') +
       '</nav>' +
@@ -496,7 +545,7 @@ const App = {
     if (page === 'student.html' || page === 'offline.html') return; // never intercept the exam runner
     if (document.getElementById('app-palette')) return;
 
-    const sess = this.getSession();
+    const sess = this.getBestSession(); /* 12M */
     const authed = !!(sess && sess.access_token);
     const isAdmin = authed && ['admin', 'super_admin'].indexOf(this.sessionRole()) !== -1;
 
