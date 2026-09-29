@@ -109,6 +109,7 @@
         <select id="vault-table">
           <option value="results">results — candidate submissions (heaviest rows)</option>
           <option value="audit_logs">audit_logs — activity history</option>
+          <option value="login_audit">login_audit — sign-in history (Phase 12N)</option>
         </select>
         <label>Archive rows older than</label>
         <input type="date" id="vault-before">
@@ -138,6 +139,11 @@
       <label style="margin:0;">Purge audit logs older than</label>
       <input type="date" id="audit-purge-before" style="width:auto;">
       <button class="btn btn-danger" onclick="purgeAuditLogs()">🧹 Purge (owner)</button>
+    </div>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;margin-top:10px;">
+      <label style="margin:0;">Purge sign-in history older than</label>
+      <input type="date" id="login-purge-before" style="width:auto;">
+      <button class="btn btn-danger" onclick="purgeLoginAuditStorage()">🧹 Purge sign-in history (owner)</button>
     </div>
   </div>
 
@@ -359,6 +365,7 @@ async function restoreVault(path) {
 /* ── Audit purge (downloads the purged rows first) ── */
 async function purgeAuditLogs() {
   const before = document.getElementById('audit-purge-before').value;
+  const lpb = document.getElementById('login-purge-before'); if (lpb) lpb.value = d.toISOString().slice(0, 10);
   if (!before) return showToast('Pick a cutoff date.', 'warning');
   const beforeTs = new Date(before + 'T23:59:59').toISOString();
   if (!confirm(`Purge audit logs older than ${before}? The purged rows will be offered as a downloadable archive first.`)) return;
@@ -376,6 +383,28 @@ async function purgeAuditLogs() {
   } catch (e) {
     showToast('Purge failed: ' + (e.message || e), 'danger');
   }
+
+/* PHASE 12N — purge old sign-in history (owner). Same RPC as the Activity
+   Log page; offered here so ALL retention controls live in one place. */
+async function purgeLoginAuditStorage() {
+  const before = document.getElementById('login-purge-before').value;
+  if (!before) return showToast('Pick a cutoff date.', 'warning');
+  if (!confirm(`Purge sign-in history older than ${before}? The purged rows will be offered as a downloadable archive first.`)) return;
+  try {
+    const r = await App.sbRpc('admin_purge_login_audit', { p_before: new Date(before + 'T23:59:59').toISOString() });
+    const res = Array.isArray(r) ? r[0] : r;
+    const purged = res?.purged ?? 0;
+    if (res?.archived && Array.isArray(res.archived) && res.archived.length) {
+      if (confirm(`${purged} sign-in event(s) purged. Download the purged rows as a JSON archive now? (recommended)`)) {
+        DataPort.downloadJSON({ table: 'login_audit', purged_at: new Date().toISOString(), rows: res.archived }, `login-audit-purged-${before}.json`);
+      }
+    }
+    showToast(`Purged ${purged} sign-in event(s) ✓`, 'success');
+    analyzeStorage();
+  } catch (e) {
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
+}
 }
 
 function clearLocalDrafts() {

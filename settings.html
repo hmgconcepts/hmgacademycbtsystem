@@ -138,6 +138,41 @@
     <input type="text" id="set-lockdown-msg" placeholder="The platform is temporarily locked for maintenance. Please check back shortly.">
   </div>
 
+  <!-- ═══════════ PHASE 12N — TWO-FACTOR (per account) ═══════════ -->
+  <div class="card">
+    <h2>🔐 Two-Factor Authentication (this account)</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">When enabled, <strong>your</strong> sign-ins require a 6-digit code emailed to you after the password step — a stolen password alone is no longer enough. Free stack: Supabase's built-in email. Each account toggles this independently; nothing changes for other users.</p>
+    <div class="a11y-row"><div><b> Require an email code at sign-in</b><br><small style="color:var(--text-muted);" id="tfa-note">Status unknown — load settings first.</small></div><div class="switch" id="set-2fa" onclick="toggle2FA(this)"></div></div>
+    <p style="font-size:.75rem;color:var(--text-muted);margin-top:6px;">Free-tier note: Supabase sends a limited number of auth emails per hour — enable this only on accounts that need the extra step (admins first). Sign-in events, 2FA challenges and passes are all recorded in the sign-in history (Activity Log → Sign-in history).</p>
+  </div>
+
+  <!-- ═══════════ PHASE 12N — CANDIDATE NUMBERS ═══════════ -->
+  <div class="card">
+    <h2>🔢 Auto-Generated Candidate Numbers</h2>
+    <p style="color:var(--text-muted);font-size:.85rem;">When a roster CSV leaves the Student ID column blank (or a teacher adds a student without typing an ID), the platform generates one automatically — <span class="code-chip" id="autoid-preview">PREFIX/0001</span>. Teachers see the same preview on their roster page.</p>
+    <div class="grid-2">
+      <div>
+        <label>Prefix (letters/digits, max 12)</label>
+        <input type="text" id="set-autoid-prefix" placeholder="e.g. HMG" maxlength="12" oninput="previewAutoId()">
+        <p style="font-size:.75rem;color:var(--text-muted);margin-top:4px;">Empty prefix = auto-generation is OFF; IDs must then be typed or imported.</p>
+      </div>
+      <div>
+        <label>Include the year</label>
+        <div class="a11y-row" style="margin-top:6px;"><div><small style="color:var(--text-muted);"><span class="code-chip" id="autoid-example">HMG/0001</span> vs <span class="code-chip" id="autoid-example-year">HMG/2026/0001</span></small></div><div class="switch" id="set-autoid-year" onclick="toggleSwitch(this);previewAutoId()"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PHASE 12N — SITE LICENSE ═══════════ -->
+  <div class="card">
+    <h2>🔑 Site License &amp; Subscription</h2>
+    <div id="license-summary"><em style="color:var(--text-muted);font-size:12px;">Loading license state…</em></div>
+    <p style="color:var(--text-muted);font-size:.85rem;">Read live from the <span class="code-chip">sc_license_status()</span> RPC (the same call the HMG Fleet Console uses). Changes are made by the owner on the Platform Health console.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;">
+      <a class="btn btn-sm btn-info" href="platform-health.html">🩺 License on Platform Health →</a>
+    </div>
+  </div>
+
   <!-- ═══════════ MODULE ACCESS ═══════════ -->
   <div class="card">
     <h2>🔑 Module Access Control</h2>
@@ -292,6 +327,13 @@ async function loadSettings() {
   document.getElementById('set-lockdown-msg').value = ps.lockdown_message || '';
   document.getElementById('set-watermark').value = ps.watermark_text || '';
 
+  /* PHASE 12N — auto-ID configuration */
+  document.getElementById('set-autoid-prefix').value = ps.auto_id_prefix || '';
+  setSwitch('set-autoid-year', !!ps.auto_id_year);
+  previewAutoId();
+  load2FAStatus();
+  loadLicenseSummary();
+
   // Drive settings (shared row)
   try {
     const rows = await App.sbFetch('/rest/v1/platform_settings?id=eq.1&select=drive_client_id,drive_sync_enabled,drive_sync_days,drive_last_backup');
@@ -345,6 +387,84 @@ function toggleAcl(role, href, on) {
   aclState[role] = [...list];
 }
 
+/* ═══════════ PHASE 12N — 2FA / auto-ID preview / license summary ═══════════ */
+function previewAutoId() {
+  const p = (document.getElementById('set-autoid-prefix').value || '').trim().toUpperCase();
+  const y = getSwitch('set-autoid-year');
+  const shape = p + (y ? '/' + new Date().getFullYear() : '') + '/0001';
+  document.getElementById('autoid-preview').textContent = p ? shape : 'auto-generation OFF';
+  document.getElementById('autoid-example').textContent = p + '/0001';
+  document.getElementById('autoid-example-year').textContent = p + '/' + new Date().getFullYear() + '/0001';
+}
+
+async function load2FAStatus() {
+  const note = document.getElementById('tfa-note');
+  try {
+    const uid = App.getSession()?.user?.id;
+    if (!uid) { note.textContent = 'Sign in to read your preference.'; return; }
+    const rows = await App.sbFetch('/rest/v1/user_security_prefs?select=two_factor&user_id=eq.' + uid);
+    const on = !!(rows && rows[0] && rows[0].two_factor);
+    setSwitch('set-2fa', on);
+    note.textContent = on
+      ? '2FA is ON for ' + (App.getSession()?.user?.email || 'this account') + ' — sign-ins demand an emailed code after the password.'
+      : '2FA is off — the password alone signs you in.';
+  } catch (e) {
+    note.textContent = 'Preference table not found — run database/platform-integration.sql once.';
+  }
+}
+
+async function toggle2FA(sw) {
+  const on = !getSwitch('set-2fa');
+  if (on && !confirm('Enable Two-Factor for this account?\n\nEvery future sign-in will also require a 6-digit code sent to your email (free Supabase email — limited sends per hour).')) {
+    return;
+  }
+  try {
+    const uid = App.getSession()?.user?.id;
+    if (!uid) return showToast('Sign in first.', 'danger');
+    const s = App.getSession();
+    /* upsert (insert-or-update) in ONE call via PostgREST merge-duplicates */
+    const r = await fetch(`${App.SB_URL}/rest/v1/user_security_prefs`, {
+      method: 'POST',
+      headers: {
+        'apikey': App.SB_KEY,
+        'Authorization': 'Bearer ' + (s?.access_token || App.SB_KEY),
+        'Content-Type': 'application/json',
+        'Prefer': 'resolution=merge-duplicates,return=minimal'
+      },
+      body: JSON.stringify({ user_id: uid, two_factor: on, updated_at: new Date().toISOString() })
+    });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    setSwitch('set-2fa', on);
+    document.getElementById('tfa-note').textContent = on
+      ? '2FA is ON — sign-ins demand an emailed code after the password.'
+      : '2FA is off — the password alone signs you in.';
+    showToast(on ? '🔐 Two-Factor enabled for this account ✓' : 'Two-Factor disabled for this account', on ? 'success' : 'info');
+  } catch (e) {
+    showToast('Could not save: ' + (e.message || e), 'danger');
+  }
+}
+
+async function loadLicenseSummary() {
+  const box = document.getElementById('license-summary');
+  try {
+    const L = await App.sbRpc('sc_license_status');
+    const l = Array.isArray(L) ? L[0] : L;
+    if (!l || !l.state) { box.innerHTML = '<em style="color:var(--text-muted);font-size:12px;">License RPC not found — run database/platform-integration.sql once.</em>'; return; }
+    const pill = (txt) => `<span class="code-chip" style="background:rgba(22,163,74,.15);color:#16a34a;border-color:rgba(22,163,74,.4);">${txt}</span>`;
+    const warn = (txt) => `<span class="code-chip" style="background:rgba(217,119,6,.15);color:#d97706;border-color:rgba(217,119,6,.4);">${txt}</span>`;
+    const badge = l.state === 'lifetime' || l.state === 'active' ? pill('✓ ' + l.state) : warn(l.state);
+    box.innerHTML = `<div class="flex-gap" style="flex-wrap:wrap;align-items:center;margin-top:8px;">
+        ${badge}
+        <strong>${escapeHtml(String(l.model || '—'))}</strong>
+        <span style="color:var(--text-muted);">· ${escapeHtml(String(l.plan || ''))}</span>
+        ${l.expires_on ? `<span style="color:var(--text-muted);">· expires ${escapeHtml(String(l.expires_on))}${l.days != null ? ' (' + l.days + ' days)' : ''}</span>` : ''}
+        ${l.grace_days ? `<span style="color:var(--text-muted);">· grace ${l.grace_days}d</span>` : ''}
+      </div>`;
+  } catch (e) {
+    box.innerHTML = '<em style="color:var(--text-muted);font-size:12px;">License RPC not found — run database/platform-integration.sql once.</em>';
+  }
+}
+
 /* ── Save ── */
 async function saveSettings(opts = {}) {
   if (!isAdmin) return showToast('Only admins can save settings.', 'danger');
@@ -378,6 +498,8 @@ async function saveSettings(opts = {}) {
     lockdown_mode: getSwitch('set-lockdown'),
     lockdown_message: document.getElementById('set-lockdown-msg').value.trim(),
     watermark_text: document.getElementById('set-watermark').value.trim(),
+    auto_id_prefix: document.getElementById('set-autoid-prefix').value.trim(),
+    auto_id_year: getSwitch('set-autoid-year'),
     drive_client_id: document.getElementById('set-drive-client').value.trim(),
     drive_sync_days: +document.getElementById('set-drive-days').value || 7,
     drive_sync_enabled: getSwitch('set-drive-enabled'),

@@ -88,6 +88,17 @@
     </div>
   </div>
 
+  <!-- 🔗 PHASE 12N — ONE-CLICK RE-LINK AFTER DISASTER RECOVERY -->
+  <div class="card" style="border:2px solid rgba(79,70,229,.3);">
+    <h2>🔗 One-Click Re-link after Disaster Recovery</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Scenario: the old Supabase project was lost and the data was restored into a <b>fresh</b> project from the Drive backup. The restored rows still point at the <b>old</b> teacher account ids — teachers who sign up again get new ones. This tool re-links everybody by matching <b>emails</b>: a bridge (old id → email → new id) is built first, then students, exams and audit rows are re-pointed, and the profiles themselves are re-labelled. Returns a full report including teachers who have not signed up again yet.</p>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-primary" onclick="relinkAccounts()">🔗 Re-link every account now</button>
+      <span style="font-size:11.5px;color:var(--text-muted);">Admin-only RPC <span class="code-chip">sc_relink_accounts()</span> (database/platform-integration.sql). Safe to run repeatedly.</span>
+    </div>
+    <div id="relink-report" style="display:none;margin-top:12px;font-size:13px;padding:12px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);"></div>
+  </div>
+
   <!-- 🎬 DEMO SAMPLE DATA -->
   <div class="card">
     <h2>🎬 One-Click Demo Sample Data</h2>
@@ -381,6 +392,34 @@ async function applyRestore(envJson) {
 }
 
 /* ═══════════ DEMO DATA ═══════════ */
+/* PHASE 12N — one-click re-link after disaster recovery (admin RPC). */
+async function relinkAccounts() {
+  const box = document.getElementById('relink-report');
+  if (!confirm('Re-link every account by email now?\n\nThis is safe to run repeatedly, but it does rewrite teacher_id references — run it once after a disaster-recovery restore, and again after any missing teacher signs up.')) return;
+  try {
+    const r = await App.sbRpc('sc_relink_accounts');
+    const res = Array.isArray(r) ? r[0] : r;
+    const unmatched = (res && res.unmatched) || [];
+    box.style.display = 'block';
+    box.innerHTML =
+      '<b>✅ Re-link complete.</b><br>' +
+      '· Students re-pointed: <b>' + Number(res?.students_relinked || 0) + '</b><br>' +
+      '· Exams re-pointed: <b>' + Number(res?.exams_relinked || 0) + '</b><br>' +
+      '· Audit rows re-pointed: <b>' + Number(res?.audit_relinked || 0) + '</b><br>' +
+      '· Profiles re-labelled: <b>' + Number(res?.profiles_relabeled || 0) + '</b><br>' +
+      (unmatched.length
+        ? '<br><b>⚠️ ' + unmatched.length + ' teacher(s) have not signed up again yet:</b> ' +
+          unmatched.map(u => escapeHtml(u.email)).join(', ') +
+          '<br><small style="color:var(--text-muted);">' + escapeHtml(res?.hint || 'Ask them to sign up with the same email, then run this once more.') + '</small>'
+        : '<br><b>🎉 Everybody is linked — no action needed.</b>');
+    showToast('Accounts re-linked ✓', 'success');
+  } catch (e) {
+    box.style.display = 'block';
+    box.innerHTML = '❌ ' + escapeHtml(e.message || e) + '<br><small>Run database/platform-integration.sql once if the RPC is missing.</small>';
+    showToast('Re-link failed: ' + (e.message || e), 'danger');
+  }
+}
+
 async function seedDemoData() {
   if (!confirm('Create/refresh the DEMO101 sample exam, demo roster and two demo results?')) return;
   try {

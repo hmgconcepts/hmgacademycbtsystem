@@ -227,6 +227,7 @@ tbody tr:hover td{background:var(--surface-hover);}
       <div class="nav-section-label">Platform</div>
       <button class="nav-item" onclick="navigate('all-exams')" id="nav-all-exams"><span class="nav-icon">📋</span>All Exams</button>
       <button class="nav-item" onclick="navigate('all-results')" id="nav-all-results"><span class="nav-icon">📊</span>All Results</button>
+      <button class="nav-item" onclick="window.location.href='analytics.html'" id="nav-analytics"><span class="nav-icon">📈</span>Analytics</button>
       <button class="nav-item" onclick="navigate('activity')" id="nav-activity"><span class="nav-icon">📈</span>Activity Log</button>
       <button class="nav-item" onclick="navigate('security')" id="nav-security"><span class="nav-icon">🛡️</span>Security & Deployment</button>
       <div class="nav-section-label">Governance Console</div>
@@ -553,6 +554,7 @@ tbody tr:hover td{background:var(--surface-hover);}
             <span style="color:var(--gold);font-weight:700;">Step 14</span> — Set up the admin account<br>
             <span style="color:var(--info);font-weight:700;">Step 15</span> — Disable email confirmation for instant teacher access<br>
             <span style="color:var(--primary);font-weight:700;">Step 16</span> — Verify everything is working
+            <span style="color:var(--purple);font-weight:700;">Step 17</span> — Phase 12N platform integration: login audit, 2FA preferences, HMG Fleet Console endpoints, analytics columns &amp; Schema Doctor markers — run <b>database/platform-integration.sql</b> once on existing installs (already inside complete-schema.sql for new ones). Platform Health → Schema Doctor verifies every pack.<br>
           </div>
         </div>
 

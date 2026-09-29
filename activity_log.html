@@ -48,16 +48,16 @@
 
   <!-- ═══════════ STATS ═══════════ -->
   <div class="grid-4">
-    <div class="stat-box"><div class="stat-lbl">Total Events</div><div class="stat-val" id="s-total">—</div></div>
+    <div class="stat-box"><div class="stat-lbl" id="lbl-total">Total Events</div><div class="stat-val" id="s-total">—</div></div>
     <div class="stat-box"><div class="stat-lbl">Last 24 h</div><div class="stat-val" id="s-24h">—</div></div>
     <div class="stat-box"><div class="stat-lbl">Last 7 days</div><div class="stat-val" id="s-7d">—</div></div>
-    <div class="stat-box"><div class="stat-lbl">Unique Actors</div><div class="stat-val" id="s-actors">—</div></div>
+    <div class="stat-box"><div class="stat-lbl" id="lbl-actors">Unique Actors</div><div class="stat-val" id="s-actors">—</div></div>
   </div>
 
   <div class="card">
-    <h2>📈 Activity — last 30 days</h2>
+    <h2 id="chart-title">📈 Activity — last 30 days</h2>
     <div class="bar-wrap" id="daily-chart"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load statistics.</em></div>
-    <h3>Top actions</h3>
+    <h3 id="top-title">Top actions</h3>
     <div id="top-actions" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
   </div>
 
@@ -65,9 +65,27 @@
   <div class="card">
     <h2>🔎 Search the trail</h2>
     <div class="flex-gap" style="flex-wrap:wrap;align-items:flex-end;">
-      <div style="flex:1;min-width:200px;">
+      <div>
+        <label>Log</label>
+        <select id="f-log" onchange="switchLog()">
+          <option value="audit" selected>Platform audit trail (privileged actions)</option>
+          <option value="login">Sign-in history (login audit — who signed in)</option>
+        </select>
+      </div>
+      <div style="flex:1;min-width:200px;" id="wrap-f-action">
         <label>Action contains</label>
         <input type="search" id="f-action" placeholder="e.g. admin_set_profile_status" oninput="debouncedLoad()">
+      </div>
+      <div style="flex:1;min-width:200px;" id="wrap-f-event" hidden>
+        <label>Event</label>
+        <select id="f-event" onchange="loadAuditLogs()">
+          <option value="">All events</option>
+          <option value="login">login</option>
+          <option value="logout">logout</option>
+          <option value="idle_lock">idle_lock (inactivity lock)</option>
+          <option value="2fa_challenge">2fa_challenge</option>
+          <option value="2fa_passed">2fa_passed</option>
+        </select>
       </div>
       <div style="flex:1;min-width:200px;">
         <label>Actor email contains</label>
@@ -95,6 +113,7 @@
       <div class="flex-gap">
         <button class="btn btn-sm btn-outline" onclick="pagePrev()">◀ Newer</button>
         <button class="btn btn-sm btn-outline" onclick="pageNext()">Older ▶</button>
+        <button class="btn btn-sm btn-outline" onclick="exportLogJSON()">⬇️ JSON</button>
       </div>
     </div>
     <div id="audit-list"><em style="color:var(--text-muted);">Loading…</em></div>
@@ -108,6 +127,11 @@
       <label style="margin:0;">Purge events older than</label>
       <input type="date" id="purge-before" style="width:auto;">
       <button class="btn btn-danger" onclick="purgeOld()">🧹 Purge (with download)</button>
+    </div>
+    <div class="flex-gap" style="flex-wrap:wrap;align-items:center;margin-top:10px;">
+      <label style="margin:0;">Purge sign-in history older than</label>
+      <input type="date" id="purge-login-before" style="width:auto;">
+      <button class="btn btn-danger" onclick="purgeLoginOld()">🧹 Purge sign-in history (with download)</button>
     </div>
     <div id="purge-result" style="margin-top:10px;display:none;"></div>
   </div>
@@ -124,17 +148,76 @@
 let PAGE = 0;
 let TAIL = null;
 let _t = null;
+let LOGMODE = 'audit';          /* 'audit' | 'login' (Phase 12N) */
+let LOGIN_EVENTS = [];          /* current login-audit rows (for stats + export) */
 
 function debouncedLoad() { clearTimeout(_t); _t = setTimeout(loadAuditLogs, 350); }
+
+/* PHASE 12N — switch between the privileged-action trail and the sign-in
+   history. The filters adapt (Action ↔ Event); pagination resets. */
+function switchLog() {
+  LOGMODE = document.getElementById('f-log').value;
+  document.getElementById('wrap-f-action').hidden = LOGMODE !== 'audit';
+  document.getElementById('wrap-f-event').hidden = LOGMODE !== 'login';
+  const login = LOGMODE === 'login';
+  document.getElementById('lbl-total').textContent  = login ? 'Total sign-ins (sample)' : 'Total Events';
+  document.getElementById('lbl-actors').textContent = login ? 'Unique emails' : 'Unique Actors';
+  document.getElementById('chart-title').textContent = login ? '📈 Sign-ins — last 30 days' : '📈 Activity — last 30 days';
+  document.getElementById('top-title').textContent  = login ? 'Event types' : 'Top actions';
+  PAGE = 0;
+  loadAuditLogs();
+  loadStats();
+}
 
 async function loadAuditLogs() {
   const el = document.getElementById('audit-list');
   el.innerHTML = '<em style="color:var(--text-muted);">Loading…</em>';
-  const action = document.getElementById('f-action').value.trim();
   const actor = document.getElementById('f-actor').value.trim();
   const from = document.getElementById('f-from').value;
   const to = document.getElementById('f-to').value;
   const limit = +document.getElementById('f-limit').value;
+
+  if (LOGMODE === 'login') {
+    /* ── SIGN-IN HISTORY (login_audit) ── */
+    try {
+      const p = new URLSearchParams();
+      p.set('select', 'id,user_id,email,event,ip,user_agent,created_at');
+      p.set('order', 'created_at.desc');
+      p.set('limit', String(limit));
+      p.set('offset', String(PAGE * limit));
+      if (actor) p.set('email', 'ilike.*' + actor + '*');
+      const ev = document.getElementById('f-event').value;
+      if (ev) p.set('event', 'eq.' + ev);
+      if (from) p.set('created_at', 'gte.' + from + 'T00:00:00');
+      if (to) { p.set('created_at', (from ? 'gte.' + from + 'T00:00:00,' : '') + 'lte.' + to + 'T23:59:59'); }
+      const rows = await App.sbFetch('/rest/v1/login_audit?' + p.toString());
+      LOGIN_EVENTS = rows || [];
+      document.getElementById('shown-info').textContent = `— showing ${rows.length} sign-in event(s), page ${PAGE + 1}`;
+      const evBadge = e => e === 'login' ? '<span class="act-chip" style="background:rgba(22,163,74,.15);color:#16a34a;">login</span>'
+        : e === 'logout' ? '<span class="act-chip" style="background:rgba(59,130,246,.15);color:#3b82f6;">logout</span>'
+        : e === 'idle_lock' ? '<span class="act-chip" style="background:rgba(217,119,6,.15);color:#d97706;">idle lock</span>'
+        : e === '2fa_challenge' ? '<span class="act-chip" style="background:rgba(147,51,234,.15);color:#9333ea;">2FA challenge</span>'
+        : e === '2fa_passed' ? '<span class="act-chip" style="background:rgba(147,51,234,.15);color:#9333ea;">2FA passed</span>'
+        : '<span class="act-chip">' + escapeHtml(e || 'event') + '</span>';
+      el.innerHTML = rows.length ? rows.map(l => `
+        <div class="log-row">
+          <div class="flex-between" style="flex-wrap:wrap;gap:6px;">
+            <div>
+              ${evBadge(l.event)}
+              <strong>${escapeHtml(l.email || 'unknown email')}</strong>
+              <span style="color:var(--text-muted);">· ${escapeHtml((l.user_agent || '').split(')')[0] + ((l.user_agent || '').includes(')') ? ')' : ''))}</span>
+            </div>
+            <span style="color:var(--text-muted);">${new Date(l.created_at).toLocaleString()}</span>
+          </div>
+        </div>`).join('') : '<em style="color:var(--text-muted);">No sign-in events match the filters. Events appear from the first sign-in after the Phase 12N SQL pack is installed.</em>';
+    } catch (e) {
+      el.innerHTML = '<div style="color:var(--danger);">❌ ' + escapeHtml(e.message || e) + '<br><small>Admin sign-in required — and run <code>database/platform-integration.sql</code> once if the sign-in history table is missing.</small></div>';
+    }
+    return;
+  }
+
+  /* ── PRIVILEGED-ACTION TRAIL (audit_logs via RPC) ── */
+  const action = document.getElementById('f-action').value.trim();
   try {
     const logs = await App.sbRpc('admin_get_audit_logs', {
       p_limit: limit, p_offset: PAGE * limit,
@@ -161,7 +244,48 @@ async function loadAuditLogs() {
   loadStats();
 }
 
+/* PHASE 12N — portable JSON export of whichever log is on screen. */
+async function exportLogJSON() {
+  try {
+    if (LOGMODE === 'login') {
+      if (!LOGIN_EVENTS.length) return showToast('No sign-in events on screen to export.', 'info');
+      DataPort.downloadJSON({ table: 'login_audit', exported_at: new Date().toISOString(), rows: LOGIN_EVENTS },
+        'login-audit-' + new Date().toISOString().slice(0, 10));
+      return;
+    }
+    const logs = await App.sbRpc('admin_get_audit_logs', { p_limit: 2000, p_offset: 0, p_action: '', p_actor: '', p_from: null, p_to: null });
+    if (!logs || !logs.length) return showToast('No audit events to export.', 'info');
+    DataPort.downloadJSON({ table: 'audit_logs', exported_at: new Date().toISOString(), rows: logs },
+      'audit-logs-' + new Date().toISOString().slice(0, 10));
+  } catch (e) { showToast('Export failed: ' + (e.message || e), 'danger'); }
+}
+
 async function loadStats() {
+  if (LOGMODE === 'login') {
+    /* ── sign-in history stats, computed from a 500-row sample ── */
+    try {
+      const rows = await App.sbFetch('/rest/v1/login_audit?select=email,event,created_at&order=created_at.desc&limit=500');
+      const list = rows || [];
+      const now = Date.now();
+      const d1 = now - 86400000, d7 = now - 7 * 86400000;
+      document.getElementById('s-total').textContent  = list.length + (list.length === 500 ? '+' : '');
+      document.getElementById('s-24h').textContent   = list.filter(x => Date.parse(x.created_at) >= d1).length;
+      document.getElementById('s-7d').textContent    = list.filter(x => Date.parse(x.created_at) >= d7).length;
+      document.getElementById('s-actors').textContent = new Set(list.map(x => (x.email || '').toLowerCase()).filter(Boolean)).size;
+      const daily = {};
+      list.forEach(x => { const d = String(x.created_at).slice(0, 10); daily[d] = (daily[d] || 0) + 1; });
+      const days = Object.keys(daily).sort().slice(-30);
+      const max = Math.max(1, ...days.map(d => daily[d]));
+      document.getElementById('daily-chart').innerHTML = days.length ? days.map(d =>
+        `<div class="bar" style="height:${(daily[d] / max) * 100}%" data-tip="${d}: ${daily[d]} sign-ins"></div>`).join('')
+        : '<em style="color:var(--text-muted);font-size:12px;">No sign-ins recorded yet.</em>';
+      const evs = {};
+      list.forEach(x => evs[x.event] = (evs[x.event] || 0) + 1);
+      document.getElementById('top-actions').innerHTML = Object.entries(evs).sort((a, b) => b[1] - a[1]).map(([a, c]) =>
+        `<span class="act-chip">${escapeHtml(a)} × ${c}</span>`).join('') || '<em style="color:var(--text-muted);">—</em>';
+    } catch (_) {}
+    return;
+  }
   try {
     const r = await App.sbRpc('admin_get_audit_stats');
     const s = Array.isArray(r) ? r[0] : r;
@@ -195,11 +319,39 @@ function toggleTail() {
 
 async function exportAuditLogsCSV() {
   try {
-    showToast('Exporting audit logs…', 'info');
-    const n = await DataPort.exportTableCSV('audit_logs');
-    if (!n) return showToast('No audit events to export.', 'info');
+    const table = LOGMODE === 'login' ? 'login_audit' : 'audit_logs';
+    showToast('Exporting ' + (LOGMODE === 'login' ? 'sign-in history' : 'audit logs') + '…', 'info');
+    const n = await DataPort.exportTableCSV(table);
+    if (!n) return showToast('Nothing to export.', 'info');
     showToast(`${n} event(s) exported ✓`, 'success');
   } catch (e) { showToast('Export failed: ' + (e.message || e), 'danger'); }
+}
+
+/* PHASE 12N — purge old sign-in history (owner only). Same two-step safety
+   as the audit purge: the RPC returns the purged rows and they are offered
+   as a downloadable archive BEFORE they disappear. */
+async function purgeLoginOld() {
+  const before = document.getElementById('purge-login-before').value;
+  if (!before) return showToast('Pick the cut-off date first.', 'info');
+  if (!confirm(`Purge ALL sign-in history older than ${before}? The rows will be offered as a downloadable archive first.`)) return;
+  const box = document.getElementById('purge-result');
+  try {
+    const r = await App.sbRpc('admin_purge_login_audit', { p_before: new Date(before + 'T23:59:59').toISOString() });
+    const res = Array.isArray(r) ? r[0] : r;
+    const purged = Number(res && res.purged || 0);
+    const rows = (res && res.archived) || [];
+    if (rows.length && window.DataPort) {
+      DataPort.downloadJSON({ table: 'login_audit', purged_at: new Date().toISOString(), rows }, `login-audit-purged-${before}.json`);
+    }
+    box.style.display = 'block';
+    box.innerHTML = `✅ Purged <strong>${purged}</strong> sign-in event(s). ${rows.length ? 'Archive was offered for download.' : ''}`;
+    showToast(`Purged ${purged} sign-in event(s) ✓`, 'success');
+    loadAuditLogs();
+  } catch (e) {
+    box.style.display = 'block';
+    box.innerHTML = '❌ ' + escapeHtml(e.message || e);
+    showToast('Purge failed: ' + (e.message || e), 'danger');
+  }
 }
 
 /* PHASE 12I — printable audit report: opens a clean print window with the
@@ -267,6 +419,14 @@ async function purgeOld() {
 document.addEventListener('DOMContentLoaded', () => {
   const d = new Date(); d.setMonth(d.getMonth() - 6);
   document.getElementById('purge-before').value = d.toISOString().slice(0, 10);
+  const dl = document.getElementById('purge-login-before');
+  if (dl) dl.value = d.toISOString().slice(0, 10);
+  /* PHASE 12N — deep-link support: activity_log.html?log=login opens the
+     sign-in history directly (Platform Health links here). */
+  if (new URLSearchParams(location.search).get('log') === 'login') {
+    document.getElementById('f-log').value = 'login';
+    switchLog();
+  }
   loadAuditLogs();
 });
 </script>

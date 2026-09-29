@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Analytics — HMG Academy CBT Pro</title>
+  <meta name="description" content="Platform analytics: enrollment trend, class sizes, gender split, birthdays, subject performance, top and at-risk students, participation and exam activity — every chart drawn from live data, exportable.">
+<link rel="icon" href="assets/img/hmg-academy-logo.png">
+<link rel="stylesheet" href="assets/css/style.css">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="assets/js/site-help.js"></script>
+<style>
+  .anl-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px;}
+  .anl-chart{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:12px;}
+  .anl-bar{flex:1;background:linear-gradient(180deg,var(--primary),var(--accent));border-radius:3px 3px 0 0;min-height:2px;position:relative;cursor:default;}
+  .anl-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--surface-hover,#323238);border:1px solid var(--border);padding:3px 8px;border-radius:6px;font-size:10px;white-space:nowrap;z-index:5;}
+  .anl-hrow{display:flex;align-items:center;gap:10px;margin:7px 0;font-size:12.5px;}
+  .anl-hlabel{width:130px;flex-shrink:0;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .anl-htrack{flex:1;height:14px;background:var(--surface-2);border:1px solid var(--border);border-radius:99px;overflow:hidden;}
+  .anl-hfill{height:100%;background:linear-gradient(90deg,var(--primary),var(--accent));border-radius:99px;}
+  .anl-hval{width:86px;text-align:right;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;color:var(--text-muted);flex-shrink:0;}
+  .anl-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:8px;}
+  .anl-table th{text-align:left;padding:6px 8px;border-bottom:2px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--text-muted);}
+  .anl-table td{padding:6px 8px;border-bottom:1px solid var(--border);}
+  .anl-badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:1px 7px;}
+  .anl-badge.ok{background:rgba(22,163,74,.15);color:#16a34a;}
+  .anl-badge.warn{background:rgba(217,119,6,.15);color:#d97706;}
+  .anl-badge.bad{background:rgba(220,38,38,.15);color:#dc2626;}
+  .anl-filter{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin:10px 0 4px;}
+  .anl-filter label{font-size:11px;font-weight:700;display:block;margin-bottom:4px;color:var(--text-muted);}
+  .anl-filter select{min-width:170px;}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div class="header-inner">
+    <a href="index.html" class="brand-group">
+      <img src="assets/img/hmg-academy-logo.png" alt="Logo" class="brand-logo">
+      <div>
+        <div class="brand-title">HMG Academy CBT Pro</div>
+        <div class="brand-sub">Analytics</div>
+      </div>
+    </a>
+    <nav class="nav-links" id="main-nav"></nav>
+  </div>
+</header>
+
+<main class="main-wrap">
+  <div class="card-title-row">
+    <div>
+      <h1>📈 Analytics</h1>
+      <p>Every chart on this page is drawn from live platform data — enrollment, exams, performance, participation and demographics. Nothing is cached or estimated.</p>
+    </div>
+    <div class="flex-gap">
+      <button class="btn btn-primary" onclick="ANL.load()">🔄 Refresh</button>
+      <button class="btn btn-outline" onclick="ANL.exportJSON()">⬇️ Export analysis JSON</button>
+      <button class="btn btn-outline" onclick="ANL.exportCSV()">⬇️ Export CSV</button>
+      <button class="btn btn-outline" onclick="window.print()">🖨️ Print / PDF</button>
+    </div>
+  </div>
+
+  <!-- ═══════════ FILTERS ═══════════ -->
+  <div class="card">
+    <h2>🧭 Scope filters</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">The class and subject filters apply to the performance cards (top students, at-risk, per-class and per-subject breakdowns). Trend cards always show the whole platform.</p>
+    <div class="anl-filter">
+      <div><label>Class</label><select id="anl-class" onchange="ANL.render()"><option value="">All classes</option></select></div>
+      <div><label>Subject</label><select id="anl-subject" onchange="ANL.render()"><option value="">All subjects</option></select></div>
+      <div><label>Performance baseline</label><select id="anl-base" onchange="ANL.render()">
+        <option value="50">Pass mark 50%</option>
+        <option value="40">Pass mark 40%</option>
+        <option value="60">Pass mark 60%</option>
+        <option value="70">Pass mark 70%</option>
+      </select></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ STAT ROW ═══════════ -->
+  <div class="grid-4">
+    <div class="stat-box"><div class="stat-lbl">Students enrolled</div><div class="stat-val" id="a-students">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Exams created</div><div class="stat-val" id="a-exams">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Exam attempts</div><div class="stat-val" id="a-attempts">—</div></div>
+    <div class="stat-box"><div class="stat-lbl">Average score</div><div class="stat-val" id="a-avg">—</div></div>
+  </div>
+
+  <!-- ═══════════ TRENDS ═══════════ -->
+  <div class="anl-grid">
+    <div class="card">
+      <h2>📈 Enrollment trend (12 months)</h2>
+      <div class="anl-chart" id="a-enroll"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:8px 0 0;">Students by <code>created_at</code> month — includes every teacher's roster.</p>
+    </div>
+    <div class="card">
+      <h2>📝 Exam activity (12 months)</h2>
+      <div class="anl-chart" id="a-examtrend"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:8px 0 0;">Exams created per month (published or draft).</p>
+    </div>
+    <div class="card">
+      <h2>📊 Attempts (last 30 days)</h2>
+      <div class="anl-chart" id="a-attempt30"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:8px 0 0;">Completed exam attempts per day.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ DEMOGRAPHICS ═══════════ -->
+  <div class="anl-grid">
+    <div class="card">
+      <h2>👥 Class sizes</h2>
+      <div id="a-classes"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+    <div class="card">
+      <h2>🚻 Gender split</h2>
+      <div id="a-gender"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:8px 0 0;">Optional column — recorded on import when provided (Phase 12N).</p>
+    </div>
+    <div class="card">
+      <h2>🎂 Birthdays — next 30 days</h2>
+      <div id="a-birthdays"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:8px 0 0;">Optional column — date of birth on import (Phase 12N).</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ SUBJECTS + RECENT EXAMS ═══════════ -->
+  <div class="anl-grid">
+    <div class="card">
+      <h2>📚 Top subjects (by exams)</h2>
+      <div id="a-subjects"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+    <div class="card">
+      <h2>📋 Latest exams</h2>
+      <div id="a-recent"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ PERFORMANCE ═══════════ -->
+  <div class="anl-grid">
+    <div class="card">
+      <h2>🏆 Top 10 students</h2>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:4px 0 0;">Average score across all attempts, within the current filters.</p>
+      <div id="a-top"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+    <div class="card">
+      <h2>⚠️ At-risk students (lowest 10)</h2>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:4px 0 0;">Students averaging below the pass mark — the intervention list.</p>
+      <div id="a-risk"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+  </div>
+
+  <div class="anl-grid">
+    <div class="card">
+      <h2>📊 Performance by class</h2>
+      <div id="a-perfclass"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+    <div class="card">
+      <h2>📚 Performance by subject</h2>
+      <div id="a-perfsub"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+    <div class="card">
+      <h2>🧾 Participation (30 days)</h2>
+      <p style="font-size:.8rem;color:var(--text-muted);margin:4px 0 0;">Attempts per class vs students enrolled — spots classes that are not sitting exams.</p>
+      <div id="a-particip"><em style="color:var(--text-muted);font-size:12px;">Run refresh to load.</em></div>
+    </div>
+  </div>
+
+  <!-- ═══════════ GUIDE ═══════════ -->
+  <div class="card">
+    <h2>🧭 Reading this page</h2>
+    <ul style="font-size:.88rem;line-height:1.75;margin:8px 0 0;padding-left:20px;">
+      <li><strong>Enrollment / exam trends</strong> answer "is the platform growing?" — flat bars after a deployment usually mean teachers have not imported rosters yet.</li>
+      <li><strong>Top / at-risk students</strong> use the average score of every attempt (not the best attempt) — a student in both lists is sitting easy and hard exams.</li>
+      <li><strong>Performance by class / subject</strong> respects the class + subject filters at the top; the pass-rate bar uses the baseline you pick.</li>
+      <li><strong>Participation</strong> compares attempts in the last 30 days with roster size per class — a class with many students and zero attempts needs a follow-up.</li>
+      <li><strong>Gender + birthdays</strong> appear once rosters include the optional <code>Gender</code> / <code>DateOfBirth</code> CSV columns (teacher roster import, Phase 12N).</li>
+      <li>Everything is exportable (JSON for records, CSV for spreadsheets, Print for PDF) — the exports always match exactly what the filters show.</li>
+    </ul>
+  </div>
+</main>
+
+<footer class="app-footer">
+  HMG Academy CBT Pro Enterprise · Analytics · Built with Free-Tier Resilient Architecture · HMG Concepts
+</footer>
+
+<script src="assets/js/app.js"></script>
+<script src="assets/js/keepalive.js"></script>
+<script src="assets/js/data-portability.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════════════════
+   PHASE 12N — ANALYTICS ENGINE
+   School Connect / GOSA-grade analytics, mapped to the CBT domain:
+   enrollment, exams, attempts, class sizes, gender, birthdays, top/at-risk
+   students, per-class/per-subject performance and participation. All data
+   read live via the admin RPC surface; charts are dependency-free SVG-ish
+   bars (no CDN, works offline, respects dark mode).
+   ══════════════════════════════════════════════════════════════════════════ */
+const ANL = {
+  students: [], exams: [], results: [],
+
+  esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); },
+
+  /* ── data load ── */
+  async load(){
+    if(!window.App){ return; }
+    try{
+      const [students, exams, results] = await Promise.all([
+        App.sbFetch('/rest/v1/students?select=full_name,student_id,class,gender,date_of_birth,status,created_at&order=created_at.desc&limit=20000').catch(()=>[]),
+        App.sbRpc('admin_get_all_exams').catch(()=>[]),
+        App.sbRpc('admin_get_all_results').catch(()=>[])
+      ]);
+      this.students = Array.isArray(students) ? students : [];
+      this.exams    = Array.isArray(exams)    ? exams    : [];
+      this.results  = Array.isArray(results)  ? results  : [];
+      this.buildFilters();
+      this.render();
+      this.toast('Analytics refreshed ✓');
+    }catch(e){
+      this.toast('Could not load analytics: ' + (e.message || e), 'danger');
+    }
+  },
+
+  toast(msg, kind){
+    if(typeof showToast === 'function') showToast(msg, kind === 'danger' ? 'danger' : 'success');
+  },
+
+  /* ── helpers ── */
+  pct(r){ const t = Number(r.total) || 0; return t ? (Number(r.score) || 0) * 100 / t : 0; },
+  subjectOf(r){
+    const ex = r.exams || {};
+    return ex.subject || (ex.code ? ex.code : 'Unknown');
+  },
+
+  buildFilters(){
+    const classes = [...new Set(this.students.map(s => (s.class || '').trim()).filter(Boolean))].sort();
+    const subjects = [...new Set(this.exams.map(e => (e.subject || '').trim()).filter(Boolean))].sort();
+    const keep = (id, list, allLabel) => {
+      const sel = document.getElementById(id); if(!sel) return;
+      const cur = sel.value;
+      sel.innerHTML = `<option value="">${allLabel}</option>` + list.map(v => `<option value="${this.esc(v)}">${this.esc(v)}</option>`).join('');
+      if(list.includes(cur)) sel.value = cur;
+    };
+    keep('anl-class', classes, 'All classes');
+    keep('anl-subject', subjects, 'All subjects');
+  },
+
+  filteredResults(){
+    const cls = document.getElementById('anl-class')?.value || '';
+    const sub = document.getElementById('anl-subject')?.value || '';
+    return this.results.filter(r =>
+      (!cls || (r.student_class || '') === cls) &&
+      (!sub || this.subjectOf(r) === sub));
+  },
+
+  /* ── tiny chart renderers ── */
+  bars(el, buckets, fmt){
+    if(!el) return;
+    const max = Math.max(1, ...buckets.map(b => b.n));
+    el.innerHTML = buckets.map(b =>
+      `<div class="anl-bar" style="height:${Math.max(2, Math.round(b.n * 100 / max))}%;" data-tip="${this.esc(b.tip || (b.label + ': ' + b.n))}"></div>`
+    ).join('') || '<em style="color:var(--text-muted);font-size:12px;">No data yet.</em>';
+  },
+
+  hbars(el, rows, unit){
+    if(!el) return;
+    const max = Math.max(1, ...rows.map(r => r.n));
+    el.innerHTML = rows.map(r =>
+      `<div class="anl-hrow">
+         <div class="anl-hlabel" title="${this.esc(r.label)}">${this.esc(r.label)}</div>
+         <div class="anl-htrack"><div class="anl-hfill" style="width:${Math.round(r.n * 100 / max)}%;"></div></div>
+         <div class="anl-hval">${r.val != null ? this.esc(r.val) : r.n}${unit || ''}</div>
+       </div>`
+    ).join('') || '<em style="color:var(--text-muted);font-size:12px;">No data yet.</em>';
+  },
+
+  monthBuckets(items, dateKey){
+    const out = [];
+    const now = new Date();
+    for(let i = 11; i >= 0; i--){
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      out.push({ y: d.getFullYear(), m: d.getMonth(), label: d.toLocaleString('en', { month: 'short' }), n: 0 });
+    }
+    (items || []).forEach(it => {
+      const t = Date.parse(it[dateKey]); if(!t) return;
+      const d = new Date(t);
+      const b = out.find(x => x.y === d.getFullYear() && x.m === d.getMonth());
+      if(b) b.n++;
+    });
+    out.forEach(b => b.tip = b.label + ' ' + b.y + ': ' + b.n);
+    return out;
+  },
+
+  dayBuckets(items, dateKey, days){
+    const out = [];
+    const now = new Date(); now.setHours(23, 59, 59, 999);
+    for(let i = days - 1; i >= 0; i--){
+      const d = new Date(now); d.setDate(d.getDate() - i); d.setHours(0,0,0,0);
+      out.push({ start: d.getTime(), end: d.getTime() + 86399999, label: d.getDate() + ' ' + d.toLocaleString('en', { month: 'short' }), n: 0 });
+    }
+    (items || []).forEach(it => {
+      const t = Date.parse(it[dateKey]); if(!t) return;
+      const b = out.find(x => t >= x.start && t <= x.end);
+      if(b) b.n++;
+    });
+    out.forEach(b => b.tip = b.label + ': ' + b.n + ' attempt(s)');
+    return out;
+  },
+
+  /* ── main render ── */
+  render(){
+    const S = this.students, E = this.exams, R = this.results;
+    const base = Number(document.getElementById('anl-base')?.value || 50);
+    const fr = this.filteredResults();
+
+    /* stat row */
+    document.getElementById('a-students').textContent  = S.length.toLocaleString();
+    document.getElementById('a-exams').textContent     = E.length.toLocaleString();
+    document.getElementById('a-attempts').textContent  = R.length.toLocaleString();
+    const avg = R.length ? R.reduce((n, r) => n + this.pct(r), 0) / R.length : 0;
+    document.getElementById('a-avg').textContent       = avg.toFixed(1) + '%';
+
+    /* trends */
+    this.bars(document.getElementById('a-enroll'),     this.monthBuckets(S, 'created_at'));
+    this.bars(document.getElementById('a-examtrend'),  this.monthBuckets(E, 'created_at'));
+    this.bars(document.getElementById('a-attempt30'),  this.dayBuckets(R, 'created_at', 30));
+
+    /* class sizes */
+    const byClass = {};
+    S.forEach(s => { const c = (s.class || '—').trim() || '—'; byClass[c] = (byClass[c] || 0) + 1; });
+    this.hbars(document.getElementById('a-classes'),
+      Object.entries(byClass).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([label, n]) => ({ label, n })));
+
+    /* gender */
+    const g = { male: 0, female: 0, other: 0, '': 0 };
+    S.forEach(s => { const k = String(s.gender || '').toLowerCase(); g[k in g ? k : 'other'] = (g[k in g ? k : 'other'] || 0) + 1; });
+    const gRows = [];
+    if(g.male)   gRows.push({ label: 'Male',   n: g.male,   val: g.male + ' (' + Math.round(g.male * 100 / S.length) + '%)' });
+    if(g.female) gRows.push({ label: 'Female', n: g.female, val: g.female + ' (' + Math.round(g.female * 100 / S.length) + '%)' });
+    if(g.other)  gRows.push({ label: 'Other',  n: g.other,  val: g.other });
+    document.getElementById('a-gender').innerHTML = gRows.length
+      ? this.hbarsHtml(gRows)
+      : '<em style="color:var(--text-muted);font-size:12px;">Not recorded yet — add the optional Gender column to your roster import (Gender: male / female / other).</em>';
+
+    /* birthdays — next 30 days */
+    const bdays = [];
+    const today = new Date(); today.setHours(0,0,0,0);
+    S.forEach(s => {
+      if(!s.date_of_birth) return;
+      const d = new Date(s.date_of_birth); if(isNaN(d)) return;
+      let next = new Date(today.getFullYear(), d.getMonth(), d.getDate());
+      if(next < today) next = new Date(today.getFullYear() + 1, d.getMonth(), d.getDate());
+      const days = Math.round((next - today) / 86400000);
+      if(days <= 30) bdays.push({ name: s.full_name, class: s.class, days, date: next, turning: today.getFullYear() - d.getFullYear() });
+    });
+    bdays.sort((a, b) => a.days - b.days);
+    document.getElementById('a-birthdays').innerHTML = bdays.length
+      ? `<table class="anl-table"><thead><tr><th>Student</th><th>Class</th><th>Date</th><th>Turning</th></tr></thead><tbody>` +
+        bdays.slice(0, 15).map(b =>
+          `<tr><td><strong>${this.esc(b.name)}</strong></td><td>${this.esc(b.class || '—')}</td>
+           <td>${b.date.toLocaleDateString()}</td><td>${b.days === 0 ? '🎉 today!' : b.turning + ' (' + b.days + 'd)'}</td></tr>`).join('') +
+        `</tbody></table>`
+      : '<em style="color:var(--text-muted);font-size:12px;">No birthdays recorded — add the optional DateOfBirth column (YYYY-MM-DD) to your roster import.</em>';
+
+    /* top subjects by exams */
+    const bySubject = {};
+    E.forEach(e => { const s2 = (e.subject || '—').trim() || '—'; bySubject[s2] = (bySubject[s2] || 0) + 1; });
+    this.hbars(document.getElementById('a-subjects'),
+      Object.entries(bySubject).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([label, n]) => ({ label, n })));
+
+    /* latest exams */
+    const latest = [...E].sort((a, b) => Date.parse(b.created_at || 0) - Date.parse(a.created_at || 0)).slice(0, 10);
+    document.getElementById('a-recent').innerHTML = latest.length
+      ? `<table class="anl-table"><thead><tr><th>Subject</th><th>Code</th><th>Created</th><th>State</th></tr></thead><tbody>` +
+        latest.map(e =>
+          `<tr><td><strong>${this.esc(e.subject)}</strong></td><td>${this.esc(e.code || '—')}</td>
+           <td>${new Date(e.created_at).toLocaleDateString()}</td>
+           <td>${e.is_archived ? '<span class="anl-badge warn">archived</span>' : (e.is_open ? '<span class="anl-badge ok">open</span>' : '<span class="anl-badge">closed</span>')}</td></tr>`).join('') +
+        `</tbody></table>`
+      : '<em style="color:var(--text-muted);font-size:12px;">No exams yet.</em>';
+
+    /* per-student averages (filtered) */
+    const perStudent = {};
+    fr.forEach(r => {
+      const key = (r.student_name || '').trim() || '(unnamed)';
+      const rec = perStudent[key] || (perStudent[key] = { name: key, class: r.student_class || '', sum: 0, n: 0 });
+      rec.sum += this.pct(r); rec.n++;
+    });
+    const studentRows = Object.values(perStudent).map(x => ({ ...x, avg: x.n ? x.sum / x.n : 0 })).filter(x => x.n > 0);
+
+    const medal = i => ['🥇', '🥈', '🥉'][i] || (i + 1) + '.';
+    const top = [...studentRows].sort((a, b) => b.avg - a.avg).slice(0, 10);
+    document.getElementById('a-top').innerHTML = top.length
+      ? `<table class="anl-table"><thead><tr><th>#</th><th>Student</th><th>Class</th><th>Avg</th><th>Attempts</th></tr></thead><tbody>` +
+        top.map((x, i) =>
+          `<tr><td>${medal(i)}</td><td><strong>${this.esc(x.name)}</strong></td><td>${this.esc(x.class || '—')}</td>
+           <td><span class="anl-badge ${x.avg >= base ? 'ok' : 'warn'}">${x.avg.toFixed(1)}%</span></td><td>${x.n}</td></tr>`).join('') +
+        `</tbody></table>`
+      : '<em style="color:var(--text-muted);font-size:12px;">No results within the current filters.</em>';
+
+    const risk = [...studentRows].sort((a, b) => a.avg - b.avg).slice(0, 10);
+    document.getElementById('a-risk').innerHTML = risk.length
+      ? `<table class="anl-table"><thead><tr><th>Student</th><th>Class</th><th>Avg</th><th>Gap to pass</th><th>Attempts</th></tr></thead><tbody>` +
+        risk.map(x =>
+          `<tr><td><strong>${this.esc(x.name)}</strong></td><td>${this.esc(x.class || '—')}</td>
+           <td><span class="anl-badge ${x.avg >= base ? 'ok' : 'bad'}">${x.avg.toFixed(1)}%</span></td>
+           <td>${x.avg >= base ? '—' : '+' + (base - x.avg).toFixed(1) + ' pts'}</td><td>${x.n}</td></tr>`).join('') +
+        `</tbody></table>`
+      : '<em style="color:var(--text-muted);font-size:12px;">No results within the current filters.</em>';
+
+    /* performance by class */
+    const perfClass = {};
+    fr.forEach(r => {
+      const c = (r.student_class || '—').trim() || '—';
+      const rec = perfClass[c] || (perfClass[c] = { sum: 0, n: 0, pass: 0 });
+      const p = this.pct(r); rec.sum += p; rec.n++; if(p >= base) rec.pass++;
+    });
+    this.hbars(document.getElementById('a-perfclass'),
+      Object.entries(perfClass).sort((a, b) => b[1].n - a[1].n).map(([label, x]) =>
+        ({ label, n: x.n ? x.sum / x.n : 0, val: (x.n ? x.sum / x.n : 0).toFixed(1) + '% · ' + Math.round(x.pass * 100 / x.n) + '% pass' })));
+
+    /* performance by subject */
+    const perfSub = {};
+    fr.forEach(r => {
+      const s2 = this.subjectOf(r);
+      const rec = perfSub[s2] || (perfSub[s2] = { sum: 0, n: 0, pass: 0 });
+      const p = this.pct(r); rec.sum += p; rec.n++; if(p >= base) rec.pass++;
+    });
+    this.hbars(document.getElementById('a-perfsub'),
+      Object.entries(perfSub).sort((a, b) => b[1].n - a[1].n).map(([label, x]) =>
+        ({ label, n: x.n ? x.sum / x.n : 0, val: (x.n ? x.sum / x.n : 0).toFixed(1) + '% · ' + Math.round(x.pass * 100 / x.n) + '% pass' })));
+
+    /* participation (30d) per class */
+    const cutoff = Date.now() - 30 * 86400000;
+    const part = {};
+    S.forEach(s => { const c = (s.class || '—').trim() || '—'; part[c] = part[c] || { students: 0, attempts: 0 }; part[c].students++; });
+    R.forEach(r => { if(Date.parse(r.created_at) >= cutoff){ const c = (r.student_class || '—').trim() || '—'; part[c] = part[c] || { students: 0, attempts: 0 }; part[c].attempts++; } });
+    this.hbars(document.getElementById('a-particip'),
+      Object.entries(part).sort((a, b) => b[1].attempts - a[1].attempts).map(([label, x]) =>
+        ({ label, n: x.attempts, val: x.attempts + ' / ' + x.students + ' students' })));
+  },
+
+  hbarsHtml(rows){ /* reuse hbars into a string */
+    const max = Math.max(1, ...rows.map(r => r.n));
+    return rows.map(r =>
+      `<div class="anl-hrow">
+         <div class="anl-hlabel" title="${this.esc(r.label)}">${this.esc(r.label)}</div>
+         <div class="anl-htrack"><div class="anl-hfill" style="width:${Math.round(r.n * 100 / max)}%;"></div></div>
+         <div class="anl-hval">${this.esc(r.val != null ? r.val : String(r.n))}</div>
+       </div>`).join('');
+  },
+
+  /* ── exports ── */
+  snapshot(){
+    const base = Number(document.getElementById('anl-base')?.value || 50);
+    const fr = this.filteredResults();
+    const perStudent = {};
+    fr.forEach(r => {
+      const key = (r.student_name || '').trim() || '(unnamed)';
+      const rec = perStudent[key] || (perStudent[key] = { name: key, class: r.student_class || '', sum: 0, n: 0 });
+      rec.sum += this.pct(r); rec.n++;
+    });
+    return {
+      exported_at: new Date().toISOString(),
+      filters: {
+        class: document.getElementById('anl-class')?.value || '',
+        subject: document.getElementById('anl-subject')?.value || '',
+        pass_mark: base
+      },
+      totals: {
+        students: this.students.length,
+        exams: this.exams.length,
+        attempts: this.results.length,
+        avg_score_pct: this.results.length ? +(this.results.reduce((n, r) => n + this.pct(r), 0) / this.results.length).toFixed(1) : 0
+      },
+      students: this.students,
+      per_student: Object.values(perStudent).map(x => ({ name: x.name, class: x.class, attempts: x.n, avg_pct: +(x.sum / x.n).toFixed(1) }))
+    };
+  },
+
+  exportJSON(){
+    if(window.DataPort) return DataPort.downloadJSON(this.snapshot(), 'analytics-' + new Date().toISOString().slice(0, 10));
+    const blob = new Blob([JSON.stringify(this.snapshot(), null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'analytics-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+  },
+
+  exportCSV(){
+    const snap = this.snapshot();
+    const head = 'student,class,attempts,average_pct';
+    const rows = snap.per_student.map(x => `"${String(x.name).replace(/"/g, '""')}","${String(x.class).replace(/"/g, '""')}",${x.attempts},${x.avg_pct}`);
+    const csv = head + '\n' + rows.join('\n');
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = 'analytics-students-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
+    this.toast('Analytics CSV exported ✓');
+  }
+};
+
+document.addEventListener('DOMContentLoaded', () => { if(window.App) ANL.load(); });
+</script>
+<script src="assets/js/chatbot.js"></script>
+</body>
+</html>

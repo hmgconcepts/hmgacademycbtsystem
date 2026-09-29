@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12m-v1'; // PHASE 12M: session/role fix (admin no longer bounced to dashboard, teacher no longer dumped on admin login), shell.css auto-injection (components render correctly on every page), ?next= + denial banners, smart Multi-Subject routing
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12n-v1'; // PHASE 12N: Fleet Console integration (dual-name keep-alive RPC + sc_keepalive view + sc_license_status), login audit trail, 2FA (email OTP), Analytics page, Schema Doctor all-packs, DR re-link, sign-in history + candidate auto-IDs
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [
@@ -24,6 +24,7 @@ const SHELL_ASSETS = [
   './status-manager.html',
   './settings.html',
   './activity_log.html',
+  './analytics.html',
   './certificate.html',
   './deployment_validator.html',
   './feature_guide.html',

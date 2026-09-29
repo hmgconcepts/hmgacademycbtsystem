@@ -647,6 +647,21 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
   </div>
 </div>
 
+<!-- ═══ PHASE 12N — TWO-FACTOR (EMAIL OTP) SCREEN ═══ -->
+<div id="otp-screen" class="hidden" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:var(--bg);">
+  <div class="card" style="max-width:420px;width:100%;text-align:center;">
+    <div style="font-size:48px;margin-bottom:16px;">🔐</div>
+    <h2 style="margin-bottom:8px;">Two-Factor Verification</h2>
+    <p style="margin-bottom:6px;">Your account is protected with 2-Factor Authentication. A 6-digit code was sent to:</p>
+    <div style="font-weight:700;color:var(--primary);font-size:15px;margin-bottom:16px;" id="otp-email"></div>
+    <div id="otp-error" style="display:none;background:var(--danger-dim);border:1px solid rgba(239,68,68,0.3);border-radius:8px;padding:10px 14px;margin-bottom:14px;font-size:13px;font-weight:600;color:var(--danger);text-align:left;"></div>
+    <input type="text" id="otp-code" inputmode="numeric" maxlength="6" placeholder="6-digit code" style="text-align:center;font-size:22px;letter-spacing:8px;font-weight:700;" onkeydown="if(event.key==='Enter')verifyLoginOTP()">
+    <button onclick="verifyLoginOTP()" id="otp-btn" style="margin-top:14px;">Verify &amp; Sign In</button>
+    <p style="text-align:center;font-size:13px;margin-top:14px;color:var(--text-muted)"><a href="#" onclick="resendLoginOTP();return false;" style="color:var(--text-muted);text-decoration:none;font-size:12px;">Resend code</a> · <a href="#" onclick="cancelLoginOTP();return false;" style="color:var(--text-muted);text-decoration:none;font-size:12px;">Cancel sign-in</a></p>
+    <p style="font-size:11px;color:var(--text-muted);margin-top:12px;">Free-tier note: Supabase's built-in email service sends a limited number of auth emails per hour. If no email arrives, wait a few minutes and resend.</p>
+  </div>
+</div>
+
 <!-- ═══ EMAIL VERIFICATION SCREEN ═══ -->
 <div id="verify-screen" class="hidden" style="min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;">
   <div class="card" style="max-width:420px;width:100%;text-align:center;">
@@ -1530,8 +1545,17 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
         <div id="spanel-single">
           <div class="grid-4">
             <div><label>Full Name</label><input type="text" id="ns-name" placeholder="e.g. ADEWALE SAMSON"></div>
-            <div><label>Student ID</label><input type="text" id="ns-id" placeholder="e.g. SS/2024/001"></div>
+            <div><label>Student ID <span id="ns-id-hint" style="font-weight:400;color:var(--text-muted);">(blank = auto)</span></label><input type="text" id="ns-id" placeholder="e.g. SS/2024/001 (blank = auto)"></div>
             <div><label>Class</label><input type="text" id="ns-class" placeholder="e.g. SSS2A"></div>
+            <div><label>Gender <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label>
+              <select id="ns-gender" style="width:100%;">
+                <option value="">—</option>
+                <option value="male">Male</option>
+                <option value="female">Female</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div><label>Date of Birth <span style="font-weight:400;color:var(--text-muted);">(optional)</span></label><input type="date" id="ns-dob"></div>
             <div style="display:flex;align-items:flex-end;padding-bottom:16px;">
               <button class="btn-sm btn-outline" onclick="addSingleStudent()" style="width:100%;padding:12px;">+ Add Student</button>
             </div>
@@ -1540,8 +1564,8 @@ code{background:var(--bg);padding:2px 6px;border-radius:4px;font-size:12px;font-
 
         <!-- CSV import -->
         <div id="spanel-csv" class="hidden">
-          <p style="font-size:13px;margin-bottom:8px;">CSV format: <code>FullName, StudentID, Class</code> — one student per row, with a header row.</p>
-          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Example: <code>ADEWALE SAMSON, SS/2024/001, SSS2A</code></p>
+          <p style="font-size:13px;margin-bottom:8px;">CSV format: <code>FullName, StudentID, Class, Gender, DateOfBirth</code> — one student per row, with a header row. The last three columns are optional; leave StudentID blank to auto-generate (when auto-IDs are configured in Platform Settings).</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;">Example: <code>ADEWALE SAMSON, SS/2024/001, SSS2A, male, 2008-04-15</code> · auto: <code>ADEWALE SAMSON,, SSS2A, female</code></p>
           <button type="button" class="btn-sm btn-outline" onclick="downloadStudentTemplate()" style="width:auto;padding:7px 14px;font-size:12px;margin-bottom:10px;">⬇ Download Student CSV Template</button>
           <input type="file" id="students-csv-file" accept=".csv" style="padding:10px;cursor:pointer;margin-bottom:8px;">
           <div id="students-csv-preview" style="font-size:13px;color:var(--primary);margin-bottom:10px;min-height:16px;"></div>
@@ -3219,13 +3243,126 @@ function copyStudentUrl(){
 // AUTH HELPERS
 // ════════════════════════════════════════════
 function showScreen(id){
-  ['auth-screen','verify-screen'].forEach(s=>{
+  ['auth-screen','verify-screen','otp-screen'].forEach(s=>{
     document.getElementById(s).classList.add('hidden');
     document.getElementById(s).style.display='none';
   });
   const el=document.getElementById(id+'-screen');
   el.classList.remove('hidden');
   el.style.display='flex';
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   PHASE 12N — LOGIN AUDIT + TWO-FACTOR (EMAIL OTP)
+   • auditLoginDB(event, email, token) — fire-and-forget write to the
+     login_audit table. Never blocks or breaks a sign-in.
+   • When the account has two_factor ON (Settings → Security), the password
+     step succeeds but the session is held until the emailed 6-digit code
+     is verified. Free stack: Supabase's built-in email OTP.            */
+let pendingAuthSession = null;   // password-verified session awaiting the OTP
+let otpEmail = '';
+
+function auditLoginDB(event, email, token){
+  try{
+    const t = token || (session && session.access_token);
+    if(!t) return;
+    fetch(`${SB_URL}/rest/v1/login_audit`, {
+      method: 'POST', keepalive: true,
+      headers: { 'apikey': SB_KEY, 'Authorization': 'Bearer ' + t, 'Content-Type': 'application/json', 'Prefer': 'return=minimal' },
+      body: JSON.stringify({ email: email || '', event: event || 'login', user_agent: (navigator.userAgent||'').slice(0,250) })
+    }).catch(()=>{});
+  }catch(_){}
+}
+
+function showOtpError(msg){
+  const el=document.getElementById('otp-error');
+  if(!el) return;
+  el.textContent=msg; el.style.display='block';
+}
+function clearOtpError(){ const el=document.getElementById('otp-error'); if(el){el.style.display='none';} }
+
+async function sendLoginOTP(){
+  clearOtpError();
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/otp`, {
+      method:'POST',
+      headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ email: otpEmail, should_create_user: false })
+    });
+    const j = await r.json().catch(()=>({}));
+    if(!r.ok){
+      const m = (j.msg||j.message||j.error_description||('HTTP '+r.status));
+      showOtpError(/too many|rate|frequent/i.test(m)
+        ? 'Too many emails sent this hour (Supabase free-tier limit). Wait a few minutes, then press Resend.'
+        : 'Could not send the code: ' + m);
+      return false;
+    }
+    return true;
+  }catch(e){ showOtpError('Network error sending the code: ' + e.message); return false; }
+}
+
+function enterOtpScreen(email){
+  otpEmail = email;
+  document.getElementById('otp-email').textContent = email;
+  document.getElementById('otp-code').value = '';
+  clearOtpError();
+  showScreen('otp');
+  sendLoginOTP();
+  setTimeout(()=>{ try{ document.getElementById('otp-code').focus(); }catch(_){} }, 150);
+}
+
+function resendLoginOTP(){
+  const btn = document.getElementById('otp-btn');
+  if(btn){ btn.disabled = true; btn.innerText = 'Resending…'; }
+  sendLoginOTP().finally(()=>{ if(btn){ btn.disabled = false; btn.innerText = 'Verify & Sign In'; } });
+}
+
+function cancelLoginOTP(){
+  pendingAuthSession = null; otpEmail = '';
+  showScreen('auth');
+}
+
+/* After the OTP verifies, continue the ORIGINAL sign-in path (admin
+   shortcut vs teacher) with the password-verified session. */
+async function completeSignInAfterOTP(){
+  const authData = pendingAuthSession;
+  pendingAuthSession = null; otpEmail = '';
+  auditLoginDB('2fa_passed', authData.user.email, authData.access_token);
+  const isShortcut = (authData.user.email || '').toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  if(isShortcut){
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      access_token:  authData.access_token,
+      refresh_token: authData.refresh_token,
+      user:          authData.user,
+      saved_at:      Date.now()
+    }));
+    window.location.href = 'admin.html';
+    return;
+  }
+  /* Teacher path: re-run the post-password stages with the verified session
+     (profile check already passed before the challenge by design — it runs
+     again here so nothing is skipped). */
+  session = authData;
+  auditLoginDB('login', authData.user.email, authData.access_token);   // 12N login audit
+  await finishTeacherLogin(authData.user.email, () => {});
+}
+
+async function verifyLoginOTP(){
+  const code = (document.getElementById('otp-code').value || '').trim();
+  if(!/^\d{6}$/.test(code)){ showOtpError('Enter the 6-digit code from the email.'); return; }
+  const btn = document.getElementById('otp-btn');
+  if(btn){ btn.disabled = true; btn.innerText = 'Verifying…'; }
+  try{
+    const r = await fetch(`${SB_URL}/auth/v1/verify`, {
+      method:'POST',
+      headers:{ 'apikey':SB_KEY, 'Content-Type':'application/json' },
+      body: JSON.stringify({ type:'email', token: code, email: otpEmail })
+    });
+    if(r.ok){ await completeSignInAfterOTP(); return; }
+    const j = await r.json().catch(()=>({}));
+    showOtpError((j.msg||j.message||j.error_description||('HTTP '+r.status)) + ' — check the code and try again.');
+  }catch(e){ showOtpError('Network error: ' + e.message); }
+  if(btn){ btn.disabled = false; btn.innerText = 'Verify & Sign In'; }
 }
 
 function toggleAuth(isSignup){
@@ -3469,8 +3606,28 @@ async function handleAuth(type){
 
   session = authData;
 
+  // ── Step 3.5: Two-Factor check (Phase 12N) ──────────────────────────────
+  // The account may have 2FA enabled (Settings → Security). The password is
+  // already verified; hold the session and demand the emailed 6-digit code.
+  try{
+    const prefRes = await fetch(`${SB_URL}/rest/v1/user_security_prefs?select=two_factor&user_id=eq.${encodeURIComponent(authData.user.id)}`, {
+      headers: { apikey: SB_KEY, Authorization: 'Bearer ' + authData.access_token }
+    });
+    if(prefRes.ok){
+      const prefRows = await prefRes.json().catch(()=>[]);
+      if(prefRows && prefRows[0] && prefRows[0].two_factor){
+        pendingAuthSession = authData;
+        auditLoginDB('2fa_challenge', email, authData.access_token);
+        resetBtn();
+        enterOtpScreen(email);
+        return;                                  // continues in verifyLoginOTP()
+      }
+    }
+  }catch(_){ /* prefs table missing → 2FA not configured → continue */ }
+
   // ── Step 4: Admin shortcut — bypass profile check ────────────────────────
   if(email.toLowerCase() === ADMIN_EMAIL.toLowerCase()){
+    auditLoginDB('login', email, session.access_token);          // 12N login audit
     localStorage.setItem(SESSION_KEY, JSON.stringify({
       access_token:  session.access_token,
       refresh_token: session.refresh_token,
@@ -3481,6 +3638,12 @@ async function handleAuth(type){
     return;
   }
 
+  await finishTeacherLogin(email, resetBtn);
+}
+
+/* PHASE 12N — Steps 5-7 extracted so BOTH paths share them: the direct
+   password path AND the post-2FA path (verifyLoginOTP → resume). */
+async function finishTeacherLogin(email, resetBtn){
   // ── Step 5: Profile check ─────────────────────────────────────────────────
   // The profiles table controls approval status.
   // If it doesn't exist yet the teacher still gets in (graceful degradation).
@@ -3551,6 +3714,7 @@ async function handleAuth(type){
 
   // ── Step 6: Act on profile status ────────────────────────────────────────
   if(profileStatus === 'pending'){
+    session = null;   // 12N: half-finished sign-in — never audited as a login
     document.getElementById('auth-screen').style.display = 'none';
     const ps = document.getElementById('pending-screen');
     if(ps){ ps.classList.remove('hidden'); ps.style.display = 'flex'; }
@@ -3560,6 +3724,7 @@ async function handleAuth(type){
   }
 
   if(profileStatus === 'inactive'){
+    session = null;   // 12N: half-finished sign-in — never audited as a login
     document.getElementById('auth-screen').style.display = 'none';
     const bs = document.getElementById('blocked-screen');
     if(bs){ bs.classList.remove('hidden'); bs.style.display = 'flex'; }
@@ -3577,6 +3742,8 @@ async function handleAuth(type){
   /* PHASE 12: the Administration nav section was removed from the teacher
      pane (admin pages belong to the Admin Panel's own navigation) — nothing
      to reveal here anymore. Admins reach the panel via Portals Home. */
+
+  auditLoginDB('login', email, session.access_token);   // 12N login audit
 
   resetBtn();
   initDashboard(session.user.email);
@@ -3746,6 +3913,7 @@ function exitAdminImpersonation(){
 
 function logout(silent=false){
   if(!silent&&!confirm('Log out of HMG Academy CBT?'))return;
+  try{ auditLoginDB(silent ? 'idle_lock' : 'logout', session && session.user && session.user.email); }catch(_){}
   clearTimeout(inactivityTimer);
   if(autoCloseInterval){clearInterval(autoCloseInterval);autoCloseInterval=null;}
   /* PHASE 11 WIRING FIX: clear EVERY teacher-persona key (teacher.html's
@@ -5370,9 +5538,9 @@ function downloadQuestionTemplate(){
   showToast('✅ Question CSV template downloaded (20 question types).');
 }
 function downloadStudentTemplate(){
-  const csv='FullName,StudentID,Class\nADEWALE SAMSON,SS/2026/001,SSS2A\nFATIMA IBRAHIM,SS/2026/002,SSS2A\nCHUKWUEMEKA OBI,SS/2026/003,SSS2B';
+  const csv='FullName,StudentID,Class,Gender,DateOfBirth\nADEWALE SAMSON,SS/2026/001,SSS2A,male,2008-04-15\nFATIMA IBRAHIM,SS/2026/002,SSS2A,female,2008-09-02\nCHUKWUEMEKA OBI,,SSS2B,male,        \nGRACE OKORO,,SSS2B,female,2009-01-20';
   _downloadTextFile('hmg_cbt_student_roster_template.csv','\uFEFF'+csv,'text/csv;charset=utf-8;');
-  showToast('✅ Student roster template downloaded.');
+  showToast('✅ Template downloaded. Columns 4-5 (and StudentID) are optional — blank IDs are auto-generated when configured.');
 }
 
 function exportExamPackage(id){
@@ -6367,21 +6535,60 @@ function renderStudentRoster(){
 // ════════════════════════════════════════════
 // ADD / IMPORT / DELETE STUDENTS
 // ════════════════════════════════════════════
+/* PHASE 12N — auto-ID configuration (Platform Settings → Candidate Numbers).
+   Fetched once via the public settings RPC; falls back to "no auto-ID". */
+let _autoIdCfg=null;
+async function getAutoIdCfg(){
+  if(_autoIdCfg)return _autoIdCfg;
+  try{
+    const r=await sbFetch('/rest/v1/rpc/get_public_settings','POST',{});
+    const cfg=(r&&(r.auto_id_prefix!==undefined)) ? r : null;
+    _autoIdCfg=cfg?{prefix:String(r.auto_id_prefix||''),year:!!r.auto_id_year}:{prefix:'',year:false};
+  }catch(_){ _autoIdCfg={prefix:'',year:false}; }
+  const hint=document.getElementById('ns-id-hint');
+  if(hint)hint.textContent=_autoIdCfg.prefix?`(blank = ${_autoIdCfg.prefix}${_autoIdCfg.year?'/YYYY':''}/NNNN)`:'(required)';
+  return _autoIdCfg;
+}
+
+/* The authoritative next number comes from the sc_next_student_id RPC; the
+   local fallback keeps the form working even on older databases. */
+async function nextAutoStudentId(){
+  const cfg=await getAutoIdCfg();
+  if(!cfg.prefix)return null;
+  try{
+    const r=await sbFetch(`/rest/v1/rpc/sc_next_student_id?p_prefix=${encodeURIComponent(cfg.prefix)}&p_year=${cfg.year}`,'POST',{});
+    if(r)return String(r);
+  }catch(_){}
+  /* local fallback: max trailing number among this teacher's roster */
+  let max=0;
+  allStudents.forEach(s=>{
+    const m=String(s.student_id||'').match(/(\d+)\s*$/);
+    if(m)max=Math.max(max,parseInt(m[1],10)||0);
+  });
+  return cfg.prefix+(cfg.year?'/'+new Date().getFullYear():'')+'/'+String(max+1).padStart(4,'0');
+}
+
 async function addSingleStudent(){
   if(!session||!session.user){
     showToast('⚠️ Session expired. Please log out and log in again.');
     return;
   }
   const name=document.getElementById('ns-name')?.value.trim()||'';
-  const sid=document.getElementById('ns-id')?.value.trim()||'';
+  let sid=document.getElementById('ns-id')?.value.trim()||'';
   const cls=document.getElementById('ns-class')?.value.trim()||'';
-  if(!name||!sid||!cls)return showToast('⚠️ Fill in Name, Student ID, and Class.');
+  const gender=document.getElementById('ns-gender')?.value||'';
+  const dob=document.getElementById('ns-dob')?.value||'';
+  if(!name||!cls)return showToast('⚠️ Fill in Name and Class.');
+  if(!sid){
+    sid=(await nextAutoStudentId())||'';
+    if(!sid)return showToast('⚠️ Fill in Student ID (or ask your admin to configure auto-generated IDs in Platform Settings).');
+  }
   const existing=allStudents.find(s=>s.student_id===sid);
   if(existing)return showToast(`⚠️ Student ID "${sid}" already exists for ${existing.full_name}.`);
   try{
-    const inserted=await sbFetch('/rest/v1/students','POST',{teacher_id:session.user.id,full_name:name,student_id:sid,class:cls});
-    showToast(`✅ ${name} added to roster.`);
-    document.getElementById('ns-name').value='';document.getElementById('ns-id').value='';document.getElementById('ns-class').value='';
+    const inserted=await sbFetch('/rest/v1/students','POST',{teacher_id:session.user.id,full_name:name,student_id:sid,class:cls,gender:gender,date_of_birth:dob||null});
+    showToast(`✅ ${name} added${sid?' as '+sid:''}.`);
+    document.getElementById('ns-name').value='';document.getElementById('ns-id').value='';document.getElementById('ns-class').value='';document.getElementById('ns-dob').value='';
     await loadStudents();
   }catch(e){showToast('Error: '+e.message);}
 }
@@ -6392,12 +6599,19 @@ document.addEventListener('DOMContentLoaded',()=>{
     const reader=new FileReader();
     reader.onload=function(){
       const lines=reader.result.split(/\r?\n/).filter(l=>l.trim());
+      /* PHASE 12N - columns 4 (Gender) and 5 (DateOfBirth, YYYY-MM-DD) are
+         optional; StudentID may be left blank for auto-generation at import
+         time (Platform Settings -> Candidate Numbers). */
       const parsed=lines.slice(1).map(line=>{
-        const p=line.split(/,(?=(?:(?:[^"]*"){2})*[^"]*$)/);
-        return{full_name:(p[0]||'').replace(/^"|"$/g,'').trim(),student_id:(p[1]||'').replace(/^"|"$/g,'').trim(),class:(p[2]||'').replace(/^"|"$/g,'').trim()};
-      }).filter(s=>s.full_name&&s.student_id&&s.class);
+        const p=line.split(/,(?=(?:(?:[^\"]*\"){2})*[^\"]*$)/);
+        const q=idx=>(p[idx]||'').replace(/^\"|\"$/g,'').trim();
+        return{full_name:q(0),student_id:q(1),class:q(2),gender:(q(3)||'').toLowerCase(),date_of_birth:q(4)||null};
+      }).filter(s=>s.full_name&&s.class);
+      const withId=parsed.filter(s=>s.student_id).length;
       const prev=document.getElementById('students-csv-preview');
-      if(prev)prev.innerText=parsed.length?`✅ ${parsed.length} students ready to import.`:'⚠️ No valid rows found. Check format.';
+      if(prev)prev.innerText=parsed.length
+        ?`\u2705 ${parsed.length} students ready to import${withId<parsed.length?` (${parsed.length-withId} will get auto-generated IDs at import)`:''}.`
+        :'\u26a0\ufe0f No valid rows found. Check format (FullName, StudentID, Class, Gender, DateOfBirth).';
       window._pendingStudents=parsed;
     };
     reader.readAsText(e.target.files[0]);
@@ -6412,9 +6626,32 @@ async function importStudentsCSV(){
   const pending=window._pendingStudents||[];
   if(!pending.length)return showToast('⚠️ Upload a student CSV first.');
   const existingIds=new Set(allStudents.map(s=>s.student_id));
-  const newStudents=pending.filter(s=>!existingIds.has(s.student_id));
+  let newStudents=pending.filter(s=>!existingIds.has(s.student_id));
   const skipped=pending.length-newStudents.length;
   if(!newStudents.length)return showToast('⚠️ All students in this file already exist.');
+  /* PHASE 12N — auto-generate candidate numbers for rows whose StudentID
+     column was left blank (Platform Settings → Candidate Numbers). */
+  let autoCount=0;
+  const needAuto=newStudents.filter(s=>!s.student_id).length;
+  if(needAuto){
+    let next=null;
+    try{ next=await nextAutoStudentId(); }catch(_){}
+    if(!next){
+      return showToast(`⚠️ ${needAuto} row(s) have no Student ID and auto-generated IDs are not configured. Fill the ID column or ask your admin to configure them in Platform Settings → Candidate Numbers.`);
+    }
+    const cfg=await getAutoIdCfg();
+    /* sequence from the authoritative RPC value, then +1 per generated row */
+    let seq=parseInt(String(next).match(/(\d+)\s*$/)?String(next).match(/(\d+)\s*$/)[1]:'0',10)||0;
+    const prefix=String(next).replace(/(\d+)\s*$/,'');
+    newStudents=newStudents.map(s=>{
+      if(s.student_id)return s;
+      autoCount++;
+      return {...s,student_id:prefix+String(++seq).padStart(4,'0')};
+    });
+    /* re-dedupe: a generated id could collide with one in this same file */
+    const seen=new Set(existingIds);
+    newStudents=newStudents.filter(s=>{ if(seen.has(s.student_id))return false; seen.add(s.student_id); return true; });
+  }
   const btn=document.querySelector('[onclick="importStudentsCSV()"]');
   if(btn){btn.disabled=true;btn.innerText='Importing…';}
   try{
@@ -6423,7 +6660,7 @@ async function importStudentsCSV(){
       const batch=newStudents.slice(i,i+batchSize).map(s=>({...s,teacher_id:session.user.id}));
       await sbFetch('/rest/v1/students','POST',batch);
     }
-    showToast(`✅ ${newStudents.length} imported.${skipped?' '+skipped+' duplicates skipped.':''}`);
+    showToast(`✅ ${newStudents.length} imported.${autoCount?' '+autoCount+' auto-ID'+(autoCount>1?'s':'')+' generated.':''}${skipped?' '+skipped+' duplicates skipped.':''}`);
     document.getElementById('students-csv-file').value='';
     document.getElementById('students-csv-preview').innerText='';
     window._pendingStudents=[];

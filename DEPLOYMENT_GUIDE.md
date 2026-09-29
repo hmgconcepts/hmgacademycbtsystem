@@ -1,5 +1,5 @@
 # DEPLOYMENT GUIDE — HMG Academy CBT Pro (Client Platform) & HMG CBT Builder (Generator)
-**Version:** Phase 12M · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
+**Version:** Phase 12N · **Read this once, end to end, before deploying.** Every step is exact and safe to re-run.
 
 ---
 
@@ -58,11 +58,13 @@ The dot-folder `.github/` gets dropped by uploads. Re-create the two workflow fi
 1. Create a free project at supabase.com → **Project Settings → API** → copy the **Project URL** and the **anon public** key.
 2. In the unzipped build, set both constants in **teacher.html**, **student.html**, **admin.html** and **assets/js/app.js** (`SB_URL`, `SB_KEY`). (The generator does this automatically for generated clients.)
 3. Supabase → **SQL Editor** → paste the ENTIRE `database/complete-schema.sql` → **Run**. Safe to re-run (idempotent).
+
+> **Phase 12N upgrade for EXISTING databases:** after deploying, run `database/platform-integration.sql` once in the Supabase SQL Editor (idempotent). It adds the Fleet-Console-compatible `sc_keep_alive(src, p_src)` signature, the `sc_keepalive` view, `sc_license_status()`, the `login_audit` sign-in trail, 2FA preferences, Schema Doctor markers, the analytics columns and the DR re-link RPC. Verify on Platform Health → 🚀 Fleet Console and 🩺 Schema Doctor cards (all 8 packs green).
 4. **Authentication → Providers → Email**: enable. Sign-up flow: the first account registered becomes `super_admin` automatically; later sign-ups land in the approval queue (Roles & Approvals page).
 5. RLS is enforced by the schema — never paste a `service_role` key anywhere in the front-end (Platform Health grades this an instant F).
 
 ### A5. Verify the deployment (5 minutes, every time)
-0. Hard-refresh once (Ctrl+Shift+R / Cmd+Shift+R) — browsers keep the previous service-worker cache after a redeploy; the platform now shows a “🚀 A new version is available” pill when that happens. Confirm the version: `sw.js` should read `hmg-cbt-shell-v12-phase12m-v1`. Then **sign in to the Admin Panel once** — the sign-in stamps your verified role into the stored session (Phase 12M session fix); sessions saved before this version lack the stamp.
+0. Hard-refresh once (Ctrl+Shift+R / Cmd+Shift+R) — browsers keep the previous service-worker cache after a redeploy; the platform now shows a “🚀 A new version is available” pill when that happens. Confirm the version: `sw.js` should read `hmg-cbt-shell-v12-phase12n-v1`. Then **sign in to the Admin Panel once** — the sign-in stamps your verified role into the stored session (Phase 12M session fix); sessions saved before this version lack the stamp.
 1. Open `https://<your-site>/deployment_validator.html` → **Run all checks**. Everything must be green — including the **Builder-tool leakage** and **Stale upload artifacts** rows. A red row prints the exact fix.
 2. Open `platform-health.html` → latency probe, 7 RPC smokes, heartbeat evidence, security grade **A/B**.
 3. Open a governance page (e.g. `/storage`) in a **private/incognito window** → you must be redirected to the admin sign-in (this proves the clean-URL guard fix is live).

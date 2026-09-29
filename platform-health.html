@@ -39,7 +39,7 @@
   <div class="card-title-row">
     <div>
       <h1>🩺 Platform Health Console</h1>
-      <p>One page that PROVES the platform is alive and safe: live latency probes, RPC &amp; RLS smoke tests, the heartbeat evidence trail, a graded security posture report, and the 10-layer free-tier protection matrix — each layer verified, not assumed.</p>
+      <p>One page that PROVES the platform is alive and safe: live latency probes, RPC &amp; RLS smoke tests, the heartbeat evidence trail, a graded security posture report, and the 11-layer free-tier protection matrix — each layer verified, not assumed.</p>
     </div>
     <div class="flex-gap">
       <button class="btn btn-primary" onclick="runDiagnostics()">🚑 Run Full Diagnostics</button>
@@ -87,6 +87,31 @@
     </div>
   </div>
 
+  <!-- ═══════════ PHASE 12N — HMG FLEET CONSOLE ═══════════ -->
+  <div class="card" style="border:2px solid rgba(79,70,229,.3);">
+    <h2>🚀 HMG Fleet Console Integration (Layer 11)</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Your fleet console (<span class="code-chip">hmgfleetconsole.vercel.app</span>) monitors every Supabase project you have built for clients and can reset this project's 7-day inactivity timer with one click. This platform is fully compatible (Phase 12N): the console's ping is recorded in the heartbeat trail above with the source <span class="code-chip">hmg-fleet-console</span> — you can SEE it here.</p>
+    <div id="ph-fleet"><div class="test-line">Run diagnostics to probe the three console endpoints.</div></div>
+    <p style="font-size:.85rem;color:var(--text-muted);margin-top:10px;"><b>Add this project to the console (2 minutes):</b></p>
+    <ol style="font-size:.83rem;line-height:1.8;margin:6px 0 0;padding-left:20px;color:var(--text-muted);">
+      <li>Open <b>hmgfleetconsole.vercel.app</b> → <b>＋ Add project</b>.</li>
+      <li>Paste the <b>Project URL</b> and the <b>anon public key</b> (buttons below copy them — the anon key is public by design; it cannot read school data).</li>
+      <li>Save, then press <b>🩺 Re-check</b>. Health, heartbeat age and license all light up; <b>💓 Ping</b> writes a real keep-alive you can verify in the heartbeat card above.</li>
+    </ol>
+    <div class="flex-gap" style="margin-top:10px;flex-wrap:wrap;">
+      <button class="btn btn-sm btn-outline" onclick="copyFleetUrl()">📋 Copy Project URL</button>
+      <button class="btn btn-sm btn-outline" onclick="copyFleetKey()">📋 Copy anon key</button>
+      <a class="btn btn-sm btn-info" href="https://hmgfleetconsole.vercel.app/" target="_blank" rel="noopener">🚀 Open Fleet Console →</a>
+    </div>
+  </div>
+
+  <!-- ═══════════ PHASE 12N — ARCHIVE HEALTH ═══════════ -->
+  <div class="card">
+    <h2>🗃️ Archive Health</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Archived exams are hidden from students (end-of-term tidy-ups). This card counts them so a forgotten archive never silently hides a cohort's results.</p>
+    <div id="ph-archive"><div class="test-line">Run diagnostics to count archived exams.</div></div>
+  </div>
+
   <!-- ═══════════ SECURITY POSTURE ═══════════ -->
   <div class="card">
     <h2>🛡️ Security Posture Report</h2>
@@ -105,7 +130,7 @@
 
   <!-- ═══════════ PROTECTION MATRIX ═══════════ -->
   <div class="card">
-    <h2>🛡️ 10-Layer Supabase Free-Tier Protection Matrix</h2>
+    <h2>🛡️ 11-Layer Supabase Free-Tier Protection Matrix</h2>
     <p style="font-size:.85rem;color:var(--text-muted);">Layers verified live where possible. Full setup instructions for every layer live in <span class="code-chip">SUPABASE_FREE_TIER_PROTECTION.md</span> (shipped with this platform).</p>
     <div id="protection-matrix"></div>
   </div>
@@ -156,6 +181,14 @@
     <h2>🕵️ Recent platform activity (audit trail)</h2>
     <div id="ph-audit"><div class="test-line">Run diagnostics to read the audit trail.</div></div>
     <p style="font-size:.8rem;color:var(--text-muted);">Full searchable trail with export &amp; retention controls: <a href="activity_log.html">Activity &amp; Audit Log</a>.</p>
+  </div>
+
+  <!-- ═══════════ PHASE 12N — LOGIN AUDIT ═══════════ -->
+  <div class="card">
+    <h2>🕵️ Recent sign-in activity (login audit)</h2>
+    <p style="font-size:.85rem;color:var(--text-muted);">Every sign-in, sign-out, inactivity lock and 2-Factor challenge — recorded automatically with the account, the time and the browser. <b>Who logged in</b> is never a mystery again.</p>
+    <div id="ph-signins"><div class="test-line">Run diagnostics to read the sign-in history.</div></div>
+    <p style="font-size:.8rem;color:var(--text-muted);">Full history with filters, export &amp; retention: <a href="activity_log.html?log=login">Activity Log → Sign-in history</a>.</p>
   </div>
 </main>
 
@@ -283,6 +316,34 @@ async function readHeartbeat() {
   renderHeartbeat(hb);
 }
 
+/* PHASE 12N — human-readable keep-alive sources: "where did the last ping
+   come from" answered in plain English, including the HMG Fleet Console. */
+function heartbeatSourceLabel(src) {
+  const s = String(src || '').toLowerCase();
+  const map = [
+    ['hmg-fleet-console', 'HMG Fleet Console — one-click fleet ping (Layer 11)'],
+    ['site-visit', "Layer 1 — Site-visit heartbeat (automatic, this platform's pages)"],
+    ['github-actions', 'Layer 2 — GitHub Actions heartbeat (scheduled workflow)'],
+    ['edge-ping', 'Layer 3 — Supabase Edge Function ping'],
+    ['uptime-robot', 'Layer 3 — UptimeRobot monitor'],
+    ['pg_cron', 'Layer 4 — pg_cron internal scheduler (every 2 days)'],
+    ['manual-button', 'Layer 5 — Manual heartbeat button'],
+    ['manual-test', 'Layer 5 — Manual heartbeat test'],
+    ['cron-job-org', 'Layer 6 — cron-job.org free scheduler'],
+    ['vercel-cron', 'Layer 7 — Vercel Cron (same account that hosts the site)'],
+    ['google-apps-script', 'Layer 8 — Google Apps Script trigger'],
+    ['auto-restore-watchdog', 'Layer 10 — Auto-restore watchdog workflow'],
+    ['schema-install', 'Schema installation'],
+    ['legacy-ping', 'Legacy ping alias (keep_alive_ping)'],
+    ['license-guard', 'License guard heartbeat'],
+    ['security-probe', 'Security self-test probe'],
+    ['schema-doctor', 'Schema Doctor probe (this page)'],
+    ['health-console-probe', 'Fleet-compat probe (this page)']
+  ];
+  for (const pair of map) { if (s === pair[0] || s.indexOf(pair[0]) === 0) return pair[1]; }
+  return s ? 'Other source: ' + src : 'Unknown source';
+}
+
 function renderHeartbeat(hb) {
   const box = document.getElementById('heartbeat-box');
   if (!hb) {
@@ -292,14 +353,17 @@ function renderHeartbeat(hb) {
   }
   const ageH = Math.round(Number(hb.seconds_since_ping || 0) / 360) / 10;
   const fresh = Number(hb.seconds_since_ping || 0) < 7 * 86400;
+  const isFleet = String(hb.last_source || '').toLowerCase().indexOf('fleet') !== -1;
   document.getElementById('stat-heartbeat').textContent = ageH < 24 ? ageH + ' h ago' : (ageH / 24).toFixed(1) + ' days ago';
   document.getElementById('stat-heartbeat').style.color = fresh ? 'var(--primary)' : 'var(--danger)';
   document.getElementById('stat-heartbeat-src').textContent = 'via ' + (hb.last_source || '?') + ' · ' + Number(hb.ping_count || 0).toLocaleString() + ' pings';
   box.innerHTML = `
     <div class="stat-box"><div class="stat-lbl">Last ping</div><div style="font-size:14px;font-weight:700;">${new Date(hb.last_ping).toLocaleString()}</div></div>
-    <div class="stat-box"><div class="stat-lbl">Last source layer</div><div style="font-size:14px;font-weight:700;">${escapeHtml(hb.last_source || '?')}</div></div>
+    <div class="stat-box" style="grid-column:span 2;"><div class="stat-lbl">Where the last ping came from</div>
+      <div style="font-size:14px;font-weight:700;">${isFleet ? '🚀 ' : ''}${escapeHtml(heartbeatSourceLabel(hb.last_source))}</div>
+      <div style="font-size:11px;color:var(--text-muted);margin-top:2px;">raw source: <span class="code-chip">${escapeHtml(hb.last_source || '?')}</span></div></div>
     <div class="stat-box"><div class="stat-lbl">Total pings</div><div style="font-size:14px;font-weight:700;">${Number(hb.ping_count || 0).toLocaleString()}</div></div>
-    <div class="stat-box"><div class="stat-lbl">Status</div><div style="font-size:14px;font-weight:700;color:${fresh ? 'var(--primary)' : 'var(--danger)'}">${fresh ? '✅ Inside the 7-day window' : '🔴 STALE — check Layer 2 secrets!'}</div></div>`;
+    <div class="stat-box"><div class="stat-lbl">Status</div><div style="font-size:14px;font-weight:700;color:${fresh ? 'var(--primary)' : 'var(--danger)'};">${fresh ? '✅ Inside the 7-day window' : '🔴 STALE — check Layer 2 secrets!'}</div></div>`;
 }
 
 async function forceHeartbeat() {
@@ -353,16 +417,134 @@ const PH12I = {
   },
   async schemaDoctor() {
     const el = document.getElementById('ph-schema');
+    /* PHASE 12N — EVERY SQL pack shipped in database/ gets a row. Probe kinds:
+       direct probe (cheapest marker) + the sc_install_state registry
+       (each pack self-marks when run; complete-schema marks them all). */
     const packs = [
-      { file: 'database/complete-schema.sql', label: 'Core schema, RLS, RPCs', probe: () => App.sbRpc('sc_keep_alive', { src: 'schema-doctor' }) },
+      { file: 'database/complete-schema.sql', label: 'Core schema, RLS, RPCs, pg_cron — everything', probe: () => App.sbRpc('sc_keep_alive', { p_src: 'schema-doctor' }) },
+      { file: 'database/keep-alive.sql', label: 'Keep-alive heartbeat table + RPC (Layers 0–4)', probe: () => App.sbRpc('sc_keep_alive', { p_src: 'schema-doctor-2' }) },
       { file: 'database/security-hardening.sql', label: 'Idle lock + emergency lockdown columns', probe: () => App.sbFetch('/rest/v1/platform_settings?select=idle_lock_minutes,lockdown_mode,lockdown_message&limit=1') },
-      { file: 'database/drive-sync.sql', label: 'Google Drive sync settings columns', probe: () => App.sbFetch('/rest/v1/platform_settings?select=drive_client_id,drive_sync_enabled&limit=1') },
+      { file: 'database/drive-sync.sql', label: 'Google Drive sync settings columns + backup RPCs', probe: () => App.sbFetch('/rest/v1/platform_settings?select=drive_client_id,drive_sync_enabled&limit=1') },
       { file: 'database/storage-offload.sql', label: 'Archive-vault storage bucket + offload RPCs', probe: () => App.sbRpc('admin_table_stats') },
-      { file: 'database/keep-alive.sql', label: 'Keep-alive heartbeat table + RPC', probe: () => App.sbRpc('sc_keep_alive', { src: 'schema-doctor-2' }) }
+      { file: 'database/platform-integration.sql', label: 'Fleet Console integration + login audit + 2FA prefs + analytics columns', probe: () => App.sbRpc('sc_license_status') },
+      { file: 'database/demo-seed.sql', label: 'One-click demo sample data (marker-verified)', probe: null },
+      { file: 'database/demo-users.sql', label: 'Demo teacher/admin accounts (marker-verified)', probe: null }
     ];
-    const rows = await Promise.all(packs.map(async (p) => { const state = await PH12I.probe(p.probe); return { file: p.file, label: p.label, state }; }));
-    el.innerHTML = rows.map(r => '<div class="test-line">' + (r.state === 'ok' ? '✅' : (r.state === 'missing' ? '❌' : '⚠️')) + ' <b>' + r.file + '</b> — ' + r.label + (r.state === 'missing' ? ' → <span style="color:var(--danger);">RUN THIS PACK in the Supabase SQL Editor</span>' : (r.state === 'error' ? ' → probe rejected (pack present; admin session may be needed)' : '')) + '</div>').join('');
+    /* marker registry (sc_install_state) — authoritative for packs whose
+       effect is data, not schema */
+    let markers = {};
+    try {
+      const mk = await App.sbRpc('sc_installed_packs');
+      (Array.isArray(mk) ? mk : []).forEach(m => { markers[m.key] = m; });
+    } catch (_) { /* registry not installed — probes still run */ }
+
+    const rows = await Promise.all(packs.map(async (p) => {
+      let state;
+      if (p.probe) state = await PH12I.probe(p.probe);
+      else state = markers[p.file.replace('database/', '')] ? 'ok' : 'missing';
+      /* marker pass can confirm an 'error' probe too */
+      if (state === 'error' && markers[p.file.replace('database/', '')]) state = 'ok';
+      const when = markers[p.file.replace('database/', '')] ? new Date(markers[p.file.replace('database/', '')].installed_at).toLocaleDateString() : '';
+      return { file: p.file, label: p.label, state, when };
+    }));
+    const missing = rows.filter(r => r.state === 'missing').length;
+    el.innerHTML =
+      (missing ? `<div class="test-line bad"><b>${missing} pack(s) NOT installed</b> — open Supabase → SQL Editor → paste each red file from the repo's database/ folder → Run (every pack is idempotent; running twice is safe). Or run complete-schema.sql once (it contains everything).</div>`
+               : `<div class="test-line ok"><b>✓ All ${rows.length} SQL packs installed</b> — green across.</div>`) +
+      rows.map(r => '<div class="test-line">' + (r.state === 'ok' ? '✅' : (r.state === 'missing' ? '❌' : '⚠️')) + ' <b>' + r.file + '</b> — ' + r.label +
+        (r.when ? ' <span style="color:var(--text-muted);">· marker ' + r.when + '</span>' : '') +
+        (r.state === 'missing' ? ' → <span style="color:var(--danger);">RUN THIS PACK in the Supabase SQL Editor</span>' : (r.state === 'error' ? ' → probe rejected (pack may be present; admin session needed)' : '')) + '</div>').join('');
     return rows;
+  },
+
+  /* PHASE 12N — Fleet Console compatibility probes: the three endpoints the
+     console touches, verified live from this page. */
+  async fleetCard() {
+    const el = document.getElementById('ph-fleet');
+    if (!el) return;
+    const lines = [];
+    /* 1. keep-alive RPC with the console's exact payload shape */
+    try {
+      const r = await fetch(`${App.SB_URL}/rest/v1/rpc/sc_keep_alive`, {
+        method: 'POST',
+        headers: { 'apikey': App.SB_KEY, 'Authorization': 'Bearer ' + App.SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ src: 'health-console-probe' })
+      });
+      lines.push(r.ok
+        ? `<div class="test-line ok">✅ <b>sc_keep_alive RPC</b> accepts the console's <span class="code-chip">{"src":"hmg-fleet-console"}</span> payload — one-click ping works (this probe wrote one; see the heartbeat source above).</div>`
+        : `<div class="test-line bad">❌ <b>sc_keep_alive RPC</b> rejected the console payload (HTTP ${r.status}) — run <span class="code-chip">database/platform-integration.sql</span> once (it adds the dual src/p_src signature).</div>`);
+    } catch (e) {
+      lines.push(`<div class="test-line bad">❌ <b>sc_keep_alive RPC</b> unreachable: ${escapeHtml(e.message || e)}</div>`);
+    }
+    /* 2. sc_keepalive view (heartbeat age read) */
+    try {
+      const r = await fetch(`${App.SB_URL}/rest/v1/sc_keepalive?select=pinged_at&limit=1`, {
+        headers: { 'apikey': App.SB_KEY, 'Authorization': 'Bearer ' + App.SB_KEY }
+      });
+      lines.push(r.ok
+        ? `<div class="test-line ok">✅ <b>sc_keepalive view</b> readable with the anon key — the console can display this project's heartbeat age.</div>`
+        : `<div class="test-line bad">❌ <b>sc_keepalive view</b> not readable (HTTP ${r.status}) — run <span class="code-chip">database/platform-integration.sql</span> once.</div>`);
+    } catch (e) {
+      lines.push(`<div class="test-line bad">❌ <b>sc_keepalive view</b> unreachable: ${escapeHtml(e.message || e)}</div>`);
+    }
+    /* 3. license status RPC */
+    try {
+      const r = await App.sbRpc('sc_license_status');
+      const l = Array.isArray(r) ? r[0] : r;
+      lines.push(l && l.state
+        ? `<div class="test-line ok">✅ <b>sc_license_status RPC</b> answers — the console can show the license cell (state: <b>${escapeHtml(String(l.state))}</b>).</div>`
+        : `<div class="test-line warn">⚠️ <b>sc_license_status RPC</b> did not return a state — run <span class="code-chip">database/platform-integration.sql</span> once.</div>`);
+    } catch (e) {
+      lines.push(`<div class="test-line warn">⚠️ <b>sc_license_status RPC</b> not installed yet — run <span class="code-chip">database/platform-integration.sql</span> once.</div>`);
+    }
+    el.innerHTML = lines.join('');
+  },
+
+  /* PHASE 12N — archive health: archived exams must never be forgotten. */
+  async archiveHealth() {
+    const el = document.getElementById('ph-archive');
+    if (!el) return;
+    try {
+      const exams = await App.sbRpc('admin_get_all_exams');
+      const list = Array.isArray(exams) ? exams : [];
+      const archived = list.filter(e => e.is_archived).length;
+      el.innerHTML =
+        (archived
+          ? `<div class="test-line warn">⚠️ <b>${archived} of ${list.length} exam(s) are archived</b> and hidden from students. Restore them from the teacher's CBT panel (Exam archive) when needed.</div>`
+          : `<div class="test-line ok">✅ No exams archived — nothing is hidden from students.</div>`) +
+        `<div class="flex-gap" style="margin-top:8px;flex-wrap:wrap;">
+           <a class="btn btn-sm btn-outline" href="teacher.html">🎓 Teacher CBT panel</a>
+           <a class="btn btn-sm btn-outline" href="storage.html">📦 Storage Manager (vault)</a>
+           <a class="btn btn-sm btn-outline" href="admin-data.html">♻️ Portable Data Archive Center</a>
+         </div>`;
+    } catch (e) {
+      el.innerHTML = '<div class="test-line warn">⚠️ Could not count archived exams: ' + escapeHtml(e.message || e) + ' (admin session required)</div>';
+    }
+  },
+
+  /* PHASE 12N — recent sign-in activity: WHO logged in, when, from what. */
+  async signInAudit() {
+    const el = document.getElementById('ph-signins');
+    if (!el) return;
+    try {
+      const rows = await App.sbFetch('/rest/v1/login_audit?select=email,event,user_agent,created_at&order=created_at.desc&limit=25');
+      if (!rows || !rows.length) {
+        el.innerHTML = '<div class="test-line">No sign-in events recorded yet. Events appear from the first sign-in after <span class="code-chip">database/platform-integration.sql</span> is installed and the site is redeployed.</div>';
+        return;
+      }
+      const evBadge = e => e === 'login' ? '<span class="code-chip" style="background:rgba(22,163,74,.15);color:#16a34a;">login</span>'
+        : e === 'logout' ? '<span class="code-chip" style="background:rgba(59,130,246,.15);color:#3b82f6;">logout</span>'
+        : e === 'idle_lock' ? '<span class="code-chip" style="background:rgba(217,119,6,.15);color:#d97706;">idle lock</span>'
+        : e === '2fa_challenge' ? '<span class="code-chip" style="background:rgba(147,51,234,.15);color:#9333ea;">2FA challenge</span>'
+        : e === '2fa_passed' ? '<span class="code-chip" style="background:rgba(147,51,234,.15);color:#9333ea;">2FA passed</span>'
+        : '<span class="code-chip">' + escapeHtml(String(e || 'event')) + '</span>';
+      el.innerHTML = rows.map(l =>
+        `<div class="test-line">${evBadge(l.event)} <b>${escapeHtml(l.email || 'unknown email')}</b>
+         <span style="color:var(--text-muted);">· ${escapeHtml((l.user_agent || 'unknown browser').slice(0, 60))}</span>
+         <span style="float:right;color:var(--text-muted);">${new Date(l.created_at).toLocaleString()}</span></div>`).join('');
+    } catch (e) {
+      el.innerHTML = '<div class="test-line warn">⚠️ Sign-in history unavailable: ' + escapeHtml(e.message || e) + ' — run <span class="code-chip">database/platform-integration.sql</span> once (admin session also required).</div>';
+    }
   },
   async dbSpace() {
     const el = document.getElementById('ph-storage');
@@ -431,14 +613,25 @@ const PH12I = {
     } catch (e) { el.innerHTML = '<div class="test-line">⚠️ Audit trail needs an admin session: ' + (e.message || e) + '</div>'; }
   },
   async runAll() {
-    await Promise.all([this.schemaDoctor(), this.dbSpace(), this.driveTile(), this.licenseTile(), this.securityCard(), this.auditTrail()]);
+    await Promise.all([this.schemaDoctor(), this.dbSpace(), this.driveTile(), this.licenseTile(), this.securityCard(), this.auditTrail(), this.fleetCard(), this.archiveHealth(), this.signInAudit()]);
   }
 };
 window.PH12I = PH12I;
 /* fold the new cards into the standard diagnostics run */
 const _origRunDiagnostics = runDiagnostics;
 runDiagnostics = async function () { await _origRunDiagnostics(); try { await PH12I.runAll(); } catch (_) {} };
-document.addEventListener('DOMContentLoaded', () => { PH12I.securityCard(); PH12I.driveTile(); });
+document.addEventListener('DOMContentLoaded', () => {
+  PH12I.securityCard(); PH12I.driveTile();
+  /* PHASE 12N — fleet + sign-in cards load immediately (cheap, no probes) */
+  try { PH12I.fleetCard(); } catch (_) {}
+  try { PH12I.signInAudit(); } catch (_) {}
+});
+function copyFleetUrl() {
+  navigator.clipboard.writeText(App.SB_URL).then(() => showToast('Project URL copied: ' + App.SB_URL, 'success', 5000));
+}
+function copyFleetKey() {
+  navigator.clipboard.writeText(App.SB_KEY).then(() => showToast('Anon public key copied — paste it into the Fleet Console.', 'success', 5000));
+}
 </script>
 <script src="assets/js/site-license.js"></script>
 <script src="assets/js/chatbot.js"></script>

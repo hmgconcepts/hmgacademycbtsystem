@@ -703,3 +703,49 @@ Pages that don't link the platform stylesheet (certificate verification, feature
 
 ### 3. 🔎 Regression safety
 New `phase12m_session_render_test.js` (52 behavioural checks) reproduces both reported bugs in a VM (role-less admin session + stale teacher alias; teacher on link checker) and asserts the fixed flows, alongside 36 suites and 346 smoke checks.
+
+---
+
+## Phase 12N — Fleet Console Integration, Login Audit, 2FA & Full Analytics Parity — 2026-09-29
+
+Deep-understudy of School Connect + GOSA Portal (analytics, activity log, settings, storage, admin data, platform health pages) and of the user's own **HMG Fleet Console** — every gap closed, plus a new SQL pack (`database/platform-integration.sql`, embedded in complete-schema.sql for fresh installs).
+
+### 1. 🚀 HMG Fleet Console compatibility (Layer 11)
+- **`sc_keep_alive(src, p_src)`** — the RPC now accepts BOTH parameter names: `{"src":"hmg-fleet-console"}` (the console's exact payload) and `{"p_src":"site-visit"}` (this platform's own layers 1–10). Old callers unchanged; console pings land in the heartbeat trail with their source.
+- **`sc_keepalive` VIEW** — the read shape the console uses for per-project heartbeat age (`GET /rest/v1/sc_keepalive?select=pinged_at&limit=1`, anon key). Exposes only the timestamp + source.
+- **`sc_license_status()` RPC** — one-call license state (model, plan, expiry, grace, lock, server date) for the console's license cells.
+- **Platform Health → 🚀 Fleet Console card** probes all three endpoints live, explains the 2-minute add-project steps, and offers Copy Project URL / Copy anon key.
+- **SUPABASE_FREE_TIER_PROTECTION.md** gains the full Layer 11 section + the 11-layer matrix and handover checklist.
+
+### 2. 💓 Keep-alive source display
+The heartbeat card now answers **"where did the last ping come from"** in plain English (every layer mapped, Fleet Console included) alongside the raw source chip, timestamp and total ping count.
+
+### 3. 🕵️ Login audit (sign-in history)
+- New `login_audit` table (RLS: authenticated insert, admin-only read) records **every sign-in, sign-out, idle lock, 2FA challenge and 2FA pass** with email + browser.
+- Wired at every real sign-in point: teacher login, admin shortcut, post-2FA sign-in, teacher logout, app.js sign-outs, idle locks.
+- **Activity Log** page gains a Log switcher (Platform audit trail ↔ Sign-in history) with event filter, JSON/CSV export, live tail and an owner-only purge with download-first archive (`admin_purge_login_audit()` RPC, 7-day floor). Deep-link: `activity_log.html?log=login`.
+- **Platform Health → 🕵️ Recent sign-in activity** card lists the last 25 events (who, when, what browser).
+- Sign-in history also purgeable from the Storage Manager; travels in full backup envelopes (newest 2000).
+
+### 4. 🔐 Two-Factor Authentication (email OTP — free stack)
+- New `user_security_prefs` table (RLS: own row only) + a Settings card per account.
+- When ON, the sign-in flow demands a **6-digit code emailed by Supabase's built-in email service** after the password step — enforced client-side with challenge + verify + resend + cancel, all audited. Free-tier email limits surfaced honestly in the UI.
+
+### 5. 📈 Analytics page (new `analytics.html`)
+SC/GOSA-grade analytics mapped to the CBT domain: enrollment trend (12 mo), exam activity (12 mo), attempts (30 d), class sizes, **gender split** and **birthdays** (new optional `students.gender` / `students.date_of_birth` columns), top subjects, latest exams, **Top 10 students**, **At-risk students (lowest 10)**, performance by class and by subject (with pass-mark baseline selector), participation (30 d) vs roster — with class/subject filters, dependency-free charts (dark-mode aware), JSON + CSV exports, print/PDF, and a "reading this page" guide. Admin-nav integrated, access-guarded, offline-precached.
+
+### 6. 🔢 Auto-generated candidate numbers
+Platform Settings → Candidate Numbers: prefix + include-year (`HMG/0001` or `HMG/2026/0001`), live preview, authoritative `sc_next_student_id()` RPC, applied when a roster CSV leaves the ID column blank or a teacher adds a student without typing one. The teacher's roster page shows the same preview and per-import counts.
+
+### 7. 🩺 Schema Doctor — every SQL pack
+Now probes **all 8 shipped packs** (complete-schema, keep-alive, security-hardening, drive-sync, storage-offload, platform-integration, demo-seed, demo-users) via cheapest-marker probes + the new `sc_install_state` marker registry (`sc_installed_packs()` RPC; every pack self-marks when run). Green across = fully installed, with install dates.
+
+### 8. ♻️ Disaster-recovery re-link + archive health
+- **`sc_relink_accounts()`** (admin RPC): after restoring into a fresh project, one click re-links students/exams/audit rows to the teachers' NEW auth ids by email (bridge built first), re-labels profiles, and reports teachers who have not signed up again yet. Exposed as a card on Admin Data.
+- **Platform Health → 🗃️ Archive Health**: counts archived exams so a forgotten archive never silently hides a cohort's results, with restore links.
+
+### 9. 📚 Protection doc at full SC/GOSA depth
+Layers 6 (cron-job.org), 7 (Vercel Cron) and 8 (Google Apps Script) rewritten click-by-click with exact button names, test steps, verification checklists and handover tips; Layer 11 added; matrix and checklists now cover all 11 layers.
+
+### 10. 🧪 Verification
+New `analysis/phase12n_platform_test.js` suite (Fleet-compat SQL contract, page features, template parity, sw pin). **37 suites + smoke suite all green.** Service worker: `hmg-cbt-shell-v12-phase12n-v1` (analytics.html precached).
