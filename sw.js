@@ -6,7 +6,7 @@
 // FIXED v3.1: Removed references to non-existent files from cache.
 // ═══════════════════════════════════════════════════════════════
 
-const CACHE_NAME = 'hmg-cbt-shell-v12-phase12n-v1'; // PHASE 12N: Fleet Console integration (dual-name keep-alive RPC + sc_keepalive view + sc_license_status), login audit trail, 2FA (email OTP), Analytics page, Schema Doctor all-packs, DR re-link, sign-in history + candidate auto-IDs
+const CACHE_NAME = 'hmg-cbt-shell-v12-phase12n-v2'; // PHASE 12N-2: robust sc_keepalive view install (auto-migrates the Fleet Console Ops-Toolkit heartbeat table, ping history preserved) + full sc_keep_alive overload reset. PHASE 12N: Fleet Console integration (dual-name keep-alive RPC + sc_keepalive view + sc_license_status), login audit trail, 2FA (email OTP), Analytics page, Schema Doctor all-packs, DR re-link, sign-in history + candidate auto-IDs
 
 // Core application shell assets — ONLY files that actually exist
 const SHELL_ASSETS = [

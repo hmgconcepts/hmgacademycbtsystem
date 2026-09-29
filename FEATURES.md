@@ -748,4 +748,15 @@ Now probes **all 8 shipped packs** (complete-schema, keep-alive, security-harden
 Layers 6 (cron-job.org), 7 (Vercel Cron) and 8 (Google Apps Script) rewritten click-by-click with exact button names, test steps, verification checklists and handover tips; Layer 11 added; matrix and checklists now cover all 11 layers.
 
 ### 10. 🧪 Verification
-New `analysis/phase12n_platform_test.js` suite (Fleet-compat SQL contract, page features, template parity, sw pin). **37 suites + smoke suite all green.** Service worker: `hmg-cbt-shell-v12-phase12n-v1` (analytics.html precached).
+New `analysis/phase12n_platform_test.js` suite (Fleet-compat SQL contract, page features, template parity, sw pin). **37 suites + smoke suite all green.** Service worker: `hmg-cbt-shell-v12-phase12n-v2` (analytics.html precached).
+
+### 11. 🛠️ 12N-2 hotfix — robust `sc_keepalive` install (SQLSTATE 42809)
+
+If a database previously ran the **HMG Fleet Console's own Ops-Toolkit keep-alive SQL** (its snippet for non-HMG projects creates a TABLE named `sc_keepalive`), the 12N `CREATE OR REPLACE VIEW sc_keepalive` failed with `42809: "sc_keepalive" is not a view`. The schema and `platform-integration.sql` now ship a guarded install that inspects `pg_class` first:
+
+- **Legacy TABLE detected** → its newest `pinged_at` + source are preserved into `sc_heartbeat` (newest-wins `GREATEST` merge, ping count folded in), then the table is retired — no ping history is ever lost.
+- **Materialized view / foreign table** under the name → retired the same way.
+- **Nothing there / already a view** → the plain `CREATE OR REPLACE VIEW` path.
+- `platform-integration.sql` additionally resets **every** existing `sc_keep_alive` overload (any argument signature) before creating the canonical dual-param function.
+
+Result: the same SQL files run cleanly on **any** pre-existing database shape — fresh, upgraded from an older phase, or already prepared by the Fleet Console.

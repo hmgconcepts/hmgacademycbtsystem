@@ -328,6 +328,8 @@ Then Actions tab → enable + **Run workflow** once to test. With this armed, ev
 
 **Why it is a real layer, not just a dashboard:** the console's ping performs the exact same verified write as every other layer — `POST /rest/v1/rpc/sc_keep_alive` with the payload `{"src":"hmg-fleet-console"}` — and since Phase 12N this platform's RPC accepts BOTH parameter names (`src` for the console, `p_src` for the platform's own layers), so the console's pings land in the heartbeat trail **with their source visible** on the Platform Health console.
 
+**⚠️ If you already ran the console's own Ops-Toolkit SQL on this project:** the console's Ops Toolkit ships a snippet for *non-HMG* projects that creates a `sc_keepalive` TABLE. On such a database the 12N SQL used to fail with `"sc_keepalive" is not a view` — **12N-2 fixes this automatically**: re-running `database/platform-integration.sql` (or the full schema) preserves that table's ping history into `sc_heartbeat`, retires it, and the console keeps reading the `sc_keepalive` view instead. Zero manual cleanup, zero lost history.
+
 ### What this platform exposes to the console (all three verified live on Platform Health → 🚀 Fleet Console card)
 
 | Console feature | What it calls | Installed by |

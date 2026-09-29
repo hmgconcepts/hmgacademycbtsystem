@@ -90,3 +90,26 @@ Class + subject scope filters, dependency-free charts (dark-mode aware, no CDN),
 `analytics.html` (NEW) · `database/platform-integration.sql` (NEW) · `database/complete-schema.sql` · `database/keep-alive.sql` · `database/security-hardening.sql` · `database/drive-sync.sql` · `database/storage-offload.sql` · `database/demo-seed.sql` · `database/demo-users.sql` · `database/README.md` · `activity_log.html` · `settings.html` · `storage.html` · `admin-data.html` · `platform-health.html` · `teacher.html` · `admin.html` · `sw.js` · `assets/js/app.js` · `assets/js/security-guard.js` · `assets/js/data-portability.js` · `assets/js/keepalive.js` · `SUPABASE_FREE_TIER_PROTECTION.md` · `FEATURES.md` · `DEPLOYMENT_GUIDE.md` — plus the generator's `assets/js/generator.js` (manifest: analytics page, shell.css, platform-integration.sql).
 
 **Upgrade path for existing sites:** deploy the new build → run `database/platform-integration.sql` once in the Supabase SQL Editor → Platform Health → Run Full Diagnostics → 🚀 Fleet Console card all ✅, 🩺 Schema Doctor all 8 packs green. Then add the project to the Fleet Console (URL + anon key) and press 💓 Ping — the heartbeat card will say exactly where it came from.
+
+---
+
+## 11. 🔧 12N-2 hotfix — `42809: "sc_keepalive" is not a view` (live-DB report, fixed)
+
+**What happened on the live database:** the 12N SQL ships `CREATE OR REPLACE VIEW public.sc_keepalive` (the read shape the HMG Fleet Console polls). PostgreSQL refuses to replace a **TABLE** with a view → `SQLSTATE 42809`. The table was traced to the **Fleet Console's own Ops-Toolkit "Keep-alive SQL" snippet** (its one-paste snippet for non-HMG projects creates `sc_keepalive (id, pinged_at, src)` + a 1-arg `sc_keep_alive(src)` writing to it). The original CBT platform never contained any `sc_keepalive` object (verified against the ORIGINAL zip — zero matches), so the collision only occurs on databases prepared by the console first.
+
+**The fix (robust + lossless, shipped to every file):**
+
+1. **Guarded install** before each `CREATE OR REPLACE VIEW` (both `database/complete-schema.sql` §6.2b and `database/platform-integration.sql`): a `DO $keepaliveview$` block reads `pg_class.relkind` for `public.sc_keepalive` and handles every shape:
+   - `r`/`p` (table) → preserves the newest `pinged_at` + `src` into `sc_heartbeat` (newest-wins `GREATEST` merge, row count folded into `ping_count`, source recorded as the legacy value or `fleet-console-legacy`), then `DROP TABLE … CASCADE`;
+   - `m` (materialized view) / `f` (foreign table) → dropped;
+   - `v` or nothing → plain `CREATE OR REPLACE VIEW` path;
+   - anything else → clear exception naming the object type.
+   - Unknown legacy column shapes fall back to `created_at`, and unrecognised shapes degrade to a NOTICE (never a crash) — data is only written when there is something to preserve.
+2. **Full overload reset** in `platform-integration.sql`: every existing `sc_keep_alive` signature (the console's `(text)`, the old `(p_src)`, any variant) is dropped via a `pg_proc` loop before the canonical dual-param function is created. `complete-schema.sql` already reset by name at the top; the standalone pack now does the same.
+3. **Audit of the same hazard on other new objects:** `login_audit`, `user_security_prefs` and `sc_install_state` are `CREATE TABLE IF NOT EXISTS` (safe on pre-existing shapes); `sc_keepalive` was the only view and is now guarded. The console's policy on its legacy table dies with the table.
+
+**What the user does on the live database:** nothing special — re-run `database/complete-schema.sql` (or just `database/platform-integration.sql`) end-to-end. The Supabase SQL Editor runs a failed script as one rolled-back transaction, so the earlier attempt left nothing half-applied; the re-run completes with the migration NOTICES visible (`sc_keepalive: preserved legacy ping …`, `legacy table retired`), and the console's ping keeps working through the view. The Platform Health → Fleet Console card now explains this inline.
+
+**Files touched by the hotfix:** `database/complete-schema.sql` · `database/platform-integration.sql` · `platform-health.html` (card note) · `sw.js` → **`hmg-cbt-shell-v12-phase12n-v2`** · `FEATURES.md` (§11) · `DEPLOYMENT_GUIDE.md` (hotfix note) · `SUPABASE_FREE_TIER_PROTECTION.md` (Layer 11 note) · `database/README.md` · this report — all synced byte-identical to `cbt-generator-package/templates/`.
+
+**Verification:** `phase12n_platform_test.js` grew by 27 checks (now **183/183**) covering the guard end-to-end in both SQL files; 12K/12L/12M pins updated to `phase12n-v2`; smoke suite +10 checks → **382/382**; full battery 36/36 JS suites + schema_static/func/html/id all green; zips rebuilt.
