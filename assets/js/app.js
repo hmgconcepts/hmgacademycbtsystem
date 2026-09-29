@@ -199,8 +199,38 @@ const App = {
     }
   },
   async logout() {
+    this.auditLogin('logout');
     this.setSession(null);
     window.location.href = 'index.html';
+  },
+
+  /* ═══════════════════════════════════════════════════════════════════
+     PHASE 12N — LOGIN AUDIT TRAIL.
+     Every sign-in / sign-out / idle-lock is recorded in the login_audit
+     table (database/platform-integration.sql). Fire-and-forget: an audit
+     failure must NEVER block or break a sign-in or sign-out.            */
+  auditLogin(event, emailOverride) {
+    try {
+      const s = this.getSession();
+      if (!s || !s.access_token) return;             // nothing to attribute
+      const row = {
+        user_id: s.user?.id || null,
+        email: emailOverride || s.user?.email || '',
+        event: event || 'login',
+        user_agent: (navigator.userAgent || '').slice(0, 250)
+      };
+      fetch(`${this.SB_URL}/rest/v1/login_audit`, {
+        method: 'POST',
+        keepalive: true,                              // survives the redirect
+        headers: {
+          'apikey': this.SB_KEY,
+          'Authorization': `Bearer ${s.access_token}`,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=minimal'
+        },
+        body: JSON.stringify(row)
+      }).catch(() => {});
+    } catch (_) { /* audit must never break the page */ }
   },
 
   /* ── REST / PostgREST Pure Fetch Client ── */
@@ -271,7 +301,8 @@ const App = {
   GUARD_TEACHER_PAGES: ['cbt-multi.html', 'cbt-prompts.html', 'question-types.html'],
   GUARD_ADMIN_PAGES: ['admin-data.html', 'disaster-recovery.html', 'storage.html',
                       'platform-health.html', 'status-manager.html', 'settings.html',
-                      'activity_log.html', 'link_checker.html', 'deployment_validator.html'],
+                      'activity_log.html', 'link_checker.html', 'deployment_validator.html',
+                      'analytics.html'],
 
   pageName() {
     let p = (window.location.pathname.split('/').pop() || 'index.html').split(/[?#]/)[0];
@@ -489,6 +520,7 @@ const App = {
   /* 12K — one-click sign out from any shell page: clears every session
      alias this ecosystem writes, then lands on Home. */
   signOutEverywhere() {
+    this.auditLogin('logout');                        // 12N: record before clearing
     for (const k of ['cbt_session', 'cbt_teacher_session', 'cbt_pro_session', 'cbt_admin_session']) {
       try { localStorage.removeItem(k); } catch (e) {}
     }
@@ -719,7 +751,8 @@ const App = {
 
   signOutUI() {
     if (!confirm('Sign out of this dashboard on this device?')) return;
-    this.clearSession();
+    this.auditLogin('logout');                        // 12N: record before clearing
+    this.setSession(null);                            // 12N fix: clearSession() never existed
     try { localStorage.removeItem('cbt_theme'); } catch (e) {}
     location.href = 'index.html';
   },

@@ -7,7 +7,7 @@ Follow the one-step install below and nothing else is required.
 
 | | |
 |---|---|
-| **What it is** | The complete, all-inclusive platform schema: 10 tables, 41+ RPC functions, full Row-Level Security, indexes, triggers, the private `archive-vault` storage bucket, the keep-alive heartbeat system (with a best-effort `pg_cron` job), and starter seed rows. |
+| **What it is** | The complete, all-inclusive platform schema: 13 tables, 45+ RPC functions, full Row-Level Security, indexes, triggers, the private `archive-vault` storage bucket, the keep-alive heartbeat system (with a best-effort `pg_cron` job), and starter seed rows. |
 | **When to run** | **Once, on a fresh Supabase project**, in the Supabase SQL Editor (Dashboard → SQL Editor → New query → paste → Run). |
 | **Idempotent?** | **Yes — safe to run repeatedly.** Every table uses `CREATE TABLE IF NOT EXISTS`, every function `CREATE OR REPLACE FUNCTION`, every policy `DROP POLICY IF EXISTS → CREATE POLICY`, every seed `ON CONFLICT DO NOTHING`. Re-running never drops or loses data. |
 | **Do I need any other SQL after it?** | **No.** No other file in this folder (or anywhere) is required. The module files below are optional maintenance extracts of subsystems that are already inside the master file. |
@@ -15,7 +15,7 @@ Follow the one-step install below and nothing else is required.
 ### Post-install verification (optional, read-only)
 
 ```sql
-SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';   -- expect 10 tables
+SELECT COUNT(*) FROM pg_tables WHERE schemaname = 'public';   -- expect 13 tables
 SELECT * FROM public.get_heartbeat_status();                   -- heartbeat row alive
 SELECT public.sc_keep_alive('manual-test');                    -- returns a timestamp
 SELECT institution_name, lockdown_mode FROM public.platform_settings;
@@ -36,6 +36,7 @@ They are all idempotent and can be run in any order.
 | `storage-offload.sql` | Private `archive-vault` bucket + `admin_table_stats()` / `admin_browse_table()` / `admin_delete_table_rows()` / `admin_purge_old_results()` / `admin_restore_archived_rows()` | Storage Manager shows "vault unavailable" or browse/purge RPCs missing |
 | `demo-seed.sql` | `admin_seed_demo_data()` / `admin_purge_test_results()` + starter seed rows | You want demo data from SQL instead of the Admin Data page button |
 | `demo-users.sql` | Creates **demo teacher + admin login accounts** (bcrypt via pgcrypto) | Evaluation/training deployments — see the removal block inside before production |
+| `platform-integration.sql` | **Phase 12N**: Fleet-Console-compatible `sc_keep_alive(src, p_src)` signature + `sc_keepalive` view + `sc_license_status()` RPC, `login_audit` sign-in trail, `user_security_prefs` (2FA), `sc_install_state` Schema-Doctor markers, students `gender`/`date_of_birth` analytics columns, auto-ID settings + `sc_next_student_id()`, `admin_purge_login_audit()`, `sc_relink_accounts()` DR re-link | Existing installs gaining Phase 12N (fresh installs get it inside complete-schema.sql). Verify on Platform Health → 🚀 Fleet Console + 🩺 Schema Doctor cards |
 
 ## 3. Sample data files (CSV)
 

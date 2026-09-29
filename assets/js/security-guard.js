@@ -140,6 +140,7 @@ const SecurityGuard = {
         clearInterval(this._idleTimer);
         const s = window.App && App.getSession();
         if (s && s.access_token) { // only lock signed-in users
+          try { if (App.auditLogin) App.auditLogin('idle_lock'); } catch (_) {} // 12N login audit
           try { App.setSession(null); } catch (_) {}
           if (typeof onLock === 'function') onLock(minutes);
           else window.location.href = 'index.html?idle=1';

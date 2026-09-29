@@ -77,6 +77,7 @@ BEGIN
       'admin_get_platform_stats',
       'admin_list_client_registrations',
       'admin_purge_audit_logs',
+      'admin_purge_login_audit',
       'admin_purge_old_results',
       'admin_purge_test_results',
       'admin_restore_archived_rows',
@@ -108,6 +109,10 @@ BEGIN
       'save_platform_settings',
       'save_site_license',
       'sc_keep_alive',
+      'sc_installed_packs',
+      'sc_license_status',
+      'sc_next_student_id',
+      'sc_relink_accounts',
       'submit_student_result',
       'update_updated_at_column',
       'verify_certificate',
@@ -248,6 +253,8 @@ CREATE TABLE IF NOT EXISTS public.students (
   class TEXT NOT NULL DEFAULT '',
   email TEXT DEFAULT '',
   phone TEXT DEFAULT '',
+  gender TEXT NOT NULL DEFAULT '',                  -- Phase 12N: optional demographics (Analytics page)
+  date_of_birth DATE,                               -- Phase 12N: optional birthday tracking (Analytics page)
   status TEXT NOT NULL DEFAULT 'active',
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
@@ -266,6 +273,35 @@ CREATE TABLE IF NOT EXISTS public.audit_logs (
   metadata JSONB NOT NULL DEFAULT '{}'::jsonb,
   ip_hint TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 2.6b PHASE 12N — Login Audit (sign-in history: who signed in, when, from
+--      what browser). Written automatically by the sign-in / sign-out /
+--      idle-lock flows; reviewed on activity_log.html + Platform Health.
+CREATE TABLE IF NOT EXISTS public.login_audit (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id     UUID REFERENCES auth.users(id) ON DELETE SET NULL,
+  email       TEXT,
+  event       TEXT NOT NULL DEFAULT 'login',   -- 'login' | 'logout' | 'idle_lock' | '2fa_challenge' | '2fa_passed'
+  ip          TEXT DEFAULT '',
+  user_agent  TEXT DEFAULT '',
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS login_audit_created_idx ON public.login_audit (created_at DESC);
+
+-- 2.6c PHASE 12N — per-account security preferences (2-Factor email OTP)
+CREATE TABLE IF NOT EXISTS public.user_security_prefs (
+  user_id     UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
+  two_factor  BOOLEAN NOT NULL DEFAULT false,
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- 2.6d PHASE 12N — SQL pack installation markers (Schema Doctor registry)
+CREATE TABLE IF NOT EXISTS public.sc_install_state (
+  key          TEXT PRIMARY KEY,          -- the pack file name, e.g. 'keep-alive.sql'
+  label        TEXT NOT NULL DEFAULT '',
+  installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- 2.7 System Backups & Drive Sync History
@@ -467,6 +503,8 @@ ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS lockdown_message T
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS watermark_text TEXT DEFAULT '';
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS signature_data_uri TEXT DEFAULT '';
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS license_registry_url TEXT DEFAULT '';
+ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS auto_id_prefix TEXT NOT NULL DEFAULT '';   -- Phase 12N
+ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS auto_id_year BOOLEAN NOT NULL DEFAULT false; -- Phase 12N
 
 -- ============================================================================
 -- SECTION 3.9 — COMPLETE COLUMN RECONCILIATION (any deployment shape → master)
@@ -526,6 +564,8 @@ ALTER TABLE public.students ADD COLUMN IF NOT EXISTS student_id TEXT NOT NULL DE
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS class TEXT NOT NULL DEFAULT '';
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS email TEXT DEFAULT '';
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS phone TEXT DEFAULT '';
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS gender TEXT NOT NULL DEFAULT '';        -- Phase 12N
+ALTER TABLE public.students ADD COLUMN IF NOT EXISTS date_of_birth DATE;                     -- Phase 12N
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS status TEXT NOT NULL DEFAULT 'active';
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE public.students ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
@@ -630,6 +670,8 @@ ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS license_salt TEXT 
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS watermark_text TEXT DEFAULT '';
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS signature_data_uri TEXT DEFAULT '';
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS auto_id_prefix TEXT NOT NULL DEFAULT '';     -- Phase 12N
+ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS auto_id_year BOOLEAN NOT NULL DEFAULT false; -- Phase 12N
 -- site_license
 ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS id INTEGER PRIMARY KEY DEFAULT 1;
 ALTER TABLE public.site_license ADD COLUMN IF NOT EXISTS model TEXT NOT NULL DEFAULT 'lifetime';
@@ -728,6 +770,21 @@ DO $uniqrec$ BEGIN
 EXCEPTION WHEN unique_violation OR others THEN
   RAISE NOTICE 'students has duplicate (teacher_id, student_id) rows — UNIQUE constraint skipped; de-duplicate and re-run.';
 END $uniqrec$;
+
+-- Phase 12N tables (login_audit / user_security_prefs / sc_install_state)
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS id UUID PRIMARY KEY DEFAULT gen_random_uuid();
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS email TEXT;
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS event TEXT NOT NULL DEFAULT 'login';
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS ip TEXT DEFAULT '';
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS user_agent TEXT DEFAULT '';
+ALTER TABLE public.login_audit ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE public.user_security_prefs ADD COLUMN IF NOT EXISTS user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE;
+ALTER TABLE public.user_security_prefs ADD COLUMN IF NOT EXISTS two_factor BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE public.user_security_prefs ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
+ALTER TABLE public.sc_install_state ADD COLUMN IF NOT EXISTS key TEXT PRIMARY KEY;
+ALTER TABLE public.sc_install_state ADD COLUMN IF NOT EXISTS label TEXT NOT NULL DEFAULT '';
+ALTER TABLE public.sc_install_state ADD COLUMN IF NOT EXISTS installed_at TIMESTAMPTZ NOT NULL DEFAULT NOW();
 
 -- ============================================================================
 -- SECTION 4 — INDEXES FOR HIGH-PERFORMANCE SEARCH & RETRIEVAL
@@ -905,7 +962,11 @@ $$;
 
 -- 6.1 The heartbeat RPC — real UPDATE, callable with the anon key,
 --     exposes no school data. Returns the new last_ping timestamp.
-CREATE OR REPLACE FUNCTION public.sc_keep_alive(p_src TEXT DEFAULT 'unknown')
+--     PHASE 12N: accepts BOTH parameter names so the HMG Fleet Console
+--     ({"src":"hmg-fleet-console"}) and this platform's own layers
+--     ({"p_src":"site-visit"} / GitHub Actions / Vercel Cron / pg_cron)
+--     all land in the same heartbeat row with their source recorded.
+CREATE OR REPLACE FUNCTION public.sc_keep_alive(src TEXT DEFAULT NULL, p_src TEXT DEFAULT NULL)
 RETURNS TIMESTAMPTZ
 LANGUAGE SQL
 SECURITY DEFINER
@@ -913,13 +974,13 @@ SET search_path = public
 AS $keepalive$
   UPDATE public.sc_heartbeat
      SET last_ping   = NOW(),
-         last_source = LEFT(COALESCE(p_src, 'unknown'), 40),
+         last_source = LEFT(COALESCE(NULLIF(src, ''), NULLIF(p_src, ''), 'unknown'), 40),
          ping_count  = ping_count + 1
    WHERE id = 1
   RETURNING last_ping;
 $keepalive$;
 
-GRANT EXECUTE ON FUNCTION public.sc_keep_alive(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sc_keep_alive(TEXT, TEXT) TO anon, authenticated;
 
 -- 6.2 Legacy alias (kept so older clients keep working — never remove)
 CREATE OR REPLACE FUNCTION public.keep_alive_ping()
@@ -936,6 +997,18 @@ END;
 $$;
 
 GRANT EXECUTE ON FUNCTION public.keep_alive_ping() TO anon, authenticated;
+
+-- 6.2b PHASE 12N — sc_keepalive VIEW: the read shape the HMG Fleet Console
+--      uses to display heartbeat age for every monitored project
+--      (GET /rest/v1/sc_keepalive?select=pinged_at&limit=1 with the anon
+--      key). Exposes only the single heartbeat row (timestamp + source).
+CREATE OR REPLACE VIEW public.sc_keepalive AS
+  SELECT last_ping AS pinged_at,
+         last_source AS source
+    FROM public.sc_heartbeat
+   WHERE id = 1;
+
+GRANT SELECT ON public.sc_keepalive TO anon, authenticated;
 
 -- 6.3 Heartbeat status reader (used by the Platform Health console to show
 --     last_ping / last_source / ping_count and verify every layer works)
@@ -974,6 +1047,8 @@ AS $$
     'lockdown_mode', lockdown_mode,
     'lockdown_message', lockdown_message,
     'watermark_text', watermark_text,
+    'auto_id_prefix', auto_id_prefix,
+    'auto_id_year', auto_id_year,
     'license', (SELECT jsonb_build_object(
         'model', model, 'plan', plan, 'cycle', cycle,
         'expires_on', expires_on, 'grace_days', grace_days,
@@ -1021,6 +1096,8 @@ BEGIN
   IF p_patch ? 'license_salt' THEN v_row.license_salt := LEFT(p_patch->>'license_salt', 200); END IF;
   IF p_patch ? 'watermark_text' THEN v_row.watermark_text := LEFT(p_patch->>'watermark_text', 120); END IF;
   IF p_patch ? 'signature_data_uri' THEN v_row.signature_data_uri := LEFT(p_patch->>'signature_data_uri', 300000); END IF;
+  IF p_patch ? 'auto_id_prefix' THEN v_row.auto_id_prefix := UPPER(LEFT(TRIM(BOTH FROM COALESCE(p_patch->>'auto_id_prefix', '')), 12)); END IF;
+  IF p_patch ? 'auto_id_year' THEN v_row.auto_id_year := COALESCE((p_patch->>'auto_id_year')::BOOLEAN, false); END IF;
 
   -- JSON objects (deep merge)
   IF p_patch ? 'branding' THEN v_row.branding := v_row.branding || (p_patch->'branding'); END IF;
@@ -1047,6 +1124,8 @@ BEGIN
     license_salt = v_row.license_salt,
     watermark_text = v_row.watermark_text,
     signature_data_uri = v_row.signature_data_uri,
+    auto_id_prefix = v_row.auto_id_prefix,
+    auto_id_year = v_row.auto_id_year,
     updated_at = NOW()
   WHERE id = 1;
 
@@ -1974,6 +2053,37 @@ BEGIN
 END;
 $$;
 
+-- 9.11b PHASE 12N — purge old sign-in history (login_audit). Same safety
+-- rails as the audit purge: owner-only, at least the last 7 days are kept,
+-- and the purged rows are returned for the downloadable archive first.
+CREATE OR REPLACE FUNCTION public.admin_purge_login_audit(p_before TIMESTAMPTZ)
+RETURNS TABLE (purged INTEGER, archived JSONB)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE v_count INTEGER; v_rows JSONB;
+BEGIN
+  IF NOT public.is_platform_owner() THEN
+    RAISE EXCEPTION 'Not authorized: super_admin (owner) access required to purge the sign-in history';
+  END IF;
+  IF p_before IS NULL OR p_before > NOW() - INTERVAL '7 days' THEN
+    RAISE EXCEPTION 'Refusing to purge: keep at least the last 7 days of sign-in history';
+  END IF;
+
+  SELECT COALESCE(jsonb_agg(t), '[]'::jsonb) INTO v_rows
+    FROM (SELECT * FROM public.login_audit WHERE created_at < p_before ORDER BY created_at) t;
+
+  DELETE FROM public.login_audit WHERE created_at < p_before;
+  GET DIAGNOSTICS v_count = ROW_COUNT;
+
+  PERFORM public.log_audit_event('admin_purge_login_audit', 'login_audit', '', jsonb_build_object('purged', v_count, 'before', p_before));
+  RETURN QUERY SELECT v_count, v_rows;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.admin_purge_login_audit(TIMESTAMPTZ) TO authenticated;
+
 -- 9.12 Admin Get Institutions
 CREATE OR REPLACE FUNCTION public.admin_get_institutions()
 RETURNS SETOF public.institutions
@@ -2129,7 +2239,7 @@ BEGIN
   IF NOT public.is_platform_owner() THEN
     RAISE EXCEPTION 'Not authorized: super_admin (owner) access required';
   END IF;
-  IF p_table NOT IN ('results','audit_logs','students','system_backups') THEN
+  IF p_table NOT IN ('results','audit_logs','login_audit','students','system_backups') THEN
     RAISE EXCEPTION 'Table % is not restorable through this RPC', p_table;
   END IF;
   IF NOT jsonb_typeof(p_rows) = 'array' THEN
@@ -2379,6 +2489,28 @@ DROP POLICY IF EXISTS "Users insert audit logs" ON public.audit_logs;
 CREATE POLICY "Users insert audit logs" ON public.audit_logs FOR INSERT
   WITH CHECK (true);
 
+-- 11.6b PHASE 12N — Login Audit (sign-in history)
+ALTER TABLE public.login_audit ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "login_audit_insert" ON public.login_audit;
+CREATE POLICY "login_audit_insert" ON public.login_audit FOR INSERT
+  TO authenticated WITH CHECK (true);
+DROP POLICY IF EXISTS "login_audit_read" ON public.login_audit;
+CREATE POLICY "login_audit_read" ON public.login_audit FOR SELECT
+  TO authenticated USING (public.is_platform_admin());
+GRANT SELECT, INSERT ON public.login_audit TO authenticated;
+
+-- 11.6c PHASE 12N — per-account security prefs (own row only)
+ALTER TABLE public.user_security_prefs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "user_security_prefs_self" ON public.user_security_prefs;
+CREATE POLICY "user_security_prefs_self" ON public.user_security_prefs FOR ALL
+  TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
+
+-- 11.6d PHASE 12N — Schema Doctor markers readable by every signed-in admin
+ALTER TABLE public.sc_install_state ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "sc_install_state_read" ON public.sc_install_state;
+CREATE POLICY "sc_install_state_read" ON public.sc_install_state FOR SELECT
+  TO authenticated USING (true);
+
 -- 11.7 System Backups
 DROP POLICY IF EXISTS "Admins manage system backups" ON public.system_backups;
 CREATE POLICY "Admins manage system backups" ON public.system_backups FOR ALL
@@ -2565,6 +2697,179 @@ END
 $cronsetup$;
 
 -- ============================================================================
+-- SECTION 15B — PHASE 12N PLATFORM INTEGRATION
+-- (mirrors database/platform-integration.sql for fresh installs)
+-- ============================================================================
+
+-- 15B.1 License status for external monitors (HMG Fleet Console reads this)
+CREATE OR REPLACE FUNCTION public.sc_license_status()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  l        public.site_license%ROWTYPE;
+  v_state  TEXT;
+  v_exp    DATE;
+  v_grace  DATE;
+  v_days   INT;
+  v_locked BOOLEAN := false;
+BEGIN
+  SELECT * INTO l FROM public.site_license WHERE id = 1;
+
+  IF l.id IS NULL OR l.model <> 'subscription' THEN
+    RETURN jsonb_build_object(
+      'state', 'lifetime', 'locked', false,
+      'model',  COALESCE(l.model, 'lifetime'),
+      'plan',   COALESCE(l.plan, 'One-time purchase (lifetime ownership)'));
+  END IF;
+
+  IF l.status = 'suspended' THEN
+    RETURN jsonb_build_object(
+      'state', 'suspended', 'locked', true, 'model', l.model, 'plan', l.plan,
+      'cycle', l.cycle, 'renew_url', l.renew_url, 'lock_message', l.lock_message,
+      'server_date', current_date);
+  END IF;
+
+  v_exp := l.expires_on;
+  IF v_exp IS NULL THEN
+    RETURN jsonb_build_object('state', 'active', 'locked', false, 'model', l.model,
+                              'plan', l.plan, 'cycle', l.cycle, 'server_date', current_date);
+  END IF;
+
+  v_grace := v_exp + make_interval(days => COALESCE(l.grace_days, 7));
+  IF current_date > v_grace THEN
+    v_state := 'expired';  v_days := current_date - v_grace;  v_locked := true;
+  ELSIF current_date > v_exp THEN
+    v_state := 'grace';    v_days := v_grace - current_date;  v_locked := false;
+  ELSE
+    v_days  := v_exp - current_date;
+    v_state := CASE WHEN v_days <= 30 THEN 'warning' ELSE 'active' END;
+  END IF;
+
+  RETURN jsonb_build_object(
+    'state', v_state, 'days', v_days, 'expires_on', v_exp,
+    'grace_days', COALESCE(l.grace_days, 7), 'model', l.model, 'plan', l.plan,
+    'cycle', l.cycle, 'status', l.status, 'renew_url', l.renew_url,
+    'lock_message', l.lock_message, 'locked', v_locked, 'server_date', current_date);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sc_license_status() TO anon, authenticated;
+
+-- 15B.2 Schema Doctor marker registry
+CREATE OR REPLACE FUNCTION public.sc_installed_packs()
+RETURNS TABLE (key TEXT, label TEXT, installed_at TIMESTAMPTZ)
+LANGUAGE SQL
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT key, label, installed_at FROM public.sc_install_state ORDER BY key;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sc_installed_packs() TO anon, authenticated;
+
+-- 15B.3 Next auto-generated candidate number (PREFIX/NNNN or PREFIX/YYYY/NNNN)
+CREATE OR REPLACE FUNCTION public.sc_next_student_id(p_prefix TEXT DEFAULT '', p_year BOOLEAN DEFAULT false)
+RETURNS TEXT
+LANGUAGE sql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT CASE WHEN p_prefix = '' THEN NULL ELSE
+    p_prefix || CASE WHEN p_year THEN '/' || to_char(NOW(), 'YYYY') ELSE '' END || '/' ||
+    LPAD(((COALESCE(max((regexp_match(student_id, '(\d+)\s*$'))[1]::int), 0)) + 1)::text, 4, '0')
+  END
+  FROM public.students
+  WHERE student_id LIKE (p_prefix || '%')
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sc_next_student_id(TEXT, BOOLEAN) TO authenticated;
+
+-- 15B.4 One-click re-link after Disaster Recovery (email bridge first)
+CREATE OR REPLACE FUNCTION public.sc_relink_accounts()
+RETURNS JSONB
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
+AS $$
+DECLARE
+  v_students INT := 0;
+  v_exams    INT := 0;
+  v_audit    INT := 0;
+  v_profiles INT := 0;
+  v_unmatched JSONB;
+BEGIN
+  IF NOT public.is_platform_admin() THEN
+    RAISE EXCEPTION 'Not authorized: admin access required';
+  END IF;
+
+  CREATE TEMP TABLE IF NOT EXISTS _relink_bridge AS
+    SELECT p.id AS old_id, p.email, u.id AS new_id
+      FROM public.profiles p
+      JOIN auth.users u ON lower(u.email) = lower(p.email)
+     WHERE p.id <> u.id;
+
+  UPDATE public.students s
+     SET teacher_id = b.new_id
+    FROM _relink_bridge b
+   WHERE s.teacher_id = b.old_id;
+  GET DIAGNOSTICS v_students = ROW_COUNT;
+
+  UPDATE public.exams e
+     SET teacher_id = b.new_id
+    FROM _relink_bridge b
+   WHERE e.teacher_id = b.old_id;
+  GET DIAGNOSTICS v_exams = ROW_COUNT;
+
+  UPDATE public.audit_logs a
+     SET actor_id = b.new_id
+    FROM _relink_bridge b
+   WHERE a.actor_id = b.old_id;
+  GET DIAGNOSTICS v_audit = ROW_COUNT;
+
+  UPDATE public.profiles p
+     SET id = b.new_id
+    FROM _relink_bridge b
+   WHERE p.id = b.old_id;
+  GET DIAGNOSTICS v_profiles = ROW_COUNT;
+
+  SELECT COALESCE(jsonb_agg(to_jsonb(x)), '[]'::jsonb) INTO v_unmatched
+    FROM (SELECT p.email, p.full_name
+            FROM public.profiles p
+           WHERE p.role IN ('teacher', 'admin', 'super_admin')
+             AND NOT EXISTS (SELECT 1 FROM auth.users u WHERE lower(u.email) = lower(p.email))
+           ORDER BY p.email LIMIT 100) x;
+
+  DROP TABLE IF EXISTS _relink_bridge;
+
+  RETURN jsonb_build_object(
+    'students_relinked', v_students,
+    'exams_relinked',    v_exams,
+    'audit_relinked',    v_audit,
+    'profiles_relabeled', v_profiles,
+    'unmatched',         v_unmatched,
+    'hint', 'Unmatched teachers simply sign up again with the same email, then run this once more.');
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sc_relink_accounts() TO authenticated;
+
+-- 15B.5 Markers for EVERY SQL pack shipped in database/ (Schema Doctor reads
+--      these; each standalone pack also self-marks when run on its own)
+INSERT INTO public.sc_install_state (key, label) VALUES
+  ('complete-schema.sql',       'Complete schema — everything (tables, RLS, RPCs, pg_cron)'),
+  ('keep-alive.sql',            'Keep-alive heartbeat + pg_cron scheduler (Layers 0-4)'),
+  ('security-hardening.sql',    'Security hardening — lockdown, idle lock, RLS guard'),
+  ('drive-sync.sql',            'Google Drive backup registry + RPCs'),
+  ('storage-offload.sql',       'Archive Vault + 1 GB file-storage offload'),
+  ('platform-integration.sql',  'Fleet Console integration, login audit, 2FA prefs, analytics columns'),
+  ('demo-seed.sql',             'One-click demo sample data'),
+  ('demo-users.sql',            'Demo teacher/admin accounts')
+ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, installed_at = NOW();
+
+-- ============================================================================
 -- SECTION 16 — POST-INSTALL VERIFICATION (informational, safe to run)
 -- ============================================================================
 -- Run these in the SQL Editor to confirm the installation:
@@ -2577,7 +2882,10 @@ $cronsetup$;
 
 -- ============================================================================
 -- SCHEMA DEPLOYMENT COMPLETE
---   10 tables • 40+ RPC functions • full RLS • archive-vault bucket
+--   13 tables • 40+ RPC functions • full RLS • archive-vault bucket
 --   heartbeat system with pg_cron • triggers • seed data
+--   Phase 12N: Fleet Console integration (sc_keep_alive dual-param +
+--   sc_keepalive view + sc_license_status), login_audit, 2FA prefs,
+--   Schema Doctor markers, analytics columns, DR re-link
 -- Idempotent: re-running this file NEVER drops or loses data.
 -- ============================================================================

@@ -222,4 +222,19 @@ REVOKE ALL ON TABLE public.sc_heartbeat FROM anon, authenticated;
 
 -- ============================================================================
 
+-- ══════════════════════════════════════════════════════════════════════════
+-- PHASE 12N — Schema Doctor marker (sc_install_state registry).
+-- Best-effort: if the registry does not exist yet (complete-schema /
+-- platform-integration pack not run), the marker is skipped silently.
+-- ══════════════════════════════════════════════════════════════════════════
+DO $marker$
+BEGIN
+  BEGIN
+    INSERT INTO public.sc_install_state (key, label)
+    VALUES ('security-hardening.sql', 'Security hardening — lockdown, idle lock, RLS guard')
+    ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, installed_at = NOW();
+  EXCEPTION WHEN undefined_table THEN NULL;
+END
+$marker$;
+
 COMMIT;

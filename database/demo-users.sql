@@ -70,3 +70,18 @@ SET encrypted_password = EXCLUDED.encrypted_password, updated_at = NOW();
 --     'teacher.demo@hmgacademy.local',
 --     'admin.demo@hmgacademy.local'
 --   );
+
+-- ══════════════════════════════════════════════════════════════════════════
+-- PHASE 12N — Schema Doctor marker (sc_install_state registry).
+-- Best-effort: if the registry does not exist yet (complete-schema /
+-- platform-integration pack not run), the marker is skipped silently.
+-- ══════════════════════════════════════════════════════════════════════════
+DO $marker$
+BEGIN
+  BEGIN
+    INSERT INTO public.sc_install_state (key, label)
+    VALUES ('demo-users.sql', 'Demo teacher/admin accounts')
+    ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, installed_at = NOW();
+  EXCEPTION WHEN undefined_table THEN NULL;
+END
+$marker$;

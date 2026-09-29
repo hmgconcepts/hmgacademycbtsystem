@@ -44,7 +44,15 @@ CREATE TABLE IF NOT EXISTS public.sc_heartbeat (
 
 -- 6.1 The heartbeat RPC — real UPDATE, callable with the anon key,
 --     exposes no school data. Returns the new last_ping timestamp.
-CREATE OR REPLACE FUNCTION public.sc_keep_alive(p_src TEXT DEFAULT 'unknown')
+--     PHASE 12N: accepts BOTH parameter names so the HMG Fleet Console
+--     ({"src":"hmg-fleet-console"}) and this platform's own layers
+--     ({"p_src":"site-visit"} and friends) all land in the same heartbeat
+--     row with their source recorded. Old overload is dropped first so
+--     PostgREST never resolves callers ambiguously.
+DROP FUNCTION IF EXISTS public.sc_keep_alive(TEXT);
+DROP FUNCTION IF EXISTS public.sc_keep_alive(TEXT, TEXT);
+
+CREATE FUNCTION public.sc_keep_alive(src TEXT DEFAULT NULL, p_src TEXT DEFAULT NULL)
 RETURNS TIMESTAMPTZ
 LANGUAGE SQL
 SECURITY DEFINER
@@ -52,13 +60,13 @@ SET search_path = public
 AS $keepalive$
   UPDATE public.sc_heartbeat
      SET last_ping   = NOW(),
-         last_source = LEFT(COALESCE(p_src, 'unknown'), 40),
+         last_source = LEFT(COALESCE(NULLIF(src, ''), NULLIF(p_src, ''), 'unknown'), 40),
          ping_count  = ping_count + 1
    WHERE id = 1
   RETURNING last_ping;
 $keepalive$;
 
-GRANT EXECUTE ON FUNCTION public.sc_keep_alive(TEXT) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.sc_keep_alive(TEXT, TEXT) TO anon, authenticated;
 
 -- 6.2 Legacy alias (kept so older clients keep working — never remove)
 CREATE OR REPLACE FUNCTION public.keep_alive_ping()
@@ -123,5 +131,19 @@ $cronsetup$;
 
 -- ============================================================================
 
+-- ══════════════════════════════════════════════════════════════════════════
+-- PHASE 12N — Schema Doctor marker (sc_install_state registry).
+-- Best-effort: if the registry does not exist yet (complete-schema /
+-- platform-integration pack not run), the marker is skipped silently.
+-- ══════════════════════════════════════════════════════════════════════════
+DO $marker$
+BEGIN
+  BEGIN
+    INSERT INTO public.sc_install_state (key, label)
+    VALUES ('keep-alive.sql', 'Keep-alive heartbeat + pg_cron scheduler (Layers 0-4)')
+    ON CONFLICT (key) DO UPDATE SET label = EXCLUDED.label, installed_at = NOW();
+  EXCEPTION WHEN undefined_table THEN NULL;
+END
+$marker$;
 
 COMMIT;

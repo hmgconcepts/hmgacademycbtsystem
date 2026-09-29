@@ -50,10 +50,13 @@ const DataPort = {
     try { students = await App.sbFetch('/rest/v1/students?select=*&order=created_at.desc&limit=10000'); } catch (_) {}
     // audit trail travels in FULL exports only (can be huge) — include newest 2000
     try { audit = await App.sbRpc('admin_get_audit_logs', { p_limit: 2000 }); } catch (_) {}
+    // PHASE 12N — sign-in history (newest 2000) travels with FULL exports too
+    let logins = [];
+    try { logins = await App.sbFetch('/rest/v1/login_audit?select=*&order=created_at.desc&limit=2000'); } catch (_) {}
 
     const data = {
       institutions, platform_settings: settings, site_license: license,
-      profiles, exams, results, students, audit_logs: audit
+      profiles, exams, results, students, audit_logs: audit, login_audit: logins
     };
 
     const summary = {
@@ -491,11 +494,12 @@ const DataPort = {
   async purgeFromDb(table, before, archivePath) {
     const App = window.App;
     if (table === 'audit_logs') return await App.sbRpc('admin_purge_audit_logs', { p_before: before });
+    if (table === 'login_audit') return await App.sbRpc('admin_purge_login_audit', { p_before: before });   /* Phase 12N */
     if (table === 'results') {
       const r = await App.sbRpc('admin_purge_old_results', { p_before: before, p_archive_path: archivePath });
       return { purged: (Array.isArray(r) ? r[0] : r)?.purged ?? r };
     }
-    throw new Error(`Direct purge is only supported for results and audit_logs (asked: ${table}). Use the table browser to delete individual rows instead.`);
+    throw new Error(`Direct purge is only supported for results, audit_logs and login_audit (asked: ${table}). Use the table browser to delete individual rows instead.`);
   },
 
   async restoreArchivedRows(table, rows) {

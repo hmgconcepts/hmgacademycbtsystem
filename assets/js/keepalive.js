@@ -145,7 +145,8 @@ const FreeTierKeeper = {
       { layer: 7, name: 'Vercel Cron Schedule', status: 'Active (vercel.json)', description: 'Native Vercel cron triggering the keepalive endpoint daily.' },
       { layer: 8, name: 'Supabase Edge Function ping', status: 'Deployable', description: 'supabase/functions/ping/index.ts — a real DB write callable by any external pinger.' },
       { layer: 9, name: 'Self-Committing Workflow', status: 'Auto (workflow)', description: 'The GitHub workflow commits a timestamp file when the repo goes 30+ days without commits, so the 60-day scheduler freeze can never happen.' },
-      { layer: 10, name: 'Auto-Restore Watchdog', status: 'Setup Required', description: 'supabase-auto-restore.yml checks the project daily via the Management API and RESTORES it automatically if paused.' }
+      { layer: 10, name: 'Auto-Restore Watchdog', status: 'Setup Required', description: 'supabase-auto-restore.yml checks the project daily via the Management API and RESTORES it automatically if paused.' },
+      { layer: 11, name: 'HMG Fleet Console (one-click fleet ping)', status: 'Ready (Phase 12N)', description: 'Your fleet console at hmgfleetconsole.vercel.app health-checks every client project and can ping this database\'s sc_keep_alive RPC with {"src":"hmg-fleet-console"} — the ping lands in the heartbeat trail with its source visible on this page.' }
     ];
   }
 };
