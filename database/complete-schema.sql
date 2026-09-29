@@ -1002,6 +1002,86 @@ GRANT EXECUTE ON FUNCTION public.keep_alive_ping() TO anon, authenticated;
 --      uses to display heartbeat age for every monitored project
 --      (GET /rest/v1/sc_keepalive?select=pinged_at&limit=1 with the anon
 --      key). Exposes only the single heartbeat row (timestamp + source).
+--      12N-2 ROBUST INSTALL (see the guard below).
+--      The HMG Fleet Console's Ops-Toolkit snippet (for non-HMG projects)
+--      creates a TABLE named public.sc_keepalive (id, pinged_at, src). If
+--      that snippet ran on this database before this schema, a plain
+--      CREATE OR REPLACE VIEW fails with SQLSTATE 42809 ("sc_keepalive"
+--      is not a view). This guard inspects what actually exists under the
+--      name, PRESERVES the ping history it holds, retires it, and only
+--      then installs the view -- so this same file runs cleanly on every
+--      database shape: fresh, upgraded from an older phase, or already
+--      prepared by the Fleet Console.
+DO $keepaliveview$
+DECLARE
+  v_kind "char";
+  v_rec  RECORD;
+  v_ping TIMESTAMPTZ := NULL;
+  v_src  TEXT := NULL;
+  v_cnt  BIGINT := 0;
+BEGIN
+  SELECT c.relkind INTO v_kind
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE n.nspname = 'public' AND c.relname = 'sc_keepalive';
+
+  IF v_kind IS NULL OR v_kind = 'v' THEN
+    RAISE NOTICE 'sc_keepalive: % - CREATE OR REPLACE VIEW handles it',
+      CASE WHEN v_kind IS NULL THEN 'nothing exists yet' ELSE 'view already installed' END;
+    RETURN;
+  END IF;
+
+  IF v_kind IN ('r', 'p') THEN
+    RAISE NOTICE 'sc_keepalive: legacy TABLE found (Fleet Console Ops-Toolkit snippet or older install) - migrating its ping history, then retiring it';
+    /* 1. preserve the newest ping + source the legacy table recorded */
+    BEGIN
+      FOR v_rec IN EXECUTE
+        'SELECT pinged_at AS ping, src AS src FROM public.sc_keepalive ORDER BY pinged_at DESC LIMIT 1'
+      LOOP
+        v_ping := v_rec.ping; v_src := v_rec.src;
+      END LOOP;
+    EXCEPTION WHEN OTHERS THEN
+      BEGIN
+        FOR v_rec IN EXECUTE
+          'SELECT created_at AS ping, NULL::text AS src FROM public.sc_keepalive ORDER BY created_at DESC LIMIT 1'
+        LOOP
+          v_ping := v_rec.ping;
+        END LOOP;
+      EXCEPTION WHEN OTHERS THEN
+        RAISE NOTICE 'sc_keepalive: legacy table shape not recognised - nothing to preserve';
+      END;
+    END;
+    BEGIN
+      EXECUTE 'SELECT count(*) FROM public.sc_keepalive' INTO v_cnt;
+    EXCEPTION WHEN OTHERS THEN
+      v_cnt := 0;
+    END;
+    IF v_ping IS NOT NULL THEN
+      INSERT INTO public.sc_heartbeat (id, last_ping, last_source, ping_count)
+      VALUES (1, v_ping, LEFT(COALESCE(v_src, 'fleet-console-legacy'), 40), GREATEST(v_cnt, 1))
+      ON CONFLICT (id) DO UPDATE SET
+        last_ping   = GREATEST(EXCLUDED.last_ping, public.sc_heartbeat.last_ping),
+        last_source = CASE WHEN EXCLUDED.last_ping >= public.sc_heartbeat.last_ping
+                           THEN EXCLUDED.last_source
+                           ELSE public.sc_heartbeat.last_source END,
+        ping_count  = public.sc_heartbeat.ping_count + GREATEST(v_cnt, 1);
+      RAISE NOTICE 'sc_keepalive: preserved legacy ping % (source: %)', v_ping, COALESCE(v_src, 'n/a');
+    END IF;
+    /* 2. retire the table (its policies and indexes go with it) */
+    EXECUTE 'DROP TABLE public.sc_keepalive CASCADE';
+    RAISE NOTICE 'sc_keepalive: legacy table retired - the Fleet Console view takes over';
+  ELSIF v_kind = 'm' THEN
+    EXECUTE 'DROP MATERIALIZED VIEW public.sc_keepalive';
+    RAISE NOTICE 'sc_keepalive: legacy materialized view dropped';
+  ELSIF v_kind = 'f' THEN
+    EXECUTE 'DROP FOREIGN TABLE public.sc_keepalive';
+    RAISE NOTICE 'sc_keepalive: legacy foreign table dropped';
+  ELSE
+    RAISE EXCEPTION 'public.sc_keepalive exists as an unsupported object type (relkind %). Drop it manually, then re-run this file.', v_kind;
+  END IF;
+END
+$keepaliveview$;
+
 CREATE OR REPLACE VIEW public.sc_keepalive AS
   SELECT last_ping AS pinged_at,
          last_source AS source
